@@ -561,6 +561,7 @@ body:not(.es-web) .only-web{display:none!important}
     <div id="cortPendBox"></div>
     <div id="mantTarBox"></div>
     <div id="turnoDifBox"></div>
+    <div id="difRevBox"></div>
     <div id="turnosCierre" style="display:grid;gap:10px"></div>
     <div id="extPendBox"></div>
     <div id="alqRevBox"></div>
@@ -604,6 +605,7 @@ body:not(.es-web) .only-web{display:none!important}
     </div>
     <div id="cierreAviso"></div>
     <div id="cierrePasos"></div>
+    <div id="difBox"></div>
     <div id="cierreEq"></div>
     <div class="grid2">
       <div class="panel">
@@ -635,7 +637,7 @@ body:not(.es-web) .only-web{display:none!important}
       <div class="panel">
         <h3>Efectivo</h3>
         <dl class="kv" id="efectivoKv"></dl>
-        <label class="f" for="cierreNotas">Comentarios / notas<textarea id="cierreNotas" rows="3" placeholder="Ej.: -35 manito Edes"></textarea></label>
+        <label class="f" for="cierreNotas">Comentarios generales del día<textarea id="cierreNotas" rows="3" placeholder="Opcional. Las diferencias se explican arriba, en «Diferencias por explicar»."></textarea></label>
       </div>
     </div>
     <div class="panel no-duena cxe">
@@ -1592,6 +1594,25 @@ function concilia(c,fz){
   const psc=lineas.filter(l=>l.sinCom),pscT=r2(psc.reduce((s,l)=>s+(+l.precio||0),0));
   const pend=met.some(x=>Math.abs(x.sinExp)>=0.005)||Math.abs(sinExpC)>=0.005,faltaZ=met.filter(x=>x.z==null).map(x=>MET_LBL[x.m]);
   return {faltaZ,met,canjeL,canje,abL,ab,esperado,sinExpC,psc,pscT,pend}}
+const DIF_MOT=['Shampoo Fanola','Cortesía no registrada','Servicio autorizado por gerencia','Otro'];
+function difLista(c,K0){const L=[],lo=cierre.lote||{},sob=(v,a,b)=>v>0?`${a} ${money(v)}`:`${b} ${money(-v)}`;
+  K0.met.filter(x=>x.z!=null&&Math.abs(x.sinExp)>=0.005).forEach(x=>L.push({k:'met:'+x.m,lbl:`${MET_LBL[x.m]}: Fiscal Z contra total real`,monto:x.sinExp,txt:sob(x.sinExp,'Sobran en lo real','Faltan en lo real')}));
+  if(Math.abs(K0.sinExpC)>=0.005)L.push({k:'comandas',lbl:'Comandas contra lo cobrado (sin ITBMS)',monto:K0.sinExpC,txt:sob(K0.sinExpC,'Se cobró de menos','Se cobró de más')});
+  TERM_K.forEach(k=>{if(lo[k]!=null){const d=r2(+lo[k]-c.term[k]);if(Math.abs(d)>=0.005)L.push({k:'lote:'+k,lbl:`Cierre de lote ${TERM[k]} contra Comanda`,monto:d,txt:sob(d,'Sobran en el lote','Faltan en el lote')})}});
+  (dia===hoy()?turnosHoy:[]).forEach(t=>{const q=(k,lbl,v)=>{v=r2(+v||0);if(Math.abs(v)>=0.005)L.push({k:k+t.id,lbl,monto:v,txt:sob(v,'Sobran','Faltan')})};
+    q('ap:',`Efectivo al abrir caja · ${t.cajero}`,t.difApertura);if(t.entrega)q('en:',`Efectivo al entregar caja · ${t.cajero}`,t.entrega.dif);if(t.recepcion)q('re:',`Efectivo al recibir caja · ${t.recepcion.por||''}`,t.recepcion.dif)});
+  const E=cierre.difExp||{};L.forEach(d=>{const e=E[d.k];d.e=e||null;d.cambio=!!(e&&Math.abs(+e.monto-d.monto)>=0.005);d.ok=!!(e&&e.motivo&&String(e.detalle||'').trim()&&!d.cambio)});return L}
+function difHtml(L){if(!L.length)return '';const f=L.filter(d=>!d.ok).length;
+  return `<div class="adel" style="border:1.5px solid ${f?'var(--warn)':'var(--ok)'};gap:10px"><h3>${f?`Diferencias por explicar · faltan ${f}`:'✓ Diferencias explicadas'}</h3><small class="muted">La app ya restó sola las propinas, cortesías registradas, canjes de puntos y cuentas abiertas. Explica lo que queda: toca el motivo y escribe el detalle.</small>
+  ${L.map(d=>`<div class="dif-r" data-dk="${esc(d.k)}" style="display:grid;gap:6px;border-top:1px solid var(--line);padding-top:8px"><div class="row between"><b>${esc(d.lbl)}</b><span class="${d.ok?'pos':'neg'}" style="font-weight:700">${d.ok?'✓ ':''}${d.txt}</span></div>
+    ${d.cambio?`<small class="neg">El monto cambió (antes ${money(Math.abs(+d.e.monto))}). Revisa la explicación y vuelve a tocar el motivo.</small>`:''}
+    <div class="pick">${DIF_MOT.map(m=>`<button type="button" data-dmot="${esc(m)}" aria-pressed="${!!(d.e&&d.e.motivo===m)}">${m}</button>`).join('')}</div>
+    <input data-ddet placeholder="Detalle (ej.: cliente, servicio, quién autorizó)" value="${esc(d.e&&d.e.detalle||'')}" aria-label="Detalle de la diferencia"></div>`).join('')}</div>`}
+async function difGuardar(k,patch){const c=calcCierre(tickets,lineas,gastos),d=difLista(c,concilia(c,cierre.fz||{})).find(x=>x.k===k);if(!d)return;
+  const E={...(cierre.difExp||{})};E[k]={...(E[k]||{}),...patch,monto:d.monto,lbl:d.lbl,por:cajero||encargada(),hora:new Date().toISOString()};cierre.difExp=E;await saveCierre({difExp:E,difRev:null});renderCierre()}
+document.addEventListener('click',e=>{const b=e.target.closest('#difBox [data-dmot]');if(!b)return;const r=b.closest('[data-dk]');difGuardar(r.dataset.dk,{motivo:b.dataset.dmot,detalle:r.querySelector('[data-ddet]').value.trim()})});
+document.addEventListener('change',e=>{const i=e.target.closest('#difBox [data-ddet]');if(!i)return;const r=i.closest('[data-dk]'),E=(cierre.difExp||{})[r.dataset.dk]||{};difGuardar(r.dataset.dk,{motivo:E.motivo||'',detalle:i.value.trim()})});
+const difFaltan=()=>{const c=calcCierre(tickets,lineas,gastos);return difLista(c,concilia(c,cierre.fz||{})).filter(d=>!d.ok).length};
 function conciliaHtml(c,k){
   const row=(l,v,cls)=>`<div class="cc-r ${cls||''}"><span>${l}</span><b>${v}</b></div>`;
   let h=`<div class="adel cc"><h3>Detalle de diferencias</h3>`;
@@ -1603,7 +1624,7 @@ function conciliaHtml(c,k){
   k.abL.forEach(x=>h+=row(`− Cuenta sin cobrar todavía · ${esc(x.t.cliente)}`,'−'+money(x.monto)));
   h+=row('= Debería coincidir con el subtotal cobrado',money(k.esperado),'tot');
   h+=row('Subtotal cobrado (ventas sin ITBMS)',money(c.sub));
-  h+=Math.abs(k.sinExpC)<0.005?row('✓ Comandas y cobros cuadran','','ok'):row('Sin explicar: escribe el motivo en las notas',money(k.sinExpC),'bad');
+  h+=Math.abs(k.sinExpC)<0.005?row('✓ Comandas y cobros cuadran','','ok'):row('Sin explicar: explícalo arriba, en «Diferencias por explicar»',money(k.sinExpC),'bad');
   if(k.psc.length)h+=row(`Incluye productos sin comisión: ${k.psc.map(l=>`${esc(l.producto)} (${esc(l.estilista)})`).join(', ')}`,money(k.pscT),'info');
   if(vaDia.length){h+=row('Aparte · Ventas a alquilados (no facturadas, no van en el Fiscal Z ni en las comandas)',money(vaTot()),'info');vaDia.forEach(v=>h+=row(`${esc(v.estilista)} · ${esc(vaDesc(v))} · ${v.metodo==='pendiente'?'PENDIENTE: al cierre pasa al alquiler':VA_MET[v.metodo]||v.metodo}`,money(v.total),v.metodo==='pendiente'?'bad':'info'))}
   return h+'</div>'}
@@ -1876,7 +1897,12 @@ $('#respaldoBtn').onclick=async()=>{if(!needDb())return;if(typeof XLSX==='undefi
 
 /* ---------- resumen de gerencia ---------- */
 let resCitas=[],resCitasUn=null,resQc=null;
-function renderResumen(){
+var difRev=[],difRevUn=null;
+function subDifRev(){if(difRevUn||!db||!duena)return;difRevUn=db.collection('cierres').where('fecha','>=',addDias(hoy(),-45)).onSnapshot(s=>{difRev=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.difExp&&Object.keys(x.difExp).length&&!x.difRev).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));renderDifRev()},()=>{})}
+function renderDifRev(){const bx=$('#difRevBox');if(!bx)return;if(!duena||!difRev.length){bx.innerHTML='';return}
+  bx.innerHTML=`<div class="adel" style="gap:8px"><h3>Diferencias explicadas por caja (${difRev.length})</h3>${difRev.map(x=>`<div style="display:grid;gap:4px;border-top:1px solid var(--line);padding-top:8px"><div class="row between"><b>${fechaCorta(x.fecha)}</b><button type="button" class="btn small" data-difrev="${esc(x.id)}">Revisado</button></div>${Object.values(x.difExp).map(d=>`<small>${esc(d.lbl||'')} · <b>${money(Math.abs(+d.monto||0))}</b> · ${esc(d.motivo||'')}: ${esc(d.detalle||'')} <span class="muted">(${esc(d.por||'')})</span></small>`).join('')}</div>`).join('')}</div>`}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-difrev]');if(!b)return;try{await db.doc('cierres/'+b.dataset.difrev).update({difRev:{por:porGer(),fecha:new Date().toISOString()}})}catch(err){toast('No se pudo guardar.')}});
+function renderResumen(){subDifRev();renderDifRev();
   if(db&&!resCitasUn)resCitasUn=db.collection('citas').where('fecha','>=',hoy()).where('fecha','<=',manana()).onSnapshot(s=>{resCitas=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==='resumen')renderResumen()},()=>{});
   const k=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
   if(dia===hoy()){
@@ -2983,7 +3009,8 @@ function renderCierre(){
   $('#cierreAviso').innerHTML=c.abiertas.length?`<div class="notice warn"><span>${c.abiertas.length} clienta(s) con servicios todavía sin cobrar: ${c.abiertas.map(t=>esc(t.cliente)).join(', ')}.</span></div>`:''
   $('#cierreEq').innerHTML=`<div class="eq"><div><span>Subtotal ventas</span><b>${money(c.sub)}</b></div><i>+</i><div><span>ITBMS</span><b>${money(c.imp)}</b></div><i>=</i><div><span>Total</span><b>${money(c.tot)}</b></div></div>
   <div class="row" style="margin-top:8px;gap:16px"></div>`;
-  $('#cierreConc').innerHTML=conciliaHtml(c,concilia(c,cierre.fz||{}))+(concilia(c,cierre.fz||{}).pend&&!(cierre.notas||'').trim()?'<div class="notice warn"><span>Hay diferencias sin explicar. Escribe el motivo en <b>Comentarios / notas</b> antes de descargar el cierre.</span></div>':'');
+  $('#cierreConc').innerHTML=conciliaHtml(c,concilia(c,cierre.fz||{}));
+  {const bx=$('#difBox'),a=document.activeElement;if(bx){const h=difHtml(difLista(c,concilia(c,cierre.fz||{})));if(bx.innerHTML!==h){const fk=a&&bx.contains(a)&&a.tagName==='INPUT'?a.closest('[data-dk]').dataset.dk:null,fv=fk&&a.value,fp=fk&&a.selectionStart;bx.innerHTML=h;if(fk){const r=[...bx.querySelectorAll('[data-dk]')].find(x=>x.dataset.dk===fk),i=r&&r.querySelector('[data-ddet]');if(i){i.value=fv;i.focus();try{i.setSelectionRange(fp,fp)}catch(e){}}}}}}
   const tb=$('#fzTable tbody');
   if(cierreRendered!==dia||!tb.children.length){
     tb.innerHTML=METODOS.map(m=>`<tr data-m="${m}"><td><b>${MET_LBL[m]}</b></td><td class="n"><input id="fz-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Fiscal Z ${MET_LBL[m]}"></td><td class="n tr"></td><td class="n df"></td><td class="ex" style="white-space:normal"></td></tr>`).join('');
@@ -3003,7 +3030,7 @@ function renderCierre(){
     const P=[['Todas las cuentas cobradas',!c.abiertas.length,c.abiertas.length?`Faltan ${c.abiertas.length}`:''],
       ['Fiscal Z de tarjeta, efectivo y Yappy',METODOS.every(m=>fz[m]!=null),''],
       ['Cierre de lote de cada punto',TERM_K.every(k=>lo[k]!=null||!(c.term[k]>0.004)),''],
-      ['Diferencias explicadas en notas',!(K0.pend||ldif)||nota,(K0.pend||ldif)&&!nota?'Escribe el motivo abajo':''],
+      (()=>{const n=difLista(c,K0).filter(d=>!d.ok).length;return ['Diferencias explicadas',!n,n?`Faltan ${n}: explícalas abajo`:'']})(),
       ...(dia===hoy()?[['Caja entregada al cierre (botón arriba)',!turnoAbierto(),'']]:[])];
     const f=P.filter(x=>!x[1]).length;
     $('#cierrePasos').innerHTML=`<div class="adel" style="gap:6px">${f?`<b>Pasos del cierre · faltan ${f}</b>`:'<b class="pos" style="font-size:1.15rem">✓ Cierre listo · descarga el PDF</b>'}${P.map((x,i)=>`<div class="row" style="gap:8px"><span class="${x[1]?'pos':'muted'}" style="width:22px">${x[1]?'✓':i+1}</span><span>${x[0]}${x[2]?` · <small class="neg">${x[2]}</small>`:''}</span></div>`).join('')}</div>`}
@@ -3266,6 +3293,7 @@ function hojaCierre(c,fz){
   DL.push(['= Debería coincidir con el subtotal cobrado',K.esperado,0,1]);DL.push(['Subtotal cobrado',c.sub]);
   DL.push(Math.abs(K.sinExpC)<0.005?['✓ Comandas y cobros cuadran','']:['SIN EXPLICAR (ver notas)',K.sinExpC,1]);
   if(K.psc.length)DL.push([`Incluye productos sin comisión: ${K.psc.map(l=>`${l.producto} (${l.estilista})`).join(', ')}`,K.pscT]);
+  Object.values(cierre.difExp||{}).forEach(x=>DL.push([`Diferencia · ${x.lbl||''}: ${x.motivo||''} · ${x.detalle||''}`,money(Math.abs(+x.monto||0))]));
   if((cierre.notas||'').trim())DL.push([`Notas de caja: ${cierre.notas.trim().replace(/\s*\n\s*/g,' · ')}`,'']);
   DL.forEach(([t,v,bad,bold])=>{box(r,0,5,t,{...L,font:F(!!(bad||bold),11,bad?'C00000':'111111'),alignment:{wrapText:true,vertical:'center'}});put(r,6,v,{...C,font:F(!!(bad||bold),11,bad?'C00000':'111111')});r++});
   r++;
@@ -3375,6 +3403,7 @@ function dibujarCierre(doc){
   DL.push(['= Debería coincidir con el subtotal cobrado',M$(K.esperado),0,1]);DL.push(['Subtotal cobrado',M$(c.sub)]);
   DL.push(Math.abs(K.sinExpC)<0.005?['Comandas y cobros cuadran ✓','']:['SIN EXPLICAR (ver notas)',M$(K.sinExpC),1]);
   if(K.psc.length)DL.push([`Incluye productos sin comisión: ${K.psc.map(l=>`${l.producto} (${l.estilista})`).join(', ')}`,M$(K.pscT)]);
+  Object.values(cierre.difExp||{}).forEach(x=>DL.push([`Diferencia · ${x.lbl||''}: ${x.motivo||''} · ${x.detalle||''}`,money(Math.abs(+x.monto||0))]));
   if((cierre.notas||'').trim())DL.push([`Notas de caja: ${cierre.notas.trim().replace(/\s*\n\s*/g,' · ')}`,'']);
   DL.forEach(([t,v,bad,bold])=>{doc.setFontSize(8.5);const lines=doc.splitTextToSize(sp(t).replace('✓','(ok)'),DW-8),h=Math.max(SR,lines.length*10+5);const col=bad?RED:[17,17,17];
     cell(M,y,DW,h,t.replace('✓','(ok)'),{align:'left',bold:bad||bold,color:col});cell(M+DW,y,80,h,v,{bold:bad||bold,color:col,align:'right'});y+=h});
@@ -3382,7 +3411,7 @@ function dibujarCierre(doc){
 }
 async function pdfCierre(){
   if(!dl){toast('La descarga no está disponible en esta vista.');return}
-  const c=calcCierre(tickets,lineas,gastos),K0=concilia(c,cierre.fz||{});if(K0.faltaZ.length){toast(`Falta el Fiscal Z de ${K0.faltaZ.join(', ')}. Escríbelo (pon 0 si no hubo).`);return}if(K0.pend&&!(cierre.notas||'').trim()){toast('Hay diferencias sin explicar. Escribe el motivo en Comentarios / notas.');return}
+  const c=calcCierre(tickets,lineas,gastos),K0=concilia(c,cierre.fz||{});if(K0.faltaZ.length){toast(`Falta el Fiscal Z de ${K0.faltaZ.join(', ')}. Escríbelo (pon 0 si no hubo).`);return}if(difFaltan()){toast('Hay diferencias sin explicar. Explícalas en «Diferencias por explicar».');$('#difBox').scrollIntoView({block:'center'});return}
   try{await cargarJs('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')}catch(e){toast('No cargó el generador de PDF. Recarga la página.');return}
   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'pt',format:'letter'});
   dibujarCierre(doc);if(lineas.length){doc.addPage();dibujarComandas(doc)}
@@ -3391,7 +3420,7 @@ async function pdfCierre(){
 
 async function exportDia(){
   if(typeof XLSX==='undefined'){toast('No cargó el generador de Excel. Recarga la página.');return}
-  const c=calcCierre(tickets,lineas,gastos),fz=cierre.fz||{};if(concilia(c,fz).pend&&!(cierre.notas||'').trim()){toast('Hay diferencias sin explicar. Escribe el motivo en Comentarios / notas.');return}
+  const c=calcCierre(tickets,lineas,gastos),fz=cierre.fz||{};if(difFaltan()){toast('Hay diferencias sin explicar. Explícalas en «Diferencias por explicar».');$('#difBox').scrollIntoView({block:'center'});return}
   const wb=XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb,hojaCierre(c,fz),'Cierre');
   await guardarXlsx(wb,`Cierre ${dia}.xlsx`);
