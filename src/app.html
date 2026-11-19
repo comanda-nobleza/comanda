@@ -1964,7 +1964,7 @@ async function renderReportes(){
 }
 $('#repPrev').onclick=()=>{const [y,m]=repMes.split('-').map(Number);repMes=ymd(new Date(y,m-2,1)).slice(0,7);renderReportes()};
 $('#repNext').onclick=()=>{const [y,m]=repMes.split('-').map(Number);repMes=ymd(new Date(y,m,1)).slice(0,7);renderReportes()};
-const COLS_TODAS=['config','perfiles','inventario','invMov','invAlertas','insumosPed','tickets','ticketsTel','lineas','citas','citasTel','bloqueos','vacaciones','clientes','puntos','puntosResumen','adelantos','pedidos','extras','descuentos','alquileres','gastos','cierres','turnos','decimos','mantenimientos','paquetes','ventasAlq','archivos'];
+const COLS_TODAS=['config','perfiles','inventario','invMov','invAlertas','insumosPed','tickets','ticketsTel','lineas','citas','citasTel','bloqueos','vacaciones','clientes','puntos','puntosResumen','adelantos','pedidos','extras','descuentos','alquileres','gastos','cierres','turnos','decimos','mantenimientos','paquetes','ventasAlq','archivos','mant','contacto','avisosVence','tareasHechas'];
 async function copiaLeer(c){if(ES_WEB)return (await db.collection(c).get()).docs;let out=[],sn=await db.collection(c).limit(1000).get();out=sn.docs;return out}
 $('#copiaBtn').onclick=async()=>{if(!needDb())return;if(PRAC){toast('Sal del modo práctica primero.');return}if(!dl){toast('Las descargas no están disponibles aquí.');return}const b=$('#copiaBtn'),m=$('#copiaMsg');b.disabled=true;
   try{const C={};let n=0;for(const c of COLS_TODAS){m.textContent=`Leyendo ${c}…`;const ds=await copiaLeer(c);if(!ds.length)continue;C[c]={};ds.forEach(d=>{C[c][d.id]=d.data();n++})}
