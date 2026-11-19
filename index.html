@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="e77ef1daba99"</script>
-<script src="web.js?v=e77ef1daba99"></script>
+<script>window.BUILD="94a7f3a9d560"</script>
+<script src="web.js?v=94a7f3a9d560"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3867,7 +3867,7 @@ function citaHtml(c,mode,conEst){
   if(c.estado==='llego'&&c.fecha===hoy()&&(mode==='caja'||mine)){const tc=ticketDeCita(c);if(tc&&tc.estado==='cobrada')b.push(`<span class="chip ok">✓ Cuenta cobrada</span>`);else b.push(`<button class="btn small primary" data-ag="agregar" data-id="${c.id}">+ Agregar servicio</button>`)}
   if(!act&&mode==='caja')b.push(`<button class="btn small ghost" data-ag="restaurar" data-id="${c.id}">Volver a activar</button>`);
   if(mode==='caja'&&(c.estado==='llego'||!act))b.push(`<button class="btn small" data-ag="editar" data-id="${c.id}">Editar</button>`);
-  if(mode==='caja'&&c.estado!=='llego')b.push(`<button class="btn small ghost danger" data-ag="borrar" data-id="${c.id}">Borrar cita</button>`);
+  if(mode==='caja'&&(c.estado!=='llego'||duena))b.push(`<button class="btn small ghost danger" data-ag="borrar" data-id="${c.id}">${c.estado==='llego'?'Borrar cita (gerencia)':'Borrar cita'}</button>`);
   if(mode==='caja'&&c.estado==='llego'&&(c.ediciones||[]).length)b.push(`<small class="muted">Editada ${(c.ediciones||[]).length} vez${c.ediciones.length>1?'es':''} · último motivo: ${esc(c.ediciones[c.ediciones.length-1].motivo)}</small>`);
   return `<article class="cita ${c.estado}${conEst?' conest':''}" ${conEst?`style="--h:${estHue(c.estilista)}"`:''}>
     <div class="c-h"><b>${h12(c.inicio)}</b>${conEst?`<span class="chip ec" style="--h:${estHue(c.estilista)}">${esc(c.estilista)}</span>`:''}<small>a ${h12(fin)} · ${durTxt(c.duracion)}</small><span class="chip ${CE_CHIP[c.estado]||''}">${CE[c.estado]||c.estado}</span>${c.recordatorio&&mode==='caja'?'<span class="chip ok">Recordada</span>':''}</div>
@@ -3965,7 +3965,7 @@ document.addEventListener('click',async e=>{
   if(a==='cancelar'){if(!armed(b))return;const pe=c.estado;await upd({estado:'cancelada',cancelada:new Date().toISOString(),canceladaPor:soy||enCaja()},'Cita cancelada');if(b.closest('.tareas-hoy'))thHecha('cancel',c.cliente,'Canceló la cita',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{estado:pe,cancelada:null}})));return}
   if(a==='restaurar'){await upd({estado:'por_confirmar'},'Cita activa de nuevo (por confirmar)');return}
   if(a==='editar'){openCita(c);return}
-  if(a==='borrar'){if(c.estado==='llego'){toast('Esta clienta ya fue atendida: la cita no se puede borrar. Puedes editarla con el motivo.');return}if(!armed(b))return;try{const g=await grupoDe();for(const x of g){await db.doc('citas/'+x.id).delete();await db.doc('citasTel/'+x.id).delete().catch(()=>{})}toast(g.length>1?'Cita borrada para todos los profesionales':'Cita borrada')}catch(err){toast('No se pudo borrar ('+(err.code||'error')+').')}return}
+  if(a==='borrar'){if(c.estado==='llego'&&!duena){toast('Esta clienta ya fue atendida: la cita no se puede borrar. Puedes editarla con el motivo.');return}if(!armed(b))return;try{const g=await grupoDe();for(const x of g){await db.doc('citas/'+x.id).delete();await db.doc('citasTel/'+x.id).delete().catch(()=>{})}toast(g.length>1?'Cita borrada para todos los profesionales':'Cita borrada')}catch(err){toast('No se pudo borrar ('+(err.code||'error')+').')}return}
   if(a==='agregar'){
     b.disabled=true;
     try{
