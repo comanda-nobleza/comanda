@@ -2482,10 +2482,10 @@ function renderPtsCobro(){
   if(!raw){box.innerHTML='<small class="muted">Escribe el teléfono de la clienta para sumarle puntos o canjear un premio.</small>';return}
   if(!cobroPts.tel){box.innerHTML='<small class="neg">Revisa el teléfono: debe tener al menos 7 dígitos.</small>';return}
   if(cobroPts.movs==='cargando'||cobroPts.movs===null){box.innerHTML='<small class="muted">Buscando puntos…</small>';return}
-  const {saldo,prox}=saldoPts(cobroPts.movs),tot=cobroTotales(),gana=tot?Math.floor(tot.sub*ptsDolar()):0;
+  const {saldo,prox}=saldoPts(cobroPts.movs),tot=cobroTotales(),gana=tot?ptsGana(tot.sub):0;
   const disp=saldo>=ptsMin()?premiosVigentes().filter(p=>+p.puntos<=saldo):[],c=cobroPts.canje;
   const lsT=tot?lineasDe(tot.t.id).filter(l=>!l.venta):[];
-  box.innerHTML=`<div class="pts-sum"><b>${saldo} puntos</b><small>${prox?`${prox.puntos} vencen el ${fechaCorta(prox.fecha)}`:cobroPts.movs.length?'':'Clienta nueva en puntos'}</small><span class="pos">+${gana} con esta cuenta</span></div>
+  box.innerHTML=`<div class="pts-sum"><b>${saldo} puntos</b><small>${prox?`${prox.puntos} vencen el ${fechaCorta(prox.fecha)}`:cobroPts.movs.length?'':'Clienta nueva en puntos'}</small>${descPct()?`<span class="muted">Sin puntos en esta cuenta: tiene descuento</span>`:`<span class="pos">+${gana} con esta cuenta</span>`}</div>
     ${disp.length?`<span class="muted">¿Quiere canjear un premio?</span><div class="pick">${disp.map((p,i)=>`<button type="button" data-canje="${esc(p.nombre)}" aria-pressed="${!!(c&&c.premio.nombre===p.nombre)}">${esc(p.nombre)}<small>${p.puntos} pts</small></button>`).join('')}</div>`:`<small class="muted">${(()=>{const s=sigPremio(saldo);if(saldo<ptsMin())return `Los canjes se habilitan desde ${ptsMin()} puntos. Le faltan ${ptsMin()-saldo}.`;return s?`Le faltan ${s.faltan} puntos para: ${esc(s.p.nombre)}.`:'No hay premios vigentes.'})()}</small>`}
     ${c&&c.premio.tipo==='servicio'?`<span class="muted">¿Qué servicio de esta cuenta cubre el premio? (se canjea junto con un servicio pagado)</span><div class="pick">${lsT.map(l=>`<button type="button" data-canje-l="${l.id}" aria-pressed="${c.lineaId===l.id}">${esc(l.servicio)}<small>${money(l.precio)}</small></button>`).join('')}</div>`:''}
     ${c?`<small class="desc-fijo">Canje: ${esc(c.premio.nombre)} (−${c.premio.puntos} pts)${c.premio.tipo==='obsequio'?' · entrega el obsequio a la clienta':''} <button type="button" class="btn ghost small" data-canje-x>Quitar</button></small>`:''}`;
@@ -2506,6 +2506,8 @@ async function reabrirPts(tid){const tels=await quitarPtsTicket(tid);
   for(const x of tels){const [k,c]=x.split('|');await guardarResumenPts(k,c)}}
 function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).forEach(x=>(g[x.ticketId]=g[x.ticketId]||[]).push(x));
   return Object.values(g).filter(a=>a.length>1).flatMap(a=>a.sort((p,q)=>(q.creado||'').localeCompare(p.creado||'')).slice(1))}
+/* los puntos se ganan solo con el pago completo: con descuento a la clienta no suma puntos */
+function ptsGana(sub){return descPct()>0?0:Math.floor((+sub||0)*ptsDolar())}
 async function aplicarPuntos(t,sub){
   const k=cobroPts.tel;if(!k||!db)return '';
   await db.doc('ticketsTel/'+t.id).set({tel:k,fecha:t.fecha||hoy()}).catch(()=>{});
@@ -2518,7 +2520,7 @@ async function aplicarPuntos(t,sub){
     if(c.premio.tipo==='servicio'&&c.lineaId){const l=lineas.find(x=>x.id===c.lineaId);if(l)await db.doc('lineas/'+l.id).update({canje:{premio:c.premio.nombre,puntos:+c.premio.puntos,precioNormal:+l.precio},precio:0})}
     msg+=` · canjeó ${c.premio.nombre}`;
   }
-  const gana=Math.floor(sub*ptsDolar());
+  const gana=ptsGana(sub);
   if(gana>0){await db.collection('puntos').add({tel:k,cliente:t.cliente,tipo:'gana',puntos:gana,ticketId:t.id,fecha:f,creado:now});msg+=` · +${gana} puntos`}
   try{await guardarCliente(k,leerFicha('fc')||{},f)}catch(e){}
   await guardarResumenPts(k,t.cliente);
@@ -3020,9 +3022,9 @@ $('#cobroForm').addEventListener('submit',async e=>{
   let terminales=null;{const tj=r2(+p.tarjeta||0);if(tj>0.004){if(!cobTerm.m){toast('Toca en qué punto pasó la tarjeta: St. Georges o Banesco.');$('#termBox').scrollIntoView({block:'center'});return}
     if(cobTerm.m==='dos'){const sg=r2(cobTerm.sg);if(!(sg>0&&sg<tj)){toast('Escribe cuánto pasó por St. Georges (el resto va a Banesco).');$('#termSg')?.focus();return}terminales={sg,bz:r2(tj-sg)}}else terminales={[cobTerm.m]:tj}}}
   $('#cobrarBtn').disabled=true;
-  try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),puntosGanados:cobroPts.tel?Math.floor(tot.sub*ptsDolar()):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
+  try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),puntosGanados:cobroPts.tel?ptsGana(tot.sub):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
     try{await aplicarDescCli(tot.t,tot.dCli,descPct(),$('#descMot').value.trim())}catch(err){}
-    const antes=Array.isArray(cobroPts.movs)?saldoPts(cobroPts.movs):{saldo:0,prox:null},telP=cobroPts.tel,ganaP=telP?Math.floor(tot.sub*ptsDolar()):0,canjP=cobroPts.canje?cobroPts.canje.premio:null,yaC=(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).some(x=>x.tipo==='canje');
+    const antes=Array.isArray(cobroPts.movs)?saldoPts(cobroPts.movs):{saldo:0,prox:null},telP=cobroPts.tel,ganaP=telP?ptsGana(tot.sub):0,canjP=cobroPts.canje?cobroPts.canje.premio:null,yaC=(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).some(x=>x.tipo==='canje');
     let pm='',okP=true;try{pm=await aplicarPuntos(tot.t,tot.sub)}catch(err){pm=' · no se pudieron guardar los puntos';okP=false}
     if(telP&&okP)setTimeout(()=>abrirPostPuntos(tot.t.cliente,telP,ganaP,canjP,antes.saldo-(canjP?+canjP.puntos:0)+ganaP,antes.prox,yaC),50);
     $('#cobroSheet').hidden=true;toast('Cuenta de '+tot.t.cliente+' cerrada: '+money(tot.total)+(c.vuelto>=0.005?' · vuelto '+money(c.vuelto):'')+pm);
