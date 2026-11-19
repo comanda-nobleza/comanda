@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="350bb5ec2d3c"</script>
-<script src="web.js?v=350bb5ec2d3c"></script>
+<script>window.BUILD="e77ef1daba99"</script>
+<script src="web.js?v=e77ef1daba99"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -977,6 +977,7 @@ body:not(.es-web) .only-web{display:none!important}
       <label class="f" for="ciDurMin">O escribe los minutos<input id="ciDurMin" type="number" min="5" step="5" inputmode="numeric" placeholder="Ej.: 150"></label>
     </div>
     <label class="f" for="ciNota">Nota (opcional)<textarea id="ciNota" rows="2" placeholder="Ej.: trae foto de referencia"></textarea></label>
+    <label class="f" for="ciMotEd" id="ciMotEdL" hidden>¿Por qué se edita? (la clienta ya fue atendida)<input id="ciMotEd" autocomplete="off" placeholder="Ej.: se cambió el profesional, se corrigió el servicio"></label>
     <div id="ciErr" class="notice warn ci-err" hidden></div>
     <div class="actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary" id="ciGuardar">Guardar cita</button></div>
   </form>
@@ -3866,7 +3867,8 @@ function citaHtml(c,mode,conEst){
   if(c.estado==='llego'&&c.fecha===hoy()&&(mode==='caja'||mine)){const tc=ticketDeCita(c);if(tc&&tc.estado==='cobrada')b.push(`<span class="chip ok">✓ Cuenta cobrada</span>`);else b.push(`<button class="btn small primary" data-ag="agregar" data-id="${c.id}">+ Agregar servicio</button>`)}
   if(!act&&mode==='caja')b.push(`<button class="btn small ghost" data-ag="restaurar" data-id="${c.id}">Volver a activar</button>`);
   if(mode==='caja'&&(c.estado==='llego'||!act))b.push(`<button class="btn small" data-ag="editar" data-id="${c.id}">Editar</button>`);
-  if(mode==='caja')b.push(`<button class="btn small ghost danger" data-ag="borrar" data-id="${c.id}">Borrar cita</button>`);
+  if(mode==='caja'&&c.estado!=='llego')b.push(`<button class="btn small ghost danger" data-ag="borrar" data-id="${c.id}">Borrar cita</button>`);
+  if(mode==='caja'&&c.estado==='llego'&&(c.ediciones||[]).length)b.push(`<small class="muted">Editada ${(c.ediciones||[]).length} vez${c.ediciones.length>1?'es':''} · último motivo: ${esc(c.ediciones[c.ediciones.length-1].motivo)}</small>`);
   return `<article class="cita ${c.estado}${conEst?' conest':''}" ${conEst?`style="--h:${estHue(c.estilista)}"`:''}>
     <div class="c-h"><b>${h12(c.inicio)}</b>${conEst?`<span class="chip ec" style="--h:${estHue(c.estilista)}">${esc(c.estilista)}</span>`:''}<small>a ${h12(fin)} · ${durTxt(c.duracion)}</small><span class="chip ${CE_CHIP[c.estado]||''}">${CE[c.estado]||c.estado}</span>${c.recordatorio&&mode==='caja'?'<span class="chip ok">Recordada</span>':''}</div>
     <div class="c-cl">${esc(c.cliente)}</div>
@@ -3963,7 +3965,7 @@ document.addEventListener('click',async e=>{
   if(a==='cancelar'){if(!armed(b))return;const pe=c.estado;await upd({estado:'cancelada',cancelada:new Date().toISOString(),canceladaPor:soy||enCaja()},'Cita cancelada');if(b.closest('.tareas-hoy'))thHecha('cancel',c.cliente,'Canceló la cita',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{estado:pe,cancelada:null}})));return}
   if(a==='restaurar'){await upd({estado:'por_confirmar'},'Cita activa de nuevo (por confirmar)');return}
   if(a==='editar'){openCita(c);return}
-  if(a==='borrar'){if(!armed(b))return;try{const g=await grupoDe();for(const x of g){await db.doc('citas/'+x.id).delete();await db.doc('citasTel/'+x.id).delete().catch(()=>{})}toast(g.length>1?'Cita borrada para todos los profesionales':'Cita borrada')}catch(err){toast('No se pudo borrar ('+(err.code||'error')+').')}return}
+  if(a==='borrar'){if(c.estado==='llego'){toast('Esta clienta ya fue atendida: la cita no se puede borrar. Puedes editarla con el motivo.');return}if(!armed(b))return;try{const g=await grupoDe();for(const x of g){await db.doc('citas/'+x.id).delete();await db.doc('citasTel/'+x.id).delete().catch(()=>{})}toast(g.length>1?'Cita borrada para todos los profesionales':'Cita borrada')}catch(err){toast('No se pudo borrar ('+(err.code||'error')+').')}return}
   if(a==='agregar'){
     b.disabled=true;
     try{
@@ -4018,7 +4020,7 @@ function openCita(c){if(modo!=='caja'){toast('La agenda la maneja caja.');return
   ciSvcs=!c?[]:eqDe(c)?c.equipo.flatMap(x=>(x.servicios||[]).map(s=>({s,e:x.estilista===c.estilista?'':x.estilista}))):(Array.isArray(c.servicios)&&c.servicios.length?[...c.servicios]:(c.servicio?String(c.servicio).split(' + ').map(x=>x.trim()).filter(Boolean):[])).map(s=>({s,e:''}));$('#ciSvc').value='';renderCiSvcs();
   $('#ciFecha').value=c?c.fecha:(agDia<hoy()?hoy():agDia);
   $('#ciHora').value=c?c.inicio:'';
-  $('#ciNota').value=c?c.nota||'':'';
+  $('#ciNota').value=c?c.nota||'':'';$('#ciMotEd').value='';$('#ciMotEdL').hidden=!(c&&c.estado==='llego');
   setCiDur(c?c.duracion:60);
   if(c&&c.grupo&&db)db.collection('citas').where('grupo','==',c.grupo).get().then(s=>{if(citaEdit!==c)return;s.docs.forEach(d=>{const x=d.data();if(d.id!==c.id)ciHoras[x.estilista]={ini:x.inicio===c.inicio?'':x.inicio,dur:+x.duracion||60}});renderCiHrs()}).catch(()=>{});
   $('#ciTelL').hidden=modo!=='caja';
@@ -4068,7 +4070,8 @@ $('#citaForm').addEventListener('submit',async e=>{
   if(!est)return ciMsg(['Elige el profesional.']);
   if(!fecha||!ini)return ciMsg(['Elige la fecha y la hora.']);
   if(!(ciDur>=5))return ciMsg(['Elige cuánto dura la cita.']);
-  if(fecha<hoy())return ciMsg(['Esa fecha ya pasó.']);
+  const motEd=citaEdit&&citaEdit.estado==='llego'?$('#ciMotEd').value.trim():'';if(citaEdit&&citaEdit.estado==='llego'&&!motEd){$('#ciMotEd').focus();return ciMsg(['Esta clienta ya fue atendida. Escribe por qué se edita la cita.'])}
+  if(fecha<hoy()&&!(citaEdit&&citaEdit.estado==='llego'))return ciMsg(['Esa fecha ya pasó.']);
   if(tel&&!waNum(tel))return ciMsg(['Revisa el teléfono: debe tener al menos 7 dígitos (ej.: 6123-4567).']);
   // equipo: profesional -> servicios (principal primero)
   const eqMap=new Map([[est,[]]]);ciSvcs.forEach(x=>{const p=x.e||est;if(!eqMap.has(p))eqMap.set(p,[]);eqMap.get(p).push(x.s)});
@@ -4110,7 +4113,7 @@ $('#citaForm').addEventListener('submit',async e=>{
       if(p.doc){
         const cambio=p.doc.fecha!==fecha||p.doc.inicio!==p.ini||p.doc.estilista!==p.estilista;
         if(cambio){cambioHora=true;if(p.doc.recordatorio)datos.recordatorio=null}
-        await db.doc('citas/'+p.doc.id).update(datos);guardadas.push(p.doc.id);
+        await db.doc('citas/'+p.doc.id).update(motEd?{...datos,ediciones:[...(p.doc.ediciones||[]),{fecha:new Date().toISOString(),por:soy||enCaja(),motivo:motEd}]}:datos);guardadas.push(p.doc.id);
       }else{
         const ext=citaEdit?{estado:citaEdit.estado==='llego'?'por_confirmar':(citaEdit.estado||'por_confirmar'),...(citaEdit.ticketId&&citaEdit.estado==='llego'?{estado:'llego',ticketId:citaEdit.ticketId,llego:ahora}:{})}:{estado:'por_confirmar'};
         const ref=await db.collection('citas').add({...datos,...ext,creado:ahora,creadoPor:soy||enCaja()});guardadas.push(ref.id);
