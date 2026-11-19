@@ -1864,7 +1864,7 @@ function msgVence(x){return `¡Hola ${primerNombre(x.cliente)}! ⭐\n\nTienes *$
 function tareasDatos(){const h=hoy(),y=new Date().getFullYear(),tel=c=>telMap[c.id]||TH.telT[c.id]||'';
   const fut=new Set([...TH.fut,...porConf.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)),...citas.filter(c=>activa(c)&&c.fecha>=h).map(c=>c.clienteKey||ckey(c.cliente))]);
   const conf=pcHoy().map(c=>({c,tel:tel(c)}));
-  const rec=unaPorGrupo(citasManana().filter(c=>c.estado==='confirmada'&&!c.recordatorio&&!c.confEnv)).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio)).map(c=>({c,tel:tel(c)}));
+  const rec=unaPorGrupo(citasManana().filter(c=>c.estado==='confirmada'&&!c.recordatorio&&!c.confEnv&&!(c.confirmada&&ymd(new Date(c.confirmada))>=addDias(h,-1)))).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio)).map(c=>({c,tel:tel(c)}));
   const P={},cap=k=>{const c=TH.cont[k];return c&&c.ultimo>addDias(h,-7)},put=(k,o)=>{if(!P[k])P[k]=o};
   (typeof cumplePendientes==='function'?cumplePendientes():[]).forEach(c=>{const nm=nomCli(c);put(sk(ckey(nm)),{t:'cum',cliente:nm,tel:c.tel,id:c.id,f:c.f,txt:`🎂 Cumpleaños ${c.f===h?'¡hoy!':fechaCorta(c.f)} · ya se le sumaron ${ptsCumple()} puntos`})});
   const M={};TH.mant.filter(x=>!x.no&&(x.prox||x.toca)<=h&&(x.env||[]).filter(e=>e>=x.fecha).length<3&&!fut.has(x.clienteKey)).forEach(x=>{const k=sk(x.clienteKey);(M[k]=M[k]||[]).push(x)});
