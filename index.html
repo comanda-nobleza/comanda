@@ -2976,7 +2976,7 @@ $('#cobroLineas').addEventListener('click',async e=>{
 function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab=turnoAbierto(),pr=turnoPorRecibir();if(pr){toast(`Hay un cambio de caja en curso: ${pr.entrega.a} debe recibirla primero.`);return}if(!ab){toast('Primero recibe la caja (botón arriba).');return}if(ab.cajero!==cajero){toast(`${ab.cajero} tiene la caja. Para cobrar, primero que te la entregue.`);return}}
   cdOpen=null;
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
-  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
+  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
   $('#cobroCliente').textContent=t.cliente;$('#cobroItbmsPct').textContent=cfg.itbms;
   $('#cobroItbms').checked=t.itbmsAplicado!==false;
   METODOS.forEach(m=>$(pId(m)).value='');
@@ -2985,7 +2985,8 @@ function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab
   refreshCobro();$('#pTarjeta').value=cobroTotales().total.toFixed(2);refreshCuadra();
   $('#cobroSheet').hidden=false;
 }
-function refreshCobro(){
+var cobrando=null;
+function refreshCobro(){if(cobrando&&cobrando===cobroTicket)return;
   const tot=cobroTotales();if(!tot){$('#cobroSheet').hidden=true;return}
   $('#cobroLineas').innerHTML=lineasDe(tot.t.id).map(cobroLineaHtml).join('');
   renderPtsCobro();
@@ -3008,15 +3009,19 @@ function calcPago(){
   if(efNeto<-0.004){r.msg=p.efectivo?`Sobran ${money(vuelto)} y en efectivo solo entraron ${money(p.efectivo)}. Revisa los montos.`:`Sobran ${money(vuelto)}. Si es propina, anótala abajo; si no, revisa los montos.`;return r}
   r.vuelto=vuelto;r.net={tarjeta:r2(p.tarjeta-tip.tarjeta),efectivo:Math.max(0,efNeto),yappy:r2(p.yappy-tip.yappy)};r.ok=true;return r;
 }
-function refreshCuadra(){
+function refreshCuadra(){if(cobrando&&cobrando===cobroTicket)return;
   renderTerm();const c=calcPago();if(!c)return;
   if(!c.ok){$('#cuadra').innerHTML=`<span class="neg">${c.msg}</span>`;return}
   const partes=[];if(c.tipT)partes.push(`incluye ${money(c.tipT)} de propina`);
   $('#cuadra').innerHTML=`<span class="pos">✓ Cuadra${partes.length?' · '+partes.join(''):''}</span>${c.vuelto>=0.005?`<br><span class="neg" style="color:var(--warn)">Vuelto a entregar en efectivo: <b>${money(c.vuelto)}</b>. Si la clienta dejó el vuelto de propina, anótalo abajo.</span>`:''}`;
 }
 $('#cobroItbms').addEventListener('change',()=>{refreshCobro();const tot=cobroTotales(),p=pagos(),used=METODOS.filter(m=>p[m]>0);if(used.length===1){$(pId(used[0])).value=tot.total.toFixed(2);refreshCuadra()}});
-['#pTarjeta','#pEfectivo','#pYappy'].forEach(s=>$(s).addEventListener('input',refreshCuadra));
-$$('[data-todo]').forEach(b=>b.onclick=()=>{const tot=cobroTotales();METODOS.forEach(m=>$(pId(m)).value=m===b.dataset.todo?tot.total.toFixed(2):'');refreshCuadra()});
+/* La tarjeta viene llena con el total. Si caja escribe en efectivo o Yappy sin haber tocado la tarjeta,
+   la tarjeta se ajusta sola a lo que falta (así no aparece un vuelto falso). */
+var tarjUser=false;
+$('#pTarjeta').addEventListener('input',()=>{tarjUser=true;refreshCuadra()});
+['#pEfectivo','#pYappy'].forEach(s=>$(s).addEventListener('input',()=>{if(!tarjUser){const t=cobroTotales();if(t){const o=r2((+$('#pEfectivo').value||0)+(+$('#pYappy').value||0)),f=r2(Math.max(0,t.total-o));$('#pTarjeta').value=f>0.004?f.toFixed(2):''}}refreshCuadra()}));
+$$('[data-todo]').forEach(b=>b.onclick=()=>{tarjUser=false;const tot=cobroTotales();METODOS.forEach(m=>$(pId(m)).value=m===b.dataset.todo?tot.total.toFixed(2):'');refreshCuadra()});
 let propSeq=0;
 function addPropRow(p){
   p=p||{};const n=propSeq++;const d=document.createElement('div');d.className='prop-row';
@@ -3041,14 +3046,14 @@ $('#cobroForm').addEventListener('submit',async e=>{
   const p=c.net,propinas=c.props;
   let terminales=null;{const tj=r2(+p.tarjeta||0);if(tj>0.004){if(!cobTerm.m){toast('Toca en qué punto pasó la tarjeta: St. Georges o Banesco.');$('#termBox').scrollIntoView({block:'center'});return}
     if(cobTerm.m==='dos'){const sg=r2(cobTerm.sg);if(!(sg>0&&sg<tj)){toast('Escribe cuánto pasó por St. Georges (el resto va a Banesco).');$('#termSg')?.focus();return}terminales={sg,bz:r2(tj-sg)}}else terminales={[cobTerm.m]:tj}}}
-  $('#cobrarBtn').disabled=true;
+  $('#cobrarBtn').disabled=true;cobrando=tot.t.id;
   try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),puntosGanados:cobroPts.tel?ptsGana(tot.sub):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
     try{await aplicarDescCli(tot.t,tot.dCli,descPct(),$('#descMot').value.trim())}catch(err){}
     const antes=Array.isArray(cobroPts.movs)?saldoPts(cobroPts.movs):{saldo:0,prox:null},telP=cobroPts.tel,ganaP=telP?ptsGana(tot.sub):0,canjP=cobroPts.canje?cobroPts.canje.premio:null,yaC=(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).some(x=>x.tipo==='canje');
     let pm='',okP=true;try{pm=await aplicarPuntos(tot.t,tot.sub)}catch(err){pm=' · no se pudieron guardar los puntos';okP=false}
     if(telP&&okP)setTimeout(()=>abrirPostPuntos(tot.t.cliente,telP,ganaP,canjP,antes.saldo-(canjP?+canjP.puntos:0)+ganaP,antes.prox,yaC),50);
     $('#cobroSheet').hidden=true;toast('Cuenta de '+tot.t.cliente+' cerrada: '+money(tot.total)+(c.vuelto>=0.005?' · vuelto '+money(c.vuelto):'')+pm);
-  }catch(err){toast('No se pudo cobrar ('+err.code+').')}finally{$('#cobrarBtn').disabled=false}
+  }catch(err){toast('No se pudo cobrar ('+err.code+').')}finally{$('#cobrarBtn').disabled=false;cobrando=null}
 });
 
 /* ---------- cierre ---------- */
