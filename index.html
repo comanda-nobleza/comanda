@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="d2597dc4ed3d"</script>
-<script src="web.js?v=d2597dc4ed3d"></script>
+<script>window.BUILD="a1602a51e17f"</script>
+<script src="web.js?v=a1602a51e17f"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1197,6 +1197,7 @@ function ticketCard(t,mode){
   const tot=mode==='est'?`<small>${ls.length} servicio${ls.length===1?'':'s'}</small>`:`<span class="tot">${money(sub)}<small style="font-weight:400"> + ITBMS</small></span>`;
   return `<article class="ticket"><div class="head"><span class="cliente">${esc(t.cliente)}</span><span class="hora">llegó ${hora(t.creado)}</span></div>
   <ul class="lines">${items}</ul>
+  ${mode!=='est'&&t.descSol?(()=>{const d=t.descSol,con=r2(sub*(1-(+d.pct||0)/100));return d.estado==='aprobada'?`<div class="notice ok" style="margin:6px 0"><span>✓ Descuento de <b>${d.pct}%</b> autorizado por ${esc(d.resp||'gerencia')} · con descuento: <b>${money(con)}</b> + ITBMS. Se aplica al tocar «Cerrar cuenta».</span></div>`:d.estado==='pendiente'?`<div class="notice warn" style="margin:6px 0"><span>⏳ Descuento de ${d.pct}% esperando autorización de gerencia.</span></div>`:`<div class="notice warn" style="margin:6px 0"><span>✗ Gerencia no autorizó el descuento de ${d.pct}%.</span></div>`})():''}
   <div class="foot">${tot}<span class="row" style="gap:6px">${btns}</span></div></article>`;
 }
 
@@ -3082,7 +3083,8 @@ $('#cobroLineas').addEventListener('click',async e=>{
 function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab=turnoAbierto(),pr=turnoPorRecibir();if(pr){toast(`Hay un cambio de caja en curso: ${pr.entrega.a} debe recibirla primero.`);return}if(!ab){toast('Primero recibe la caja (botón arriba).');return}if(ab.cajero!==cajero){toast(`${ab.cajero} tiene la caja. Para cobrar, primero que te la entregue.`);return}}
   cdOpen=null;
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
-  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
+  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;
+  if(t.descSol&&t.descSol.estado!=='rechazada'&&+t.descSol.pct>0){const v=+t.descSol.pct;cobDesc=DESC_OP.includes(v)?{p:v,otro:false}:{p:0,otro:true};if(cobDesc.otro)$('#descOtro').value=v;$('#descMot').value=t.descSol.motivo||'';renderDesc()}cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
   $('#cobroCliente').textContent=t.cliente;$('#cobroItbmsPct').textContent=cfg.itbms;
   $('#cobroItbms').checked=t.itbmsAplicado!==false;
   METODOS.forEach(m=>$(pId(m)).value='');
