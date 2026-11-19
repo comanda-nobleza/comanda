@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="62f80dfe3f9c"</script>
-<script src="web.js?v=62f80dfe3f9c"></script>
+<script>window.BUILD="31de4f8d7be6"</script>
+<script src="web.js?v=31de4f8d7be6"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -547,7 +547,7 @@ body:not(.es-web) .only-web{display:none!important}
     <div class="ag-top">
       <button class="btn primary only-caja" id="agNueva">+ Nueva cita</button>
       <div class="agseg only-est" id="agVistaEst" role="group" aria-label="Vista"><button type="button" data-ve="dia">Día</button><button type="button" data-ve="semana">Semana</button><button type="button" data-ve="mes">Mes</button></div>
-      <div class="agseg only-caja" id="agVista" role="group" aria-label="Vista"><button type="button" data-v="mes">Mes</button><button type="button" data-v="dia">Día</button><button type="button" data-v="est">Por profesional</button></div>
+      <div class="agseg only-caja" id="agVista" role="group" aria-label="Vista"><button type="button" data-v="hoy">Hoy</button><button type="button" data-v="man">Mañana</button><button type="button" data-v="mes">Mes</button></div>
       <select id="agFiltro" class="only-caja" aria-label="Filtrar por profesional"></select>
       <button class="btn only-caja" id="agCerrar">Cerrar agenda</button>
     </div>
@@ -3807,7 +3807,7 @@ function subMes(){
   unsubMes.push(db.collection('bloqueos').where('fecha','>=',a).where('fecha','<=',b).onSnapshot(s=>{mesBloq=m(s);renderDyn()},()=>{}));
 }
 function setVista(v){agVista=v;store.set('agVista',v);subMes();renderAgenda()}
-$('#agVista').addEventListener('click',e=>{const x=e.target.closest('[data-v]');if(x)setVista(x.dataset.v)});
+$('#agVista').addEventListener('click',e=>{const x=e.target.closest('[data-v]');if(!x)return;const v=x.dataset.v;if(v==='mes'){setVista('mes');return}agVista='dia';store.set('agVista','dia');subMes();const f=v==='man'?manana():hoy();if(f!==agDia)setAgDia(f);else renderAgenda()});
 const movMes=n=>{const [y,m]=agDia.split('-').map(Number);return ymd(new Date(y,m-1+n,1))};
 function estHue(n){const i=cfg.estilistas.findIndex(e=>e.nombre===n);return Math.round(((i<0?cfg.estilistas.length+String(n).length:i)*137.5)%360)}
 const citasManana=()=>agDia===manana()?citas:citasMan;
@@ -3886,7 +3886,8 @@ function itemsEst(est,mode){
 }
 function renderAgenda(){
   const enMes=modo==='caja'&&agVista==='mes';
-  $$('#agVista button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v===agVista));
+  if(agVista==='est')agVista='dia';
+  $$('#agVista button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='mes'?agVista==='mes':agVista==='dia'&&agDia===(x.dataset.v==='man'?manana():hoy())));
   $('#agFecha').textContent=enMes?new Date(agDia+'T12:00:00').toLocaleDateString('es-PA',{month:'long',year:'numeric'}):fechaLarga(agDia);$('#agRel').textContent=enMes?'':relDia(agDia);$('#agFechaIn').value=agDia;
   $('#agPrev').setAttribute('aria-label',enMes?'Mes anterior':'Día anterior');$('#agNext').setAttribute('aria-label',enMes?'Mes siguiente':'Día siguiente');
   const out=$('#agOut');
