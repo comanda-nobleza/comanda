@@ -29,5 +29,9 @@ head=f'''<!doctype html>
 </head>
 <body>
 '''
+import hashlib
+ver=hashlib.sha1((head+app+(R/'web.js').read_text()).encode()).hexdigest()[:12]
+head=head.replace('<script src="web.js"></script>',f'<script>window.BUILD="{ver}"</script>\n<script src="web.js?v={ver}"></script>')
 (R/'index.html').write_text(head+app+'\n</body>\n</html>\n')
-print('index.html listo', len(head+app))
+(R/'version.txt').write_text(ver+'\n')
+print('index.html listo', len(head+app), 'versión', ver)

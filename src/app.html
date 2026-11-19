@@ -1843,17 +1843,19 @@ async function guardarMant(t,tel){if(!db||!t)return;const k=ckey(t.cliente),f=t.
   for(const l of lineasDe(t.id)){if(l.venta)continue;const m=mantInfo(l.servicio);if(!m)continue;hechos[sk(k)+'__'+sk(ckey(m.g))]={cliente:t.cliente,clienteKey:k,tel:tel||'',servicio:l.servicio,g:m.g,dias:m.d,fecha:f,toca:addDias(f,m.d),estilista:l.estilista||'',env:[],prox:'',no:null,creado:new Date().toISOString()}}
   for(const [id,d] of Object.entries(hechos)){try{await db.doc('mant/'+id).set(d)}catch(e){}}}
 var TH={t:0,busy:false,mant:[],fut:new Set(),cont:{},react:[],vence:[],av:{},hechas:[],telT:{}},thUn=[];
-function subTareas(){if(thUn.length||!db||modo!=='caja')return;const h=hoy();
-  thUn.push(db.collection('tareasHechas').where('fecha','==',h).onSnapshot(s=>{TH.hechas=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));renderTareas()},()=>{}));
-  thUn.push(db.collection('citasTel').where('fecha','>=',h).where('fecha','<=',addDias(h,2)).onSnapshot(s=>{s.docs.forEach(d=>TH.telT[d.id]=d.data().tel||'');renderTareas()},()=>{}));
-  cargarTareas();setInterval(()=>{if(modo==='caja')cargarTareas()},180000)}
-async function cargarTareas(){if(TH.busy||!db)return;TH.busy=true;
-  try{const h=hoy(),m=x=>x.docs.map(d=>({id:d.id,...d.data()})),q=p=>p.then(m).catch(()=>[]);
-    const [mt,fc,co,cl,pr,av]=await Promise.all([q(db.collection('mant').where('toca','<=',h).limit(500).get()),q(db.collection('citas').where('fecha','>=',h).limit(1000).get()),q(db.collection('contacto').where('ultimo','>=',addDias(h,-6)).limit(1000).get()),
-      q(db.collection('clientes').where('ultimaVisita','>=',addDias(h,-365)).where('ultimaVisita','<=',addDias(h,-45)).limit(500).get()),q(db.collection('puntosResumen').where('vence','>=',h).where('vence','<=',addDias(h,30)).limit(300).get()),q(db.collection('avisosVence').where('vence','>=',h).limit(500).get())]);
-    TH.mant=mt;TH.fut=new Set(fc.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)));TH.cont={};co.forEach(c=>TH.cont[c.id]=c);TH.react=cl;TH.vence=pr.filter(x=>(+x.saldo||0)>0);for(const x of TH.vence){if(x.tel)continue;try{const ps=await db.collection('puntos').where('cliente','==',x.cliente).limit(1).get();x.tel=ps.docs.length?ps.docs[0].data().tel||'':''}catch(e){}}TH.av={};av.forEach(x=>TH.av[x.id]=x);TH.t=Date.now();
-    try{if(typeof cumpleRun!=='undefined'&&!cumpleRun)cumplesGerencia()}catch(e){}
-    renderTareas()}catch(e){console.warn('tareas',e)}finally{TH.busy=false}}
+function subTareas(){if(thUn.length||!db||modo!=='caja')return;const h=hoy(),m=x=>x.docs.map(d=>({id:d.id,...d.data()})),on=(q,f)=>thUn.push(q.onSnapshot(x=>{f(m(x));TH.t=Date.now();renderTareas()},()=>{}));
+  on(db.collection('tareasHechas').where('fecha','==',h),L=>{TH.hechas=L.sort((a,b)=>(b.hora||'').localeCompare(a.hora||''))});
+  thUn.push(db.collection('citasTel').where('fecha','>=',h).where('fecha','<=',addDias(h,2)).onSnapshot(x=>{x.docs.forEach(d=>TH.telT[d.id]=d.data().tel||'');renderTareas()},()=>{}));
+  on(db.collection('mant').where('toca','<=',h).limit(500),L=>{TH.mant=L});
+  on(db.collection('citas').where('fecha','>=',h).limit(1000),L=>{TH.fut=new Set(L.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)))});
+  on(db.collection('contacto').where('ultimo','>=',addDias(h,-6)).limit(1000),L=>{TH.cont={};L.forEach(c=>TH.cont[c.id]=c)});
+  on(db.collection('clientes').where('ultimaVisita','>=',addDias(h,-365)).where('ultimaVisita','<=',addDias(h,-45)).limit(500),L=>{TH.react=L});
+  on(db.collection('avisosVence').where('vence','>=',h).limit(500),L=>{TH.av={};L.forEach(x=>TH.av[x.id]=x)});
+  thUn.push(db.collection('puntosResumen').where('vence','>=',h).where('vence','<=',addDias(h,30)).limit(300).onSnapshot(async x=>{const L=m(x).filter(v=>(+v.saldo||0)>0),old={};(TH.vence||[]).forEach(v=>old[v.id]=v.tel);
+    for(const v of L){v.tel=old[v.id]||'';if(v.tel)continue;try{const ps=await db.collection('puntos').where('cliente','==',v.cliente).limit(1).get();v.tel=ps.docs.length?ps.docs[0].data().tel||'':''}catch(e){}}TH.vence=L;renderTareas()},()=>{}));
+  {const now=new Date(),m1=now.getMonth()+1,m2=m1%12+1;on(db.collection('clientes').where('cumpleMes','in',[m1,m2]).limit(1000),L=>{cumpleList=L})}
+  try{if(!cumpleRun)cumplesGerencia()}catch(e){}}
+function cargarTareas(){/* ahora todo se actualiza en vivo para todos los usuarios de caja */renderTareas()}
 async function thGrupo(c){if(!c.grupo)return [c];try{const s=await db.collection('citas').where('grupo','==',c.grupo).get();const l=s.docs.map(d=>({id:d.id,...d.data()}));return l.length?l:[c]}catch(e){return [c]}}
 async function thHecha(tipo,cliente,txt,undo){try{await db.collection('tareasHechas').add({fecha:hoy(),hora:new Date().toISOString(),tipo,cliente:cliente||'',txt,por:cajero||encargada(),undo:undo||[]})}catch(e){}}
 const nomCli=c=>((c.nombre||'')+' '+(c.apellido||'')).trim();
@@ -1912,7 +1914,7 @@ document.addEventListener('click',async e=>{const b=e.target.closest('[data-then
   if(b.dataset.thag!=null){openCita();$('#ciCliente').value=b.dataset.thag;if($('#ciTel'))$('#ciTel').value=b.dataset.tel||'';if(b.dataset.est&&[...$('#ciEst').options].some(o=>o.value===b.dataset.est))$('#ciEst').value=b.dataset.est;
     (b.dataset.svc||'').split('|').filter(Boolean).forEach(v=>{$('#ciSvc').value=v;ciAddSvc()});$('#ciSvc').value='';return}
   const t=b.dataset.thenv,k=b.dataset.k,D=tareasDatos(),all=[...D.mant,...D.react,...D.otros];
-  if(t==='mant'){const x=all.find(z=>z.t==='mant'&&z.ids.join(',')===k);if(!x)return;const undo=[];for(const d of x.docs){undo.push({op:'update',p:'mant/'+d.id,d:{env:d.env||[],prox:d.prox||''}});await db.doc('mant/'+d.id).update({env:[...(d.env||[]),h],prox:addDias(h,5)})}
+  if(t==='mant'){const x=all.find(z=>z.t==='mant'&&z.ids.join(',')===k);if(!x)return;try{const d0=await db.doc('mant/'+x.docs[0].id).get();if(d0.exists&&(d0.data().env||[]).includes(h)){toast('A esta clienta ya le escribieron hoy.');return}}catch(err){}const undo=[];for(const d of x.docs){undo.push({op:'update',p:'mant/'+d.id,d:{env:d.env||[],prox:d.prox||''}});await db.doc('mant/'+d.id).update({env:[...(d.env||[]),h],prox:addDias(h,5)})}
     undo.push(await thContacto(sk(x.docs[0].clienteKey),x.cliente));await thHecha('mant',x.cliente,'Recordatorio de mantenimiento ('+x.servs.join(', ')+')',undo)}
   else if(t==='react'){const x=all.find(z=>z.t==='react'&&z.id===k);if(!x)return;const r=x.doc.react||{},undo=[{op:'update',p:'clientes/'+k,d:{react:r.env||r.prox||r.no?r:null}}];await db.doc('clientes/'+k).update({react:{...r,env:[...(r.env||[]),h],prox:addDias(h,5)}});
     undo.push(await thContacto(sk(x.doc.nombreKey||ckey(x.cliente)),x.cliente));await thHecha('react',x.cliente,'Mensaje «te extrañamos»',undo)}
@@ -2203,6 +2205,7 @@ function fxInit(){const sh=$('#fxSheet');if(!sh||sh.dataset.ok)return;sh.dataset
       const sg=ts.find(t=>!(+t.g>0));if(sg)return toast('Escribe los gramos de cada tinte.');
       if(!fx.px)return toast('Elige el peróxido.');
       sv.disabled=true;const l=fx.l,quien=invQuien(),nota=`Fórmula · ${l.cliente} · ${l.estilista}`;
+      try{const ya=await db.doc('lineas/'+l.id).get();if(ya.exists&&ya.data().formulaPend===false&&ya.data().formula){toast(`Esta fórmula ya la anotó ${(ya.data().formulaPor||{}).nombre||'otra persona'}. No se volvió a descontar del inventario.`);fx=null;sh.hidden=true;return}}catch(err){}
       const tonos=ts.map(t=>({numero:t.pid?invLabel(invById[t.pid]):norm(t.n),gramos:r2(t.g),...(t.pid?{invId:t.pid}:{fueraInv:true}),...(t.pid&&t.abrir?{abrio:true}:{}),...(t.pid&&t.term?{termino:true}:{})}));
       try{await db.doc('lineas/'+l.id).update({formula:{tonos,tinte:tonos.map(t=>`${t.numero} (${t.gramos} g)`).join(' + '),peroxido:fx.px},formulaPend:false,formulaPor:{nombre:quien,fecha:new Date().toISOString()}});
         for(const o of formPend.filter(o=>o.id!==l.id&&(o.clienteKey||ckey(o.cliente))===(l.clienteKey||ckey(l.cliente))&&o.fecha===l.fecha)){try{await db.doc('lineas/'+o.id).update({formulaPend:false,formulaVer:l.id})}catch(err){}}
@@ -3128,6 +3131,7 @@ $('#cobroForm').addEventListener('submit',async e=>{
   let terminales=null;{const tj=r2(+p.tarjeta||0);if(tj>0.004){if(!cobTerm.m){toast('Toca en qué punto pasó la tarjeta: St. Georges o Banesco.');$('#termBox').scrollIntoView({block:'center'});return}
     if(cobTerm.m==='dos'){const sg=r2(cobTerm.sg);if(!(sg>0&&sg<tj)){toast('Escribe cuánto pasó por St. Georges (el resto va a Banesco).');$('#termSg')?.focus();return}terminales={sg,bz:r2(tj-sg)}}else terminales={[cobTerm.m]:tj}}}
   $('#cobrarBtn').disabled=true;cobrando=tot.t.id;
+  try{const ya=await db.doc('tickets/'+tot.t.id).get();if(ya.exists&&ya.data().estado==='cobrada'){toast(`Esta cuenta ya la cerró ${ya.data().cobradoPor||'otra persona de caja'}. No se cobró de nuevo.`);$('#cobroSheet').hidden=true;$('#cobrarBtn').disabled=false;cobrando=null;return}}catch(err){}
   try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),puntosGanados:cobroPts.tel?ptsGana(tot.sub):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
     try{await aplicarDescCli(tot.t,tot.dCli,descPct(),$('#descMot').value.trim())}catch(err){}
     const antes=Array.isArray(cobroPts.movs)?saldoPts(cobroPts.movs):{saldo:0,prox:null},telP=cobroPts.tel,ganaP=telP?ptsGana(tot.sub):0,canjP=cobroPts.canje?cobroPts.canje.premio:null,yaC=(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).some(x=>x.tipo==='canje');

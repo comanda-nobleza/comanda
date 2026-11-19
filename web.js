@@ -73,6 +73,16 @@
       try{await firebase.auth().signInWithEmailAndPassword(d.querySelector('#wlMail').value.trim(),d.querySelector('#wlPass').value);d.remove();ok()}
       catch(err){const c=err&&err.code||'';m.textContent=/invalid|wrong|user-not-found/.test(c)?'Correo o contraseña incorrectos.':/network/.test(c)?'No hay internet. Revisa la conexión.':/too-many/.test(c)?'Demasiados intentos. Espera unos minutos.':'No se pudo conectar ('+c+').';b.disabled=false;b.textContent='Conectar'}})})}
 
+  /* ---- todos los equipos con la misma versión: si hay una nueva, se recarga sola cuando no se está usando ---- */
+  let nueva=null,desde=0;
+  function libre(){const a=document.activeElement;if(a&&/INPUT|TEXTAREA|SELECT/.test(a.tagName))return false;return ![...document.querySelectorAll('.sheet-bg')].some(x=>!x.hidden)}
+  async function revisarVersion(){try{const r=await fetch('version.txt?t='+Date.now(),{cache:'no-store'});if(!r.ok)return;const v=(await r.text()).trim();
+    if(!v||!window.BUILD||v===window.BUILD)return;if(!nueva){nueva=v;desde=Date.now()}
+    const ir=()=>{try{if(sessionStorage.getItem('verTry')===v)return false;sessionStorage.setItem('verTry',v)}catch(e){}location.replace(location.pathname+'?v='+v);return true};
+    if(libre()&&ir())return;else if(Date.now()-desde>120000&&!document.getElementById('verBanner')){const b=document.createElement('button');b.id='verBanner';b.type='button';b.textContent='Hay una actualización de Comanda. Toca aquí para cargarla.';
+      b.style.cssText='position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:9999;background:#D4AF37;color:#111;border:0;border-radius:999px;padding:12px 18px;font-weight:700;box-shadow:0 6px 24px rgba(0,0,0,.4)';b.onclick=()=>location.replace(location.pathname+'?v='+v);document.body.appendChild(b)}}catch(e){}}
+  setInterval(revisarVersion,60000);document.addEventListener('visibilitychange',()=>{if(!document.hidden)revisarVersion()});
+
   window.WEB={
     activo:()=>typeof firebase!=='undefined',
     desconectar:async()=>{try{await firebase.auth().signOut()}catch(e){}location.reload()},
