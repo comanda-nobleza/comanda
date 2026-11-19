@@ -3924,8 +3924,9 @@ $('#citaForm').addEventListener('submit',async e=>{
         if(choque.length)msgs.push(`${esc(p.estilista)} ya tiene a ${esc(choque[0].cliente)} (${r(choque[0].inicio,deMin(finDe(choque[0])))}).`);
         else if(cerr.length)msgs.push(`${esc(p.estilista)} tiene la agenda cerrada ${cerr[0].todoDia?'todo el día':r(cerr[0].desde,cerr[0].hasta)} (${esc(cerr[0].motivo||'cerrado')}).`)}
       if(msgs.length){btn.disabled=false;
-        if(compart){ciForzar=true;return ciMsg(['<b>Horario ocupado.</b> '+msgs.join(' '),'Como hay una cita compartida, el profesional tiene flexibilidad: puedes cambiar la hora, o guardarla así y atender cuando se desocupe.'],'Guardar así (cita compartida)')}
-        return ciMsg(['<b>Horario ocupado.</b> '+msgs.join(' ')+' Verifica la hora.'])}
+        ciForzar=true;
+        if(compart)return ciMsg(['<b>Horario ocupado.</b> '+msgs.join(' '),'Como hay una cita compartida, el profesional tiene flexibilidad: puedes cambiar la hora, o guardarla así y atender cuando se desocupe.'],'Guardar así (cita compartida)');
+        return ciMsg(['<b>A esa hora ya hay otra cita.</b> '+msgs.join(' '),'Si se puede atender a las dos (por ejemplo, mientras una está en tiempo de pose), toca «Guardar así». Si no, cambia la hora.'],'Guardar así')}
     }
     const grupo=equipo.length>1||miembros.length>1?((citaEdit&&citaEdit.grupo)||'g'+Date.now().toString(36)+Math.random().toString(36).slice(2,6)):null;
     const base={fecha,cliente,clienteKey:ckey(cliente),nota,equipo:equipo.length>1?equipo:null,grupo};
