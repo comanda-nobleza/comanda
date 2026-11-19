@@ -1903,7 +1903,7 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     ${grp('react','💌 Te extrañamos','más de 45 días sin venir',D.react.length,react)}
     ${grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',D.otros.length,otros)}
     ${n?'':'<small class="muted">No hay nada pendiente por ahora.</small>'}${hech}
-    ${D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta. Si saca cita, sale sola de la lista.</small>':''}</div>`;
+    ${D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta. Si saca cita, sale sola de la lista.</small>':''}${esMovil?'':`<small class="muted">WhatsApp se abre en ${waApp()?'la aplicación de esta computadora':'WhatsApp Web'} · <button type="button" class="btn small ghost" data-wamodo style="padding:2px 8px">cambiar</button></small>`}</div>`;
   bxs.forEach(b=>{if(b.innerHTML!==html)b.innerHTML=html})}
 document.addEventListener('toggle',e=>{const d=e.target;if(!d.matches||!d.matches('.th-g'))return;thOpen[d.dataset.thg]=d.open;try{localStorage.setItem('thOpen',JSON.stringify(thOpen))}catch(err){}},true);
 async function thPatch(ops){for(const o of ops){try{if(o.op==='delete')await db.doc(o.p).delete();else if(o.op==='set')await db.doc(o.p).set(o.d);else await db.doc(o.p).update(o.d)}catch(e){}}}
@@ -3738,7 +3738,12 @@ const finDe=c=>aMin(c.inicio)+(+c.duracion||0);
 const relDia=f=>f===hoy()?'Hoy':f===manana()?'Mañana':f===addDias(hoy(),-1)?'Ayer':'';
 const diaCita=f=>{const r=relDia(f);const l=new Date(f+'T12:00:00').toLocaleDateString('es-PA',{weekday:'long',day:'numeric',month:'long'});return r&&r!=='Ayer'?`${r.toLowerCase()}, ${l}`:l};
 function waNum(t){let d=String(t||'').replace(/\D/g,'');if(!d)return '';if(d.length===7||d.length===8)d='507'+d;return d.length>=10?d:''}
-function waLink(tel,msg){const n=waNum(tel);return n?`https://wa.me/${n}?text=${encodeURIComponent(msg)}`:''}
+/* En la computadora, WhatsApp se abre directo en la aplicación instalada; en el teléfono, wa.me ya abre la app */
+const esMovil=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
+function waApp(){if(esMovil)return false;try{return localStorage.getItem('waModo')!=='web'}catch(e){return true}}
+function waLink(tel,msg){const n=waNum(tel);if(!n)return '';return waApp()?`whatsapp://send?phone=${n}&text=${encodeURIComponent(msg)}`:`https://wa.me/${n}?text=${encodeURIComponent(msg)}`}
+document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="whatsapp://"]');if(!a)return;e.preventDefault();location.href=a.href},true);
+document.addEventListener('click',e=>{const b=e.target.closest('[data-wamodo]');if(!b)return;try{localStorage.setItem('waModo',waApp()?'web':'app')}catch(err){}toast(waApp()?'WhatsApp se abrirá en la aplicación de la computadora.':'WhatsApp se abrirá en WhatsApp Web.');renderDyn()});
 const primerNombre=n=>String(n||'').trim().split(/\s+/)[0]||'';
 const eqDe=c=>Array.isArray(c.equipo)&&c.equipo.length>1?c.equipo:null;
 const svcTodos=c=>{const q=eqDe(c);return q?q.flatMap(x=>x.servicios||[]).join(' + '):(c.servicio||'')};
