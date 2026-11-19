@@ -859,6 +859,15 @@ body:not(.es-web) .only-web{display:none!important}
       <div id="ptsInfo" style="display:grid;gap:8px"></div>
       <div id="ptsFicha" style="display:grid;gap:8px"></div>
     </fieldset>
+    <fieldset id="descBox">
+      <legend>Descuento a la clienta</legend>
+      <div class="pick" id="descPick"></div>
+      <div id="descCampos" hidden style="display:grid;gap:8px">
+        <label class="f" for="descOtro" id="descOtroL" hidden>¿Qué porcentaje?<input id="descOtro" type="number" step="1" min="1" max="100" inputmode="numeric" placeholder="Ej.: 12"></label>
+        <label class="f" for="descMot">Motivo<input id="descMot" autocomplete="off" placeholder="Ej.: clienta frecuente, convenio de empresa"></label>
+        <small>Se descuenta de toda la cuenta y la comisión del profesional se calcula sobre el precio con descuento.</small>
+      </div>
+    </fieldset>
     <fieldset id="cortBox">
       <legend>Cortesía de gerencia</legend>
       <label for="cortOn" style="display:flex;flex-wrap:nowrap;gap:10px;align-items:center;font-weight:600"><input type="checkbox" id="cortOn" style="width:22px;height:22px;flex:none"> La cubre gerencia (la clienta no paga en caja)</label>
@@ -2508,6 +2517,8 @@ $('#ptsInfo').addEventListener('click',e=>{
 async function quitarPtsTicket(tid){try{const s=await db.collection('puntos').where('ticketId','==',tid).get();const tels=new Set();
   for(const d of s.docs){const x=d.data();if(x.tipo==='gana'||x.tipo==='canje'){tels.add(x.tel+'|'+(x.cliente||''));await db.doc('puntos/'+d.id).delete()}}return [...tels]}catch(e){return []}}
 async function reabrirPts(tid){const tels=await quitarPtsTicket(tid);
+  try{await db.doc('tickets/'+tid).update({descCli:null})}catch(e){}
+  for(const l of lineasDe(tid)){try{if(l.descCli)await db.doc('lineas/'+l.id).update({precio:+l.descCli.precioNormal||0,descCli:{__delete__:true}})}catch(e){}}
   for(const l of lineasDe(tid)){try{if(l.canje)await db.doc('lineas/'+l.id).update({precio:+l.canje.precioNormal||0,canje:{__delete__:true}});else if(l.canjeDesc)await db.doc('lineas/'+l.id).update({canjeDesc:{__delete__:true},canjeDescPremio:{__delete__:true}})}catch(e){}}
   for(const x of tels){const [k,c]=x.split('|');await guardarResumenPts(k,c)}}
 function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).forEach(x=>(g[x.ticketId]=g[x.ticketId]||[]).push(x));
@@ -2895,10 +2906,21 @@ $('#svcForm').addEventListener('submit',async e=>{
 });
 
 /* ---------- hoja: cobrar ---------- */
+var cobDesc={p:0,otro:false};const DESC_OP=[5,10,15,20,25];
+function descPct(){const v=cobDesc.otro?Math.round(+$('#descOtro').value||0):cobDesc.p;return v>0&&v<=100?v:0}
+function renderDesc(){const b=$('#descPick');if(!b)return;b.innerHTML=`<button type="button" data-desc="0" aria-pressed="${!cobDesc.p&&!cobDesc.otro}">Sin descuento</button>`+DESC_OP.map(v=>`<button type="button" data-desc="${v}" aria-pressed="${!cobDesc.otro&&cobDesc.p===v}">${v}%</button>`).join('')+`<button type="button" data-desc="otro" aria-pressed="${cobDesc.otro}">Otro</button>`;
+  $('#descCampos').hidden=!(cobDesc.p||cobDesc.otro);$('#descOtroL').hidden=!cobDesc.otro}
+function descReset(){cobDesc={p:0,otro:false};if($('#descOtro')){$('#descOtro').value='';$('#descMot').value=''}renderDesc()}
+document.addEventListener('click',e=>{const b=e.target.closest('#descPick [data-desc]');if(!b)return;const v=b.dataset.desc;cobDesc=v==='otro'?{p:0,otro:true}:{p:+v,otro:false};renderDesc();refreshCobro();{const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}}refreshCuadra();if(v==='otro')setTimeout(()=>$('#descOtro').focus(),30)});
+document.addEventListener('input',e=>{if(e.target.id!=='descOtro')return;refreshCobro();const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}refreshCuadra()});
+async function aplicarDescCli(t,dCli,pct,motivo){if(!(dCli>0))return;const ex=cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'?cobroPts.canje.lineaId:null;
+  const base=lineasDe(t.id).filter(l=>+l.precio>0&&!l.canje&&l.id!==ex),tot=r2(base.reduce((x,l)=>x+(+l.precio||0),0));if(!(tot>0))return;let rest=dCli;const por=cajero||encargada();
+  for(let i=0;i<base.length;i++){const l=base[i],part=i===base.length-1?r2(rest):r2(dCli*(+l.precio||0)/tot);rest=r2(rest-part);
+    await db.doc('lineas/'+l.id).update({precio:r2((+l.precio||0)-part),descCli:{pct,monto:part,precioNormal:+l.precio||0,motivo,por}})}}
 function cobroTotales(){
   const t=tickets.find(x=>x.id===cobroTicket);if(!t)return null;
-  const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),cort=cortMontoDe(bruto,dPts),sub=r2(bruto-dPts-cort), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
-  return {t,sub,imp,total:r2(sub+imp),bruto,dPts,cort};
+  const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),dCli=r2((bruto-dPts)*descPct()/100),cort=cortMontoDe(r2(bruto-dCli),dPts),sub=r2(bruto-dPts-dCli-cort), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
+  return {t,sub,imp,total:r2(sub+imp),bruto,dPts,dCli,cort};
 }
 let cdOpen=null;
 function cobroLineaHtml(l){
@@ -2930,7 +2952,7 @@ $('#cobroLineas').addEventListener('click',async e=>{
 function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab=turnoAbierto(),pr=turnoPorRecibir();if(pr){toast(`Hay un cambio de caja en curso: ${pr.entrega.a} debe recibirla primero.`);return}if(!ab){toast('Primero recibe la caja (botón arriba).');return}if(ab.cajero!==cajero){toast(`${ab.cajero} tiene la caja. Para cobrar, primero que te la entregue.`);return}}
   cdOpen=null;
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
-  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
+  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
   $('#cobroCliente').textContent=t.cliente;$('#cobroItbmsPct').textContent=cfg.itbms;
   $('#cobroItbms').checked=t.itbmsAplicado!==false;
   METODOS.forEach(m=>$(pId(m)).value='');
@@ -2943,7 +2965,7 @@ function refreshCobro(){
   const tot=cobroTotales();if(!tot){$('#cobroSheet').hidden=true;return}
   $('#cobroLineas').innerHTML=lineasDe(tot.t.id).map(cobroLineaHtml).join('');
   renderPtsCobro();
-  $('#cobroTot').innerHTML=`${tot.dPts?`<div class="l"><span>Servicios</span><span>${money(tot.bruto)}</span></div><div class="l"><span>Canje de puntos</span><span>−${money(tot.dPts)}</span></div>`:''}${tot.cort?`<div class="l"><span>Cortesía de gerencia</span><span>−${money(tot.cort)}</span></div>`:''}<div class="l"><span>Subtotal</span><span>${money(tot.sub)}</span></div><div class="l"><span>ITBMS</span><span>${money(tot.imp)}</span></div><div class="l t"><span>Total a cobrar</span><span>${money(tot.total)}</span></div>`;
+  $('#cobroTot').innerHTML=`${tot.dPts||tot.dCli?`<div class="l"><span>Servicios</span><span>${money(tot.bruto)}</span></div>`:''}${tot.dPts?`<div class="l"><span>Canje de puntos</span><span>−${money(tot.dPts)}</span></div>`:''}${tot.dCli?`<div class="l"><span>Descuento ${descPct()}%</span><span>−${money(tot.dCli)}</span></div>`:''}${tot.cort?`<div class="l"><span>Cortesía de gerencia</span><span>−${money(tot.cort)}</span></div>`:''}<div class="l"><span>Subtotal</span><span>${money(tot.sub)}</span></div><div class="l"><span>ITBMS</span><span>${money(tot.imp)}</span></div><div class="l t"><span>Total a cobrar</span><span>${money(tot.total)}</span></div>`;
   $('#cobrarBtn').textContent='Cerrar cuenta · '+money(tot.total);refreshCuadra();
 }
 function pagos(){return {tarjeta:r2($('#pTarjeta').value),efectivo:r2($('#pEfectivo').value),yappy:r2($('#pYappy').value)}}
@@ -2989,11 +3011,14 @@ $('#cobroForm').addEventListener('submit',async e=>{
   if(cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'&&!cobroPts.canje.lineaId){toast('Elige qué servicio cubre el premio de puntos.');return}
   if(cobroPts.canje&&(()=>{const sd=saldoPts(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).saldo;return sd<ptsMin()||sd<+cobroPts.canje.premio.puntos})()){toast('No le alcanzan los puntos para ese premio.');return}
   if(cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'){const cl=cobroPts.canje.lineaId;if(!cl){toast('Toca qué servicio de la cuenta cubre el premio.');return}const t0=tickets.find(x=>x.id===cobroTicket);if(t0&&!lineasDe(t0.id).some(l=>l.id!==cl&&!l.venta&&+l.precio>0)){toast('El premio de temporada se canjea junto con un servicio pagado.');return}}
+  if(cobDesc.otro&&!descPct()){toast('Escribe el porcentaje del descuento.');$('#descOtro').focus();return}
+  if(descPct()&&!$('#descMot').value.trim()){toast('Escribe el motivo del descuento.');$('#descMot').focus();return}
   const p=c.net,propinas=c.props;
   let terminales=null;{const tj=r2(+p.tarjeta||0);if(tj>0.004){if(!cobTerm.m){toast('Toca en qué punto pasó la tarjeta: St. Georges o Banesco.');$('#termBox').scrollIntoView({block:'center'});return}
     if(cobTerm.m==='dos'){const sg=r2(cobTerm.sg);if(!(sg>0&&sg<tj)){toast('Escribe cuánto pasó por St. Georges (el resto va a Banesco).');$('#termSg')?.focus();return}terminales={sg,bz:r2(tj-sg)}}else terminales={[cobTerm.m]:tj}}}
   $('#cobrarBtn').disabled=true;
-  try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),puntosGanados:cobroPts.tel?Math.floor(tot.sub*ptsDolar()):0});
+  try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),puntosGanados:cobroPts.tel?Math.floor(tot.sub*ptsDolar()):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
+    try{await aplicarDescCli(tot.t,tot.dCli,descPct(),$('#descMot').value.trim())}catch(err){}
     const antes=Array.isArray(cobroPts.movs)?saldoPts(cobroPts.movs):{saldo:0,prox:null},telP=cobroPts.tel,ganaP=telP?Math.floor(tot.sub*ptsDolar()):0,canjP=cobroPts.canje?cobroPts.canje.premio:null,yaC=(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).some(x=>x.tipo==='canje');
     let pm='',okP=true;try{pm=await aplicarPuntos(tot.t,tot.sub)}catch(err){pm=' · no se pudieron guardar los puntos';okP=false}
     if(telP&&okP)setTimeout(()=>abrirPostPuntos(tot.t.cliente,telP,ganaP,canjP,antes.saldo-(canjP?+canjP.puntos:0)+ganaP,antes.prox,yaC),50);
