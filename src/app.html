@@ -3749,7 +3749,7 @@ const eqDe=c=>Array.isArray(c.equipo)&&c.equipo.length>1?c.equipo:null;
 const svcTodos=c=>{const q=eqDe(c);return q?q.flatMap(x=>x.servicios||[]).join(' + '):(c.servicio||'')};
 const atiendeTxt=c=>{const q=eqDe(c);if(!q)return c.estilista;const p=q.map(x=>`${x.estilista} (${(x.servicios||[]).join(', ')})`);return p.slice(0,-1).join(', ')+' y '+p[p.length-1]};
 const unaPorGrupo=l=>{const v=new Set();return l.filter(c=>{const k=c.grupo&&eqDe(c)?'g'+c.grupo:c.id;if(v.has(k))return false;v.add(k);return true})};
-function msgConfirmar(c){return `Hola ${primerNombre(c.cliente)}, *te confirmamos tu cita* en ${SALON}:\n\n• Servicio: *${svcTodos(c)||'por definir'}*\n• Día: *${diaCita(c.fecha)}*\n• Hora: *${h12(c.inicio)}*\n• Te atiende${eqDe(c)?'n':''}: *${atiendeTxt(c)}*\n\nEstamos en Paitilla. Si necesitas cambiar la cita, respóndenos por aquí. ¡Te esperamos!`}
+function msgConfirmar(c){return `Hola ${primerNombre(c.cliente)}, te *confirmamos tu cita* en ${SALON}:\n\n• *Servicio: ${svcTodos(c)||'por definir'}*\n• *Día: ${diaCita(c.fecha)}*\n• *Hora: ${h12(c.inicio)}*\n• Te atiende${eqDe(c)?'n':''}: ${atiendeTxt(c)}\n\nEstamos en Paitilla. Si necesitas cambiar la cita, respóndenos por aquí. ¡Te esperamos!`}
 function msgRecordar(c){return `Hola ${primerNombre(c.cliente)}, *te recordamos tu cita ${c.fecha===manana()?'de mañana':'del '+diaCita(c.fecha)}* a las *${h12(c.inicio)}* con *${atiendeTxt(c)}*${svcTodos(c)?' para *'+svcTodos(c)+'*':''} en ${SALON}.\n\nPor favor *confírmanos tu asistencia* respondiendo este mensaje. ¡Te esperamos!`}
 
 function subAgenda(){
