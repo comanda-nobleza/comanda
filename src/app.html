@@ -1962,8 +1962,8 @@ function renderDyn(){{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);n
   }
   if(tab==='mias'&&per==='dia'&&perOff===0)renderMias();
   if(tab==='caja'){
-    {const esp=lineas.filter(l=>l.especial&&l.especial.estado==='pendiente').length,pc=modo==='caja'?pcFut().length:0,ir=usaInsumos()?insumos.filter(x=>x.estado==='aprobado').length:0,pp=pedPend.length;
-     const it=[esp&&`<button class="btn small" data-cp="esp">💲 ${esp} precio${esp>1?'s':''} especial${esp>1?'es':''} por autorizar</button>`,pp&&`<button class="btn small" data-cp="ped">🧴 ${pp} producto${pp>1?'s':''} pedido${pp>1?'s':''} por el equipo</button>`,pc&&`<button class="btn small" data-cp="ag">📅 ${pc} cita${pc>1?'s':''} por confirmar</button>`,ir&&`<button class="btn small" data-cp="ins">📦 ${ir} insumo${ir>1?'s':''} por recibir</button>`].filter(Boolean);
+    {const esp=lineas.filter(l=>l.especial&&l.especial.estado==='pendiente').length,pc=modo==='caja'?pcHoy().length:0,fp=modo==='caja'?formPend.length:0,ir=usaInsumos()?insumos.filter(x=>x.estado==='aprobado').length:0,pp=pedPend.length;
+     const it=[esp&&`<button class="btn small" data-cp="esp">💲 ${esp} precio${esp>1?'s':''} especial${esp>1?'es':''} por autorizar</button>`,pp&&`<button class="btn small" data-cp="ped">🧴 ${pp} producto${pp>1?'s':''} pedido${pp>1?'s':''} por el equipo</button>`,pc&&`<button class="btn small" data-cp="ag">📅 ${pc} cita${pc>1?'s':''} por confirmar hoy</button>`,fp&&`<button class="btn small" data-cp="form">🎨 ${fp} fórmula${fp>1?'s':''} de tinte por llenar</button>`,ir&&`<button class="btn small" data-cp="ins">📦 ${ir} insumo${ir>1?'s':''} por recibir</button>`].filter(Boolean);
      $('#cajaPendBox').innerHTML=it.length?`<div class="adel-pend"><h3>Tareas pendientes</h3><div class="row" style="gap:8px;flex-wrap:wrap">${it.join('')}</div></div>`:'';}
     renderPedPend();
     $('#cajaAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'caja')).join(''):`<div class="empty">No hay cuentas abiertas. Las clientas aparecen aquí en cuanto un estilista agrega un servicio.</div>`;
@@ -1971,7 +1971,7 @@ function renderDyn(){{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);n
   }
   if(tab==='cierre')renderCierre();
   if(tab==='quincena'&&$('#adEst').options.length!==cfg.estilistas.length+1)$('#adEst').innerHTML='<option value="">— Profesional —</option>'+optsProf();
-  if(modo==='caja'){const n=pcFut().length;$('#agBadge').hidden=!n;$('#agBadge').textContent=n}
+  if(modo==='caja'){const n=pcHoy().length;$('#agBadge').hidden=!n;$('#agBadge').textContent=n}
   if(tab==='agenda'||(modo==='est'&&tab==='clientas'))renderAgenda();
   if(tab==='venta')renderVenta();
   if(!$('#cobroSheet').hidden)refreshCobro();
@@ -2388,7 +2388,7 @@ function renderInsumos(){subInsumos();subInv();const out=$('#insOut');if(!out)re
    +`<div class="adel-pend"><h3>Ya pedido (${P.length})</h3>${P.length?P.map(x=>insFila(x,x.por===quienIns()?`<button class="btn small ghost danger" data-insdel="${x.id}">Cancelar</button>`:'')).join(''):'<small class="muted">Nada pendiente. ✓</small>'}</div>`}
 function insCompraBtns(x){return `<input id="inc-${x.id}" inputmode="text" placeholder="Cantidad comprada" style="width:150px" aria-label="Cantidad comprada de ${esc(x.producto)}"><button class="btn small primary" data-insok="${x.id}">Comprado</button><button class="btn small ghost danger" data-insno="${x.id}">Rechazar</button>`}
 function renderInsTareas(){const box=$('#insTarBox');if(!box)return;subInsumos();subInv();const C=porComprar(),L=porLlegar(),u=C.filter(x=>x.r&&x.r.urgente).length;box.innerHTML=(C.length||L.length)?`<div class="res-ok" style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap"><span>📦 ${C.length?`<b>${C.length}</b> por comprar${u?` (${u} urgente${u>1?'s':''})`:''}`:''}${C.length&&L.length?' · ':''}${L.length?`<b>${L.length}</b> comprado${L.length>1?'s':''} por llegar`:''}</span><button class="btn small" data-go-ins>Ver inventario</button></div>`:''}
-document.addEventListener('click',e=>{const cp=e.target.closest('[data-cp]');if(cp){const k=cp.dataset.cp;if(k==='ag')setTab('agenda');else if(k==='ins'){invSub='cmp';setTab('inv')}else{const el=k==='ped'?$('#pedPendBox'):document.querySelector('#cajaAbiertas .esp-pend,#cajaAbiertas [data-esp],#cajaAbiertas');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}return}if(e.target.closest('[data-go-ins]')){invSub='comp';setTab('inv');return;insTab='com';setTab('insumos')}});
+document.addEventListener('click',e=>{const cp=e.target.closest('[data-cp]');if(cp){const k=cp.dataset.cp;if(k==='ag')setTab('agenda');else if(k==='ins'){invSub='cmp';setTab('inv')}else{const el=k==='ped'?$('#pedPendBox'):k==='form'?$('#formPendBox'):document.querySelector('#cajaAbiertas .esp-pend,#cajaAbiertas [data-esp],#cajaAbiertas');if(el)el.scrollIntoView({behavior:'smooth',block:'start'})}return}if(e.target.closest('[data-go-ins]')){invSub='comp';setTab('inv');return;insTab='com';setTab('insumos')}});
 document.addEventListener('click',async e=>{
   const it=e.target.closest('[data-instab]');if(it){insTab=it.dataset.instab;renderInsumos();return}
   const ic=e.target.closest('[data-inscat]');if(ic){insCat=ic.dataset.inscat;renderInsumos();return}
@@ -3681,6 +3681,10 @@ $('#agVista').addEventListener('click',e=>{const x=e.target.closest('[data-v]');
 const movMes=n=>{const [y,m]=agDia.split('-').map(Number);return ymd(new Date(y,m-1+n,1))};
 function estHue(n){const i=cfg.estilistas.findIndex(e=>e.nombre===n);return Math.round(((i<0?cfg.estilistas.length+String(n).length:i)*137.5)%360)}
 const citasManana=()=>agDia===manana()?citas:citasMan;
+/* cuándo toca confirmar una cita: antes del mediodía → el día anterior; después del mediodía → ese mismo día;
+   las del lunes → desde el sábado */
+function confDesde(c){const dw=new Date(c.fecha+'T12:00:00').getDay();if(dw===1)return addDias(c.fecha,-2);return aMin(c.inicio||'00:00')<12*60?addDias(c.fecha,-1):c.fecha}
+const pcHoy=()=>pcFut().filter(c=>confDesde(c)<=hoy());
 const pcFut=()=>unaPorGrupo(porConf.filter(c=>c.fecha>=hoy())).sort((a,b)=>(a.fecha+a.inicio).localeCompare(b.fecha+b.inicio));
 
 const agMov=n=>modo==='caja'?(agVista==='mes'?movMes(n):addDias(agDia,n)):agVE==='mes'?movMes(n):agVE==='semana'?addDias(agDia,7*n):addDias(agDia,n);
@@ -3771,7 +3775,7 @@ function renderAgenda(){
   // paneles
   const pc=pcFut(), man=unaPorGrupo(citasManana().filter(c=>c.estado==='confirmada'||c.estado==='por_confirmar')).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio));
   let pan='';
-  if(pc.length){const fila=c=>`<div class="ag-prow"><div><b>${esc(c.cliente)}</b> · ${esc(svcTodos(c))}<br><small>${fechaCorta(c.fecha)} · ${h12(c.inicio)} · ${esc(atiendeTxt(c))}${c.creadoPor&&!esCaja(c.creadoPor)?' · agendada por '+esc(c.creadoPor):''}</small></div>${c.fecha===agDia?'<small>Está en este día ↓</small>':`<button class="btn small" data-ag="ir" data-f="${c.fecha}">Ver ese día</button>`}</div>`;pan+=`<div class="ag-panel"><h3>Por confirmar (${pc.length})</h3><small>Citas que todavía no le has confirmado a la clienta.</small>${pc.slice(0,3).map(fila).join('')}${pc.length>3?`<details><summary>Ver las otras ${pc.length-3}</summary><div style="display:grid;gap:10px;margin-top:10px">${pc.slice(3).map(fila).join('')}</div></details>`:''}</div>`}
+  if(pc.length){const fila=c=>`<div class="ag-prow"><div><b>${esc(c.cliente)}</b> · ${esc(svcTodos(c))}${confDesde(c)<=hoy()?' <span class="chip warn">Confirmar hoy</span>':`<small class="muted"> · se confirma el ${fechaCorta(confDesde(c))}</small>`}<br><small>${fechaCorta(c.fecha)} · ${h12(c.inicio)} · ${esc(atiendeTxt(c))}${c.creadoPor&&!esCaja(c.creadoPor)?' · agendada por '+esc(c.creadoPor):''}</small></div>${c.fecha===agDia?'<small>Está en este día ↓</small>':`<button class="btn small" data-ag="ir" data-f="${c.fecha}">Ver ese día</button>`}</div>`;pan+=`<div class="ag-panel"><h3>Por confirmar (${pc.length})</h3><small>Citas que todavía no le has confirmado a la clienta.</small>${pc.slice(0,3).map(fila).join('')}${pc.length>3?`<details><summary>Ver las otras ${pc.length-3}</summary><div style="display:grid;gap:10px;margin-top:10px">${pc.slice(3).map(fila).join('')}</div></details>`:''}</div>`}
   if(agDia===hoy()&&man.length){const pend=man.filter(c=>!c.recordatorio).length;
     pan+=`<div class="ag-panel ${pend?'':'ok'}"><h3>Recordatorios para mañana (${pend?pend+' por enviar':'todos enviados ✓'})</h3>${man.map(c=>{const tel=telMap[c.id]||'',l=waLink(tel,msgRecordar(c));return `<div class="ag-prow"><div><b>${esc(c.cliente)}</b> · ${h12(c.inicio)} con ${esc(atiendeTxt(c))}<br><small>${esc(svcTodos(c))} · ${tel?esc(tel):'<span class="neg">sin teléfono</span>'}</small></div>${c.recordatorio?'<span class="chip ok">✓ Enviado</span>':`<a class="btn small wa" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="recordar" data-id="${c.id}">Enviar recordatorio</a>`}</div>`}).join('')}</div>`}
   $('#agPaneles').innerHTML=pan;
