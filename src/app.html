@@ -525,7 +525,7 @@ body:not(.es-web) .only-web{display:none!important}
     </div>
     <div class="ag-top">
       <button class="btn primary only-caja" id="agNueva">+ Nueva cita</button>
-      <div class="agseg only-est" id="agVistaEst" role="group" aria-label="Vista"><button type="button" data-ve="dia">Día</button><button type="button" data-ve="semana">Semana</button><button type="button" data-ve="mes">Mes</button></div>
+      <div class="agseg only-est" id="agVistaEst" role="group" aria-label="Vista"><button type="button" data-ve="hoy">Hoy</button><button type="button" data-ve="man">Mañana</button><button type="button" data-ve="mes">Mes</button></div>
       <div class="agseg only-caja" id="agVista" role="group" aria-label="Vista"><button type="button" data-v="hoy">Hoy</button><button type="button" data-v="man">Mañana</button><button type="button" data-v="mes">Mes</button></div>
       <select id="agFiltro" class="only-caja" aria-label="Filtrar por profesional"></select>
       <button class="btn only-caja" id="agCerrar">Cerrar agenda</button>
@@ -3799,8 +3799,8 @@ const pcFut=()=>unaPorGrupo(porConf.filter(c=>c.fecha>=hoy())).sort((a,b)=>(a.fe
 const agMov=n=>modo==='caja'?(agVista==='mes'?movMes(n):addDias(agDia,n)):agVE==='mes'?movMes(n):agVE==='semana'?addDias(agDia,7*n):addDias(agDia,n);
 $('#agPrev').onclick=()=>setAgDia(agMov(-1));
 $('#agNext').onclick=()=>setAgDia(agMov(1));
-let agVE=store.get('agVE')||'dia',estRC=null;
-$('#agVistaEst').addEventListener('click',e=>{const x=e.target.closest('[data-ve]');if(!x)return;agVE=x.dataset.ve;store.set('agVE',agVE);renderAgenda()});
+let agVE=store.get('agVE')==='mes'?'mes':'dia',estRC=null;
+$('#agVistaEst').addEventListener('click',e=>{const x=e.target.closest('[data-ve]');if(!x)return;const v=x.dataset.ve;if(v==='mes'){agVE='mes';store.set('agVE','mes');renderAgenda();return}agVE='dia';store.set('agVE','dia');const f=v==='man'?manana():hoy();if(f!==agDia)setAgDia(f);else renderAgenda()});
 document.addEventListener('click',e=>{const d=e.target.closest('[data-ve-dia]');if(!d)return;agVE='dia';store.set('agVE','dia');if(d.dataset.veDia===agDia)renderAgenda();else setAgDia(d.dataset.veDia)});
 function rangoEst(){if(agVE==='semana')return [agDia,addDias(agDia,6)];const [y,m]=agDia.split('-').map(Number);return [ymd(new Date(y,m-1,1)),ymd(new Date(y,m,0))]}
 async function renderEstRango(out){const [a,b]=rangoEst(),key=soy+a+b;
@@ -3872,7 +3872,7 @@ function renderAgenda(){
   const out=$('#agOut');
   if(!db){out.innerHTML='<div class="empty">Sin conexión con el salón.</div>';return}
   if(modo==='est'){
-    $$('#agVistaEst button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ve===agVE));
+    $$('#agVistaEst button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ve==='mes'?agVE==='mes':agVE==='dia'&&agDia===(x.dataset.ve==='man'?manana():hoy())));
     if(agVE!=='dia'){$('#agPrev').setAttribute('aria-label',agVE==='mes'?'Mes anterior':'Semana anterior');$('#agNext').setAttribute('aria-label',agVE==='mes'?'Mes siguiente':'Semana siguiente');renderEstRango(out);return}
     const {cs,bs,html}=itemsEst(soy,'est');
     out.innerHTML=(cs.length||bs.length)?`<div class="ag-est">${html}</div><small>Tu agenda la maneja <b>caja</b>. Si necesitas una cita o un cambio, pídeselo a caja.</small>`:`<div class="empty">No tienes citas este día. Si una clienta te escribe para agendar, pásale el contacto a caja.</div>`;
