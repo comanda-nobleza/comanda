@@ -752,7 +752,7 @@ body:not(.es-web) .only-web{display:none!important}
       <div class="panel">
         <h3>Personal</h3>
         <small>En <b>Área</b> puedes poner varias separadas por coma, en el orden en que la persona las ve (ej.: <i>Barbería, Peluquería</i>). Marca <b>Pestañas</b> para que vea cada área en su propia pestaña. <b>Planta</b>: entra a la app y tiene agenda. <b>Externo</b>: no entra a la app; con alquiler es <b>alquilado</b>, sin alquiler es <b>eventual</b>. En Cuentas se elige con <b>Alquilado o eventual…</b> y sale en Quincena. Un alquilado nuevo que no esté aquí se puede escribir a mano y cobra la comisión base.</small>
-        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th>Abre cuentas</th><th></th></tr></thead><tbody></tbody></table></div>
         <button class="btn small" data-addrow="ajEst" style="justify-self:start">+ Estilista</button>
       </div>
       <div class="panel">
@@ -1947,7 +1947,7 @@ function pintarResQ(d){
 }
 
 /* ---------- render ---------- */
-function renderDyn(){
+function renderDyn(){{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
   try{renderViejas()}catch(e){}
   try{revisarAvisos()}catch(e){}
   if(modo!=='caja'&&cajaLocked)aplicarLock();
@@ -2611,12 +2611,14 @@ function textoPremios(){const v=premiosVigentes();return `Programa de puntos –
 async function crearClienta(nombre,form,tel){
   if(!needDb())return;nombre=nombre.trim();if(!nombre)return;
   if(dia!==hoy())setDia(hoy());
+  {const ya=tickets.find(t=>t.estado==='abierta'&&t.fecha===hoy()&&t.clienteKey===ckey(nombre));if(ya){form.reset();form.hidden=true;toast(`${ya.cliente} ya tiene la cuenta abierta. Agrega aquí el servicio.`);openSvc(ya);return}}
   try{const k=modo==='caja'?telKey(tel||''):'';const ref=await db.collection('tickets').add({fecha:hoy(),cliente:nombre,clienteKey:ckey(nombre),estado:'abierta',creado:new Date().toISOString(),creadoPor:soy||enCaja()});
     form.reset();form.hidden=true;if(k)await db.doc('ticketsTel/'+ref.id).set({tel:k,fecha:hoy()}).catch(()=>{});
     openSvc({id:ref.id,cliente:nombre,fecha:hoy()});
   }catch(err){toast('No se pudo abrir la comanda ('+err.code+').')}
 }
-$('#nuevaBtn').onclick=()=>{if(modo==='est')return;$('#nuevaForm').hidden=false;$('#nuevaNombre').focus()};
+const abreCuentas=n=>!!(cfg.estilistas.find(e=>e.nombre===n)||{}).abreCuentas;
+$('#nuevaBtn').onclick=()=>{if(modo==='est'&&!abreCuentas(soy))return;$('#nuevaForm').hidden=false;$('#nuevaNombre').focus()};
 $('#nuevaCancel').onclick=()=>{$('#nuevaForm').reset();$('#nuevaForm').hidden=true};
 $('#nuevaForm').addEventListener('submit',e=>{e.preventDefault();crearClienta($('#nuevaNombre').value,e.target,'')});
 $('#nuevaBtnCaja').onclick=()=>{$('#nuevaFormCaja').hidden=false;$('#nuevaNombreCaja').focus()};
@@ -3548,7 +3550,7 @@ function xlVis(){$$('.xl-btn').forEach(b=>b.disabled=!dl);$$('.xl-off').forEach(
 
 /* ---------- ajustes ---------- */
 const AJ={
-  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin']],src:()=>cfg.estilistas},
+  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin'],['abreCuentas','check']],src:()=>cfg.estilistas},
   ajVAlq:{cols:[['nombre','text'],['precio','number']],src:()=>vaProds()},
   ajPrem:{cols:[['nombre','text'],['tipo','ptipo'],['puntos','number'],['monto','number'],['temporada','text'],['desde','date'],['hasta','date']],src:()=>cfg.premios||[]},
   ajSvc:{cols:[['nombre','text'],['area','text'],['pestana','text'],['categoria','text'],['precio','number'],['descuento','number'],['descuentoPct','number'],['libre','check'],['minimo','number'],['detalle','check'],['especial','check'],['formula','check'],['variantes','list'],['precios','list'],['descuentosPct','list'],['extra','check'],['productos','list'],['sesiones','number']],src:()=>cfg.servicios},
