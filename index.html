@@ -4110,8 +4110,8 @@ $('#citaForm').addEventListener('submit',async e=>{
     else if(citaEdit)for(const id of guardadas)await db.doc('citasTel/'+id).update({fecha}).catch(()=>{});
     const nP=equipo.length>1?` con ${equipo.length} profesionales`:'';
     if(citaEdit)toast('Cita actualizada'+nP+(cambioHora&&citaEdit.estado==='confirmada'&&modo==='caja'?'. Avísale el cambio a la clienta.':''));
-    else toast(modo==='caja'?(tel?`Cita guardada${nP}. Confírmala por WhatsApp.`:`Cita guardada${nP}. Agrega el teléfono para confirmarla por WhatsApp.`):`Cita guardada${nP}. Recepción se la confirma a la clienta.`);
-    $('#citaSheet').hidden=true;if(fecha!==agDia)setAgDia(fecha);
+    else{const pf=fecha!==agDia?` para el ${fechaCorta(fecha)}`:'';toast(modo==='caja'?(tel?`Cita guardada${pf}${nP}. Saldrá en Tareas de hoy cuando toque confirmarla.`:`Cita guardada${pf}${nP}. Agrega el teléfono para confirmarla por WhatsApp.`):`Cita guardada${pf}${nP}. Recepción se la confirma a la clienta.`)}
+    $('#citaSheet').hidden=true;
   }catch(err){toast('No se pudo guardar la cita ('+(err.code||'error')+').')}finally{btn.disabled=false}
 });
 
