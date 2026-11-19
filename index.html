@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="7d71417397df"</script>
-<script src="web.js?v=7d71417397df"></script>
+<script>window.BUILD="6320bf7bf4c7"</script>
+<script src="web.js?v=6320bf7bf4c7"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -622,14 +622,14 @@ body:not(.es-web) .only-web{display:none!important}
     <div id="difBox"></div>
     <div id="cierreEq"></div>
     <div class="grid2">
-      <div class="panel">
+      <div class="panel" style="grid-column:1/-1">
         <h3>Formas de pago</h3>
         <div class="tw"><table id="fzTable">
-          <thead><tr><th></th><th class="n">Fiscal Z</th><th class="n">Total real</th><th class="n">Diferencia</th><th>Explicación</th></tr></thead>
+          <thead><tr><th></th><th class="n">Registrado en Comanda</th><th class="n">Fiscal Z (Swift)</th><th>Z contra Comanda</th><th class="n">Real (lo que entró)</th><th>Real contra Comanda</th></tr></thead>
           <tbody></tbody>
         </table></div>
         <div id="cierreConc" style="display:grid;gap:10px"></div>
-        <small>Escribe el Fiscal Z de cada forma de pago. La diferencia es Total real − Fiscal Z; cuando es igual a las propinas, cuadra ✓.</small>
+        <small>Escribe el Fiscal Z de cada forma de pago (la diferencia con Comanda debe ser igual a las propinas). En «Real»: el efectivo sale del conteo al entregar la caja al cierre, la tarjeta de los cierres de lote de abajo, y el Yappy lo escribes de lo que entró en la cuenta.</small>
         <h3 style="margin-top:8px">Puntos de tarjeta · cierre de lote</h3>
         <div class="tw"><table id="loteTable"><thead><tr><th></th><th class="n">Cobrado en Comanda</th><th class="n">Cierre de lote</th><th class="n">Diferencia</th></tr></thead><tbody></tbody></table></div>
         <small>Escribe el total del cierre de lote que imprime cada máquina (con propinas). Sirve para la conciliación bancaria de cada punto.</small>
@@ -1615,6 +1615,8 @@ document.addEventListener('input',e=>{const t=e.target;if(!t||!['vProd','pscProd
 function efectivoCaja(c,TU){const adEf=r2(adelDia.filter(x=>x.metodo==='efectivo').reduce((s,x)=>s+(+x.monto||0),0)),fondo=+cfg.fondo||0,vaEf=vaTot('efectivo'),sistema=r2(fondo+c.ventas.efectivo+vaEf-c.gasto.efectivo-adEf);
   const fin=(TU||[]).filter(t=>t.estado==='cerrado'&&t.entrega&&t.entrega.a==='cierre').pop(),contado=fin?+fin.entrega.contado:null,enCaja=contado!=null?contado:sistema;
   return {adEf,vaEf,fondo,sistema,contado,dif:contado!=null?r2(contado-sistema):0,enCaja,depositar:Math.max(0,r2(enCaja-fondo)),reponer:Math.max(0,r2(fondo-enCaja))}}
+function realDe(c){const lo=cierre.lote||{},re=cierre.real||{},K=concilia(c,cierre.fz||{}),reg=m=>(K.met.find(x=>x.m===m)||{}).real||0,EC=efectivoCaja(c,dia===hoy()?turnosHoy:[]);
+  return {efectivo:EC.contado!=null?r2(reg('efectivo')+EC.dif):null,tarjeta:TERM_K.every(k=>lo[k]!=null)?r2(TERM_K.reduce((a,k)=>a+(+lo[k]||0),0)+(c.term.sin||0)):null,yappy:re.yappy!=null?+re.yappy:null}}
 function concilia(c,fz){
   const met=METODOS.map(m=>{const real=r2(c.ventas[m]+(c.prop[m]||0)),z=fz[m],tiene=!(z==null||z===''),df=tiene?r2(real-z):null,pr=r2(c.prop[m]||0),sinExp=tiene?r2(df-pr):0;return {m,real,z:tiene?+z:null,df,pr,sinExp}});
   const canjeL=c.cob.filter(t=>t.canjePuntos&&+t.canjePuntos.monto>0),canje=r2(canjeL.reduce((s,t)=>s+(+t.canjePuntos.monto||0),0));
@@ -1627,6 +1629,7 @@ const DIF_MOT=['Shampoo Fanola','Cortesía no registrada','Servicio autorizado p
 function difLista(c,K0){const L=[],lo=cierre.lote||{},sob=(v,a,b)=>v>0?`${a} ${money(v)}`:`${b} ${money(-v)}`;
   K0.met.filter(x=>x.z!=null&&Math.abs(x.sinExp)>=0.005).forEach(x=>L.push({k:'met:'+x.m,lbl:`${MET_LBL[x.m]}: Fiscal Z contra total real`,monto:x.sinExp,txt:sob(x.sinExp,'Sobran en lo real','Faltan en lo real')}));
   if(Math.abs(K0.sinExpC)>=0.005)L.push({k:'comandas',lbl:'Comandas contra lo cobrado (sin ITBMS)',monto:K0.sinExpC,txt:sob(K0.sinExpC,'Se cobró de menos','Se cobró de más')});
+  {const re=cierre.real||{},ry=(K0.met.find(x=>x.m==='yappy')||{}).real||0;if(re.yappy!=null){const d=r2(+re.yappy-ry);if(Math.abs(d)>=0.005)L.push({k:'real:yappy',lbl:'Yappy: lo que entró contra Comanda',monto:d,txt:sob(d,'Entró de más','Entró de menos')})}}
   TERM_K.forEach(k=>{if(lo[k]!=null){const d=r2(+lo[k]-c.term[k]);if(Math.abs(d)>=0.005)L.push({k:'lote:'+k,lbl:`Cierre de lote ${TERM[k]} contra Comanda`,monto:d,txt:sob(d,'Sobran en el lote','Faltan en el lote')})}});
   (dia===hoy()?turnosHoy:[]).forEach(t=>{const q=(k,lbl,v)=>{v=r2(+v||0);if(Math.abs(v)>=0.005)L.push({k:k+t.id,lbl,monto:v,txt:sob(v,'Sobran','Faltan')})};
     q('ap:',`Efectivo al abrir caja · ${t.cajero}`,t.difApertura);if(t.entrega)q('en:',`Efectivo al entregar caja · ${t.cajero}`,t.entrega.dif);if(t.recepcion)q('re:',`Efectivo al recibir caja · ${t.recepcion.por||''}`,t.recepcion.dif)});
@@ -3206,7 +3209,7 @@ function calcCierre(tks,ls,gs){
 var loteRendered=null;
 function renderCierreInputs(){
   const fz=cierre.fz||{};
-  METODOS.forEach(m=>{const i=$('#fz-'+m);if(i&&document.activeElement!==i)i.value=fz[m]??''});
+  METODOS.forEach(m=>{const i=$('#fz-'+m);if(i&&document.activeElement!==i)i.value=fz[m]??''});{const i=$('#real-yappy');if(i&&document.activeElement!==i)i.value=(cierre.real||{}).yappy??''}
   if(document.activeElement!==$('#cierreNotas'))$('#cierreNotas').value=cierre.notas||'';
   {const lo=cierre.lote||{};TERM_K.forEach(k=>{const i=$('#lote-'+k);if(i&&document.activeElement!==i)i.value=lo[k]??''})}
 }
@@ -3221,15 +3224,18 @@ function renderCierre(){
   {const bx=$('#difBox'),a=document.activeElement;if(bx){const h=difHtml(difLista(c,concilia(c,cierre.fz||{})));if(bx.innerHTML!==h){const fk=a&&bx.contains(a)&&a.tagName==='INPUT'?a.closest('[data-dk]').dataset.dk:null,fv=fk&&a.value,fp=fk&&a.selectionStart;bx.innerHTML=h;if(fk){const r=[...bx.querySelectorAll('[data-dk]')].find(x=>x.dataset.dk===fk),i=r&&r.querySelector('[data-ddet]');if(i){i.value=fv;i.focus();try{i.setSelectionRange(fp,fp)}catch(e){}}}}}}
   const tb=$('#fzTable tbody');
   if(cierreRendered!==dia||!tb.children.length){
-    tb.innerHTML=METODOS.map(m=>`<tr data-m="${m}"><td><b>${MET_LBL[m]}</b></td><td class="n"><input id="fz-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Fiscal Z ${MET_LBL[m]}"></td><td class="n tr"></td><td class="n df"></td><td class="ex" style="white-space:normal"></td></tr>`).join('');
+    tb.innerHTML=METODOS.map(m=>`<tr data-m="${m}"><td><b>${MET_LBL[m]}</b></td><td class="n tr"></td><td class="n"><input id="fz-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Fiscal Z ${MET_LBL[m]}"></td><td class="ex" style="white-space:normal"></td><td class="n rl">${m==='yappy'?`<input id="real-yappy" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Yappy real">`:''}</td><td class="rx" style="white-space:normal"></td></tr>`).join('');
+    $('#real-yappy').addEventListener('change',e=>{const r={...(cierre.real||{})};r.yappy=e.target.value===''?null:r2(e.target.value);saveCierre({real:r})});
     METODOS.forEach(m=>$('#fz-'+m).addEventListener('change',e=>{const f={...(cierre.fz||{})};f[m]=e.target.value===''?null:r2(e.target.value);saveCierre({fz:f})}));
     cierreRendered=dia;renderCierreInputs();
   }
   const K=concilia(c,fz);
   K.met.forEach(x=>{const tr=tb.querySelector(`[data-m="${x.m}"]`);tr.querySelector('.tr').textContent=money(x.real);const df=tr.querySelector('.df'),ex=tr.querySelector('.ex');
-    if(x.z==null){df.textContent='';ex.innerHTML='<small class="muted">Escribe el Fiscal Z</small>';return}
-    df.textContent=money(x.df);const ok=Math.abs(x.sinExp)<0.005;df.className='n df '+(ok?'pos':'neg');
-    ex.innerHTML=ok?`<small class="pos">✓ ${x.pr?`Igual a las propinas (${money(x.pr)})`:'Cuadra'}</small>`:`<small class="neg">${x.pr?`Propinas ${money(x.pr)} · `:''}Sin explicar: <b>${money(x.sinExp)}</b></small>`});
+    {const R=realDe(c)[x.m],rl=tr.querySelector('.rl'),rx=tr.querySelector('.rx');if(x.m!=='yappy')rl.innerHTML=R==null?'<small class="muted">—</small>':money(R);
+      if(R==null)rx.innerHTML=`<small class="muted">${x.m==='efectivo'?'Se llena al entregar la caja al cierre':x.m==='tarjeta'?'Escribe los cierres de lote abajo':'Escribe lo que entró'}</small>`;else{const d=r2(R-x.real);rx.innerHTML=Math.abs(d)<0.005?'<small class="pos">✓ Cuadra</small>':`<small class="neg"><b>${d>0?'Sobran':'Faltan'} ${money(Math.abs(d))}</b></small>`}}
+    if(x.z==null){ex.innerHTML='<small class="muted">Escribe el Fiscal Z</small>';return}
+    const ok=Math.abs(x.sinExp)<0.005;
+    ex.innerHTML=ok?`<small class="pos">✓ ${x.pr?`Diferencia ${money(x.df)} = propinas`:'Cuadra'}</small>`:`<small class="neg">Diferencia ${money(x.df)}${x.pr?` · propinas ${money(x.pr)}`:''} · sin explicar: <b>${money(x.sinExp)}</b></small>`});
   {const lb=$('#loteTable tbody');if(loteRendered!==dia||!lb.children.length){lb.innerHTML=TERM_K.map(k=>`<tr data-k="${k}"><td><b>${TERM[k]}</b></td><td class="n cm"></td><td class="n"><input id="lote-${k}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Cierre de lote ${TERM[k]}"></td><td class="n df"></td></tr>`).join('')+`<tr data-k="sin" hidden><td><b>Sin punto</b><br><small class="muted">cobros de antes de este cambio</small></td><td class="n cm"></td><td></td><td></td></tr>`;
       TERM_K.forEach(k=>$('#lote-'+k).addEventListener('change',e=>{const lo={...(cierre.lote||{})};lo[k]=e.target.value===''?null:r2(e.target.value);saveCierre({lote:lo})}));loteRendered=dia;renderCierreInputs()}
     const lo=cierre.lote||{};TERM_K.forEach(k=>{const tr=lb.querySelector(`[data-k="${k}"]`);tr.querySelector('.cm').textContent=money(c.term[k]);const df=tr.querySelector('.df');if(lo[k]==null){df.innerHTML='<small class="muted">Escribe el lote</small>';return}const d=r2(+lo[k]-c.term[k]);df.innerHTML=Math.abs(d)<0.005?'<small class="pos">✓ Cuadra</small>':`<b class="neg">${d>0?'+':''}${money(d)}</b>`});
@@ -3249,7 +3255,7 @@ function renderCierre(){
   $('#gastoTable tfoot').innerHTML=`<tr><td>Total ${money(c.gasto.efectivo+c.gasto.yappy)}</td><td class="n">${money(c.gasto.efectivo)}</td><td class="n">${money(c.gasto.yappy)}</td><td></td></tr>`;
   const adEf=r2(adelDia.filter(x=>x.metodo==='efectivo').reduce((s,x)=>s+(+x.monto||0),0)),adYa=r2(adelDia.filter(x=>x.metodo==='yappy').reduce((s,x)=>s+(+x.monto||0),0));
   const dep=r2(c.ventas.efectivo-c.gasto.efectivo-adEf);
-  const EC=efectivoCaja(c,[]);$('#efectivoKv').innerHTML=`<dt>Fondo de caja</dt><dd>${money(cfg.fondo)}</dd><dt>Ventas en efectivo</dt><dd>${money(c.ventas.efectivo)}</dd>${EC.vaEf?`<dt>Ventas a alquilados en efectivo (no facturadas)</dt><dd>${money(EC.vaEf)}</dd>`:''}<dt>Gastos pagados en efectivo</dt><dd>−${money(c.gasto.efectivo)}</dd><dt>Adelantos entregados en efectivo${adelDia.filter(x=>x.metodo==='efectivo').length?' ('+adelDia.filter(x=>x.metodo==='efectivo').map(x=>esc(x.estilista)).join(', ')+')':''}</dt><dd>−${money(adEf)}</dd>${adYa?`<dt>Adelantos por Yappy (${adelDia.filter(x=>x.metodo==='yappy').map(x=>esc(x.estilista)).join(', ')})</dt><dd>${money(adYa)}</dd>`:''}<dt>Debe haber en caja</dt><dd>${money(EC.sistema)}</dd>${EC.contado!=null?`<dt>Contado al cierre</dt><dd>${money(EC.contado)}</dd>${Math.abs(EC.dif)>=0.005?`<dt class="neg">${EC.dif<0?'Faltante':'Sobrante'}</dt><dd class="neg">${money(Math.abs(EC.dif))}</dd>`:''}`:''}<div class="sep"></div><dt><b>Efectivo a depositar</b></dt><dd class="big">${money(EC.depositar)}</dd>${EC.reponer?`<dt class="neg">Se usó del fondo: falta reponer</dt><dd class="neg"><b>${money(EC.reponer)}</b></dd>`:''}`;
+  const EC=efectivoCaja(c,dia===hoy()?turnosHoy:[]);$('#efectivoKv').innerHTML=`<dt>Fondo de caja</dt><dd>${money(cfg.fondo)}</dd><dt>Ventas en efectivo</dt><dd>${money(c.ventas.efectivo)}</dd>${EC.vaEf?`<dt>Ventas a alquilados en efectivo (no facturadas)</dt><dd>${money(EC.vaEf)}</dd>`:''}<dt>Gastos pagados en efectivo</dt><dd>−${money(c.gasto.efectivo)}</dd><dt>Adelantos entregados en efectivo${adelDia.filter(x=>x.metodo==='efectivo').length?' ('+adelDia.filter(x=>x.metodo==='efectivo').map(x=>esc(x.estilista)).join(', ')+')':''}</dt><dd>−${money(adEf)}</dd>${adYa?`<dt>Adelantos por Yappy (${adelDia.filter(x=>x.metodo==='yappy').map(x=>esc(x.estilista)).join(', ')})</dt><dd>${money(adYa)}</dd>`:''}<dt>Debe haber en caja</dt><dd>${money(EC.sistema)}</dd>${EC.contado!=null?`<dt>Contado al cierre</dt><dd>${money(EC.contado)}</dd>${Math.abs(EC.dif)>=0.005?`<dt class="neg">${EC.dif<0?'Faltante':'Sobrante'}</dt><dd class="neg">${money(Math.abs(EC.dif))}</dd>`:''}`:''}<div class="sep"></div><dt><b>Efectivo a depositar</b></dt><dd class="big">${money(EC.depositar)}</dd>${EC.reponer?`<dt class="neg">Se usó del fondo: falta reponer</dt><dd class="neg"><b>${money(EC.reponer)}</b></dd>`:''}`;
   const pr=produccion(lineas);
   {const by={};[...lineas].sort((a,b)=>(a.creado||'').localeCompare(b.creado||'')).forEach(l=>(by[l.estilista||'—']=by[l.estilista||'—']||[]).push(l));
    const tk=Object.fromEntries(tickets.map(t=>[t.id,t])),ab=new Set([...document.querySelectorAll('#cxeOut details[open]')].map(d=>d.dataset.e));
