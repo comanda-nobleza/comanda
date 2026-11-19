@@ -2600,7 +2600,7 @@ function renderPtsCobro(){
   const {saldo,prox}=saldoPts(cobroPts.movs),tot=cobroTotales(),gana=tot?ptsGana(tot.sub):0;
   const disp=saldo>=ptsMin()?premiosVigentes().filter(p=>+p.puntos<=saldo):[],c=cobroPts.canje;
   const lsT=tot?lineasDe(tot.t.id).filter(l=>!l.venta):[];
-  box.innerHTML=`<div class="pts-sum"><b>${saldo} puntos</b><small>${prox?`${prox.puntos} vencen el ${fechaCorta(prox.fecha)}`:cobroPts.movs.length?'':'Clienta nueva en puntos'}</small>${ptsSinMotivo()?`<span class="muted">Sin puntos en esta cuenta: ${ptsSinMotivo()}</span>`:`<span class="pos">+${gana} con esta cuenta</span>`}</div>
+  box.innerHTML=`<div class="pts-sum"><b>${saldo} puntos</b><small>${prox?`${prox.puntos} vencen el ${fechaCorta(prox.fecha)}`:cobroPts.movs.length?'':'Clienta nueva en puntos'}</small>${gana?`<span class="pos">+${gana} con esta cuenta</span>`:`<span class="muted">Sin puntos en esta cuenta</span>`}${ptsSinMotivo()?`<small class="muted">${ptsSinMotivo()}</small>`:''}</div>
     ${disp.length?`<span class="muted">¿Quiere canjear un premio?</span><div class="pick">${disp.map((p,i)=>`<button type="button" data-canje="${esc(p.nombre)}" aria-pressed="${!!(c&&c.premio.nombre===p.nombre)}">${esc(p.nombre)}<small>${p.puntos} pts</small></button>`).join('')}</div>`:`<small class="muted">${(()=>{const s=sigPremio(saldo);if(saldo<ptsMin())return `Los canjes se habilitan desde ${ptsMin()} puntos. Le faltan ${ptsMin()-saldo}.`;return s?`Le faltan ${s.faltan} puntos para: ${esc(s.p.nombre)}.`:'No hay premios vigentes.'})()}</small>`}
     ${c&&c.premio.tipo==='servicio'?`<span class="muted">¿Qué servicio de esta cuenta cubre el premio? (se canjea junto con un servicio pagado)</span><div class="pick">${lsT.map(l=>`<button type="button" data-canje-l="${l.id}" aria-pressed="${c.lineaId===l.id}">${esc(l.servicio)}<small>${money(l.precio)}</small></button>`).join('')}</div>`:''}
     ${c?`<small class="desc-fijo">Canje: ${esc(c.premio.nombre)} (−${c.premio.puntos} pts)${c.premio.tipo==='obsequio'?' · entrega el obsequio a la clienta':''} <button type="button" class="btn ghost small" data-canje-x>Quitar</button></small>`:''}`;
@@ -2622,10 +2622,13 @@ async function reabrirPts(tid){const tels=await quitarPtsTicket(tid);
 function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).forEach(x=>(g[x.ticketId]=g[x.ticketId]||[]).push(x));
   return Object.values(g).filter(a=>a.length>1).flatMap(a=>a.sort((p,q)=>(q.creado||'').localeCompare(p.creado||'')).slice(1))}
 /* los puntos se ganan solo con el pago completo: con descuento a la clienta no suma puntos */
-function ptsSinMotivo(){if(descPct()>0)return 'tiene descuento';const ls=cobroTicket?lineasDe(cobroTicket):[];
-  if(ls.some(l=>l.descuentoCliente&&+l.descuentoCliente.pct>0))return 'un servicio tiene descuento';if(ls.some(l=>l.especial&&l.especial.estado!=='rechazado'))return 'tiene precio especial';
-  if(cobroPts&&cobroPts.canje)return 'canjea puntos (promoción)';if(typeof cortOn==='function'&&cortOn())return 'es cortesía';return ''}
-function ptsGana(sub){return ptsSinMotivo()?0:Math.floor((+sub||0)*ptsDolar())}
+/* Los puntos se ganan solo por lo que se pagó a precio completo: los servicios con descuento, precio especial o canje no suman */
+function ptsPromo(l){return (descPct()>0&&descSel.has(l.id))||!!l.descCli||(l.descuentoCliente&&+l.descuentoCliente.pct>0)||(l.especial&&l.especial.estado!=='rechazado')||!!l.canje||!!(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'&&cobroPts.canje.lineaId===l.id)}
+function ptsBase(){const ls=cobroTicket?lineasDe(cobroTicket).filter(l=>+l.precio>0||l.descCli):[],t=cobroTotales();let b=ls.filter(l=>!ptsPromo(l)).reduce((a,l)=>a+(+l.precio||0),0);
+  if(t){if(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo!=='servicio')b-=t.dPts||0;b-=t.cort||0}return Math.max(0,r2(b))}
+function ptsSinMotivo(){const ls=cobroTicket?lineasDe(cobroTicket):[],ex=ls.filter(l=>(+l.precio>0||l.descCli)&&ptsPromo(l));if(!ex.length&&!(typeof cortOn==='function'&&cortOn()))return '';
+  return ex.length?`${ex.map(l=>l.servicio).join(', ')} no suma${ex.length>1?'n':''} (tiene${ex.length>1?'n':''} descuento o promoción)`:'es cortesía'}
+function ptsGana(){return Math.floor(ptsBase()*ptsDolar())}
 async function aplicarPuntos(t,sub){
   const k=cobroPts.tel;if(!k||!db)return '';
   await db.doc('ticketsTel/'+t.id).set({tel:k,fecha:t.fecha||hoy()}).catch(()=>{});
