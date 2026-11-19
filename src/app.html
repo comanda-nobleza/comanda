@@ -3682,8 +3682,8 @@ const movMes=n=>{const [y,m]=agDia.split('-').map(Number);return ymd(new Date(y,
 function estHue(n){const i=cfg.estilistas.findIndex(e=>e.nombre===n);return Math.round(((i<0?cfg.estilistas.length+String(n).length:i)*137.5)%360)}
 const citasManana=()=>agDia===manana()?citas:citasMan;
 /* cuándo toca confirmar una cita: antes del mediodía → el día anterior; después del mediodía → ese mismo día;
-   las del lunes → desde el sábado */
-function confDesde(c){const dw=new Date(c.fecha+'T12:00:00').getDay();if(dw===1)return addDias(c.fecha,-2);return aMin(c.inicio||'00:00')<12*60?addDias(c.fecha,-1):c.fecha}
+   las del lunes en la mañana → desde el sábado (el domingo no cuenta) */
+function confDesde(c){const dw=new Date(c.fecha+'T12:00:00').getDay();if(aMin(c.inicio||'00:00')>=12*60)return c.fecha;return addDias(c.fecha,dw===1?-2:-1)}
 const pcHoy=()=>pcFut().filter(c=>confDesde(c)<=hoy());
 const pcFut=()=>unaPorGrupo(porConf.filter(c=>c.fecha>=hoy())).sort((a,b)=>(a.fecha+a.inicio).localeCompare(b.fecha+b.inicio));
 
