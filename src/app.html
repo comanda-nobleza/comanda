@@ -858,8 +858,9 @@ body:not(.es-web) .only-web{display:none!important}
       <div id="descCampos" hidden style="display:grid;gap:8px">
         <label class="f" for="descOtro" id="descOtroL" hidden>¿Qué porcentaje?<input id="descOtro" type="number" step="1" min="1" max="100" inputmode="numeric" placeholder="Ej.: 12"></label>
         <label class="f" for="descMot">Motivo<input id="descMot" autocomplete="off" placeholder="Ej.: clienta frecuente, convenio de empresa"></label>
+        <div id="descLin" style="display:grid;gap:6px"></div>
         <div id="descAut" style="display:grid;gap:6px"></div>
-        <small>Se descuenta de toda la cuenta y la comisión del profesional se calcula sobre el precio con descuento. Caja puede dar hasta 15%; más de 15% necesita autorización de gerencia.</small>
+        <small>Solo se descuenta de los servicios marcados; la comisión de ese profesional se calcula sobre el precio con descuento. Caja puede dar hasta 15%; más de 15% necesita autorización de gerencia.</small>
       </div>
     </fieldset>
     <fieldset id="cortBox">
@@ -1186,7 +1187,7 @@ function ticketCard(t,mode){
   const tot=mode==='est'?`<small>${ls.length} servicio${ls.length===1?'':'s'}</small>`:`<span class="tot">${money(sub)}<small style="font-weight:400"> + ITBMS</small></span>`;
   return `<article class="ticket"><div class="head"><span class="cliente">${esc(t.cliente)}</span><span class="hora">llegó ${hora(t.creado)}</span></div>
   <ul class="lines">${items}</ul>
-  ${mode!=='est'&&t.descSol?(()=>{const d=t.descSol,con=r2(sub*(1-(+d.pct||0)/100));return d.estado==='aprobada'?`<div class="notice ok" style="margin:6px 0"><span>✓ Descuento de <b>${d.pct}%</b> autorizado por ${esc(d.resp||'gerencia')} · con descuento: <b>${money(con)}</b> + ITBMS. Se aplica al tocar «Cerrar cuenta».</span></div>`:d.estado==='pendiente'?`<div class="notice warn" style="margin:6px 0"><span>⏳ Descuento de ${d.pct}% esperando autorización de gerencia.</span></div>`:`<div class="notice warn" style="margin:6px 0"><span>✗ Gerencia no autorizó el descuento de ${d.pct}%.</span></div>`})():''}
+  ${mode!=='est'&&t.descSol?(()=>{const d=t.descSol,con=r2(sub-(d.base!=null?+d.base:sub)*(+d.pct||0)/100);return d.estado==='aprobada'?`<div class="notice ok" style="margin:6px 0"><span>✓ Descuento de <b>${d.pct}%</b>${d.detalle?' en '+esc(d.detalle):''} autorizado por ${esc(d.resp||'gerencia')} · con descuento: <b>${money(con)}</b> + ITBMS. Se aplica al tocar «Cerrar cuenta».</span></div>`:d.estado==='pendiente'?`<div class="notice warn" style="margin:6px 0"><span>⏳ Descuento de ${d.pct}% esperando autorización de gerencia.</span></div>`:`<div class="notice warn" style="margin:6px 0"><span>✗ Gerencia no autorizó el descuento de ${d.pct}%.</span></div>`})():''}
   <div class="foot">${tot}<span class="row" style="gap:6px">${btns}</span></div></article>`;
 }
 
@@ -3010,39 +3011,46 @@ $('#svcForm').addEventListener('submit',async e=>{
 });
 
 /* ---------- hoja: cobrar ---------- */
-var cobDesc={p:0,otro:false};const DESC_OP=[5,10,15,20,25];
+var cobDesc={p:0,otro:false},descSel=new Set();const DESC_OP=[5,10,15,20,25];
+function descLineas(){const t=cobroTicket,ex=cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'?cobroPts.canje.lineaId:null;return t?lineasDe(t).filter(l=>+l.precio>0&&!l.canje&&l.id!==ex):[]}
+function descBase(){return r2(descLineas().filter(l=>descSel.has(l.id)).reduce((a,l)=>a+(+l.precio||0),0))}
+const descIds=()=>[...descSel].sort().join(',');
+function renderDescLin(){const bx=$('#descLin');if(!bx)return;const L=descLineas();if(!(cobDesc.p||cobDesc.otro)){bx.innerHTML='';return}
+  const h=`<span class="muted">¿A qué servicios se le aplica?</span>${L.map(l=>`<label style="display:flex;gap:10px;align-items:center"><input type="checkbox" data-descl="${l.id}" ${descSel.has(l.id)?'checked':''} style="width:20px;height:20px;flex:none"> <span>${esc(l.servicio)} · <b>${esc(l.estilista)}</b> · ${money(l.precio)}</span></label>`).join('')}${descSel.size?'':'<small class="neg">Marca el servicio que lleva el descuento.</small>'}`;
+  if(bx.innerHTML!==h)bx.innerHTML=h}
+document.addEventListener('change',e=>{const c=e.target.closest('[data-descl]');if(!c)return;if(c.checked)descSel.add(c.dataset.descl);else descSel.delete(c.dataset.descl);renderDescLin();renderDescAut();refreshCobro();{const t=cobroTotales();if(t&&!tarjUser){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}}refreshCuadra()});
 function descPct(){const v=cobDesc.otro?Math.round(+$('#descOtro').value||0):cobDesc.p;return v>0&&v<=100?v:0}
 function renderDesc(){const b=$('#descPick');if(!b)return;setTimeout(renderDescAut,0);b.innerHTML=`<button type="button" data-desc="0" aria-pressed="${!cobDesc.p&&!cobDesc.otro}">Sin descuento</button>`+DESC_OP.map(v=>`<button type="button" data-desc="${v}" aria-pressed="${!cobDesc.otro&&cobDesc.p===v}">${v}%</button>`).join('')+`<button type="button" data-desc="otro" aria-pressed="${cobDesc.otro}">Otro</button>`;
-  $('#descCampos').hidden=!(cobDesc.p||cobDesc.otro);$('#descOtroL').hidden=!cobDesc.otro}
+  $('#descCampos').hidden=!(cobDesc.p||cobDesc.otro);$('#descOtroL').hidden=!cobDesc.otro;renderDescLin()}
 const DESC_MAX_CAJA=15;
 function descTicket(){return tickets.find(x=>x.id===cobroTicket)}
-function descAutOk(){const v=descPct();if(!v||duena||PRAC||v<=DESC_MAX_CAJA)return true;const d=(descTicket()||{}).descSol;return !!(d&&d.estado==='aprobada'&&+d.pct===v)}
+function descAutOk(){const v=descPct();if(!v||duena||PRAC||v<=DESC_MAX_CAJA)return true;const d=(descTicket()||{}).descSol;return !!(d&&d.estado==='aprobada'&&+d.pct===v&&(!d.lineas||d.lineas.join(',')===descIds()))}
 function renderDescAut(){const bx=$('#descAut');if(!bx)return;const v=descPct();if(!v||duena||PRAC||v<=DESC_MAX_CAJA){bx.innerHTML='';return}
-  const d=(descTicket()||{}).descSol,mismo=d&&+d.pct===v;let h;
+  const d=(descTicket()||{}).descSol,mismo=d&&+d.pct===v&&(!d.lineas||d.lineas.join(',')===descIds());let h;
   if(mismo&&d.estado==='aprobada')h=`<span class="notice ok" style="margin:0">✓ ${esc(d.resp||'Gerencia')} autorizó el ${v}%.</span>`;
   else if(mismo&&d.estado==='pendiente')h=`<span class="notice warn" style="margin:0">⏳ Esperando que gerencia autorice el ${v}%. Cuando lo apruebe, aquí sale ✓ y podrás cerrar la cuenta.</span>`;
   else h=`${mismo&&d.estado==='rechazada'?`<span class="notice warn" style="margin:0">✗ ${esc(d.resp||'Gerencia')} no autorizó el ${v}%.</span>`:`<span class="notice warn" style="margin:0">El ${v}% pasa del 15% que puede dar caja.</span>`}<button type="button" class="btn small primary" id="descPedir" style="justify-self:start">Pedir autorización a gerencia</button>`;
   if(bx.innerHTML!==h)bx.innerHTML=h}
-document.addEventListener('click',async e=>{if(!e.target.closest('#descPedir'))return;const t=descTicket(),v=descPct(),mo=$('#descMot').value.trim();if(!t||!v)return;if(!mo){toast('Escribe primero el motivo del descuento.');$('#descMot').focus();return}
-  try{await db.doc('tickets/'+t.id).update({descSol:{pct:v,motivo:mo,por:cajero||encargada(),hora:new Date().toISOString(),estado:'pendiente'},descSolEstado:'pendiente'});t.descSol={pct:v,motivo:mo,estado:'pendiente'};renderDescAut();toast('Solicitud enviada a gerencia')}catch(err){toast('No se pudo enviar.')}});
+document.addEventListener('click',async e=>{if(!e.target.closest('#descPedir'))return;const t=descTicket(),v=descPct(),mo=$('#descMot').value.trim();if(!t||!v)return;if(!descSel.size){toast('Marca el servicio que lleva el descuento.');return}if(!mo){toast('Escribe primero el motivo del descuento.');$('#descMot').focus();return}const L=descLineas().filter(l=>descSel.has(l.id));
+  try{await db.doc('tickets/'+t.id).update({descSol:{pct:v,motivo:mo,por:cajero||encargada(),hora:new Date().toISOString(),estado:'pendiente',lineas:[...descSel].sort(),detalle:L.map(l=>`${l.servicio} (${l.estilista})`).join(', '),base:r2(L.reduce((a,l)=>a+(+l.precio||0),0))},descSolEstado:'pendiente'});t.descSol={pct:v,motivo:mo,estado:'pendiente',lineas:[...descSel].sort()};renderDescAut();toast('Solicitud enviada a gerencia')}catch(err){toast('No se pudo enviar.')}});
 setInterval(()=>{try{if(!$('#cobroSheet').hidden)renderDescAut()}catch(e){}},2000);
 var descSolPend=[],descSolUn=null;
 function subDescSol(){if(descSolUn||!db||!duena)return;descSolUn=db.collection('tickets').where('descSolEstado','==','pendiente').onSnapshot(s=>{descSolPend=s.docs.map(d=>({id:d.id,...d.data()}));renderDescSol();renderDyn()},()=>{descSolUn=null})}
 function renderDescSol(){const bx=$('#descSolBox');if(!bx)return;if(!duena||!descSolPend.length){bx.innerHTML='';return}
-  bx.innerHTML=`<div class="adel-pend"><h3>Descuentos por autorizar</h3>${descSolPend.map(t=>{const d=t.descSol||{},b=subtotalDe(t.id);return `<div class="adel-row"><div><b>${esc(t.cliente)}</b> · <b>${d.pct}%</b>${b?` (−${money(r2(b*d.pct/100))} de ${money(b)})`:''}<br><small>${esc(d.motivo||'')} · lo pide ${esc(d.por||'caja')}${d.hora?' a las '+hora(d.hora):''}</small></div>
+  bx.innerHTML=`<div class="adel-pend"><h3>Descuentos por autorizar</h3>${descSolPend.map(t=>{const d=t.descSol||{},b=d.base!=null?+d.base:subtotalDe(t.id);return `<div class="adel-row"><div><b>${esc(t.cliente)}</b> · <b>${d.pct}%</b>${b?` (−${money(r2(b*d.pct/100))} de ${money(b)})`:''}${d.detalle?`<br><small>En: <b>${esc(d.detalle)}</b></small>`:''}<br><small>${esc(d.motivo||'')} · lo pide ${esc(d.por||'caja')}${d.hora?' a las '+hora(d.hora):''}</small></div>
     <div class="row" style="gap:6px"><button class="btn small primary" data-dsol-ok="${t.id}">Autorizar</button><button class="btn small ghost danger" data-dsol-no="${t.id}">No autorizar</button></div></div>`}).join('')}</div>`}
 document.addEventListener('click',async e=>{const ok=e.target.closest('[data-dsol-ok]'),no=e.target.closest('[data-dsol-no]');if(!ok&&!no)return;const id=(ok||no).dataset[ok?'dsolOk':'dsolNo'],t=descSolPend.find(x=>x.id===id);if(!t)return;
   try{await db.doc('tickets/'+id).update({descSol:{...t.descSol,estado:ok?'aprobada':'rechazada',resp:porGer(),respHora:new Date().toISOString()},descSolEstado:ok?'aprobada':'rechazada'});toast(ok?'Descuento autorizado':'Descuento no autorizado')}catch(err){toast('No se pudo guardar.')}});
-function descReset(){cobDesc={p:0,otro:false};if($('#descOtro')){$('#descOtro').value='';$('#descMot').value=''}renderDesc()}
-document.addEventListener('click',e=>{const b=e.target.closest('#descPick [data-desc]');if(!b)return;const v=b.dataset.desc;cobDesc=v==='otro'?{p:0,otro:true}:{p:+v,otro:false};renderDesc();refreshCobro();{const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}}refreshCuadra();if(v==='otro')setTimeout(()=>$('#descOtro').focus(),30)});
+function descReset(){cobDesc={p:0,otro:false};descSel=new Set();if($('#descOtro')){$('#descOtro').value='';$('#descMot').value=''}renderDesc()}
+document.addEventListener('click',e=>{const b=e.target.closest('#descPick [data-desc]');if(!b)return;const v=b.dataset.desc;cobDesc=v==='otro'?{p:0,otro:true}:{p:+v,otro:false};if(v==='0')descSel=new Set();else if(!descSel.size){const L=descLineas();if(new Set(L.map(l=>l.estilista)).size===1)L.forEach(l=>descSel.add(l.id))}renderDesc();refreshCobro();{const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}}refreshCuadra();if(v==='otro')setTimeout(()=>$('#descOtro').focus(),30)});
 document.addEventListener('input',e=>{if(e.target.id!=='descOtro')return;renderDescAut();refreshCobro();const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}refreshCuadra()});
 async function aplicarDescCli(t,dCli,pct,motivo){if(!(dCli>0))return;const ex=cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'?cobroPts.canje.lineaId:null;
-  const base=lineasDe(t.id).filter(l=>+l.precio>0&&!l.canje&&l.id!==ex),tot=r2(base.reduce((x,l)=>x+(+l.precio||0),0));if(!(tot>0))return;let rest=dCli;const por=cajero||encargada();
+  const base=lineasDe(t.id).filter(l=>+l.precio>0&&!l.canje&&l.id!==ex&&descSel.has(l.id)),tot=r2(base.reduce((x,l)=>x+(+l.precio||0),0));if(!(tot>0))return;let rest=dCli;const por=cajero||encargada();
   for(let i=0;i<base.length;i++){const l=base[i],part=i===base.length-1?r2(rest):r2(dCli*(+l.precio||0)/tot);rest=r2(rest-part);
     await db.doc('lineas/'+l.id).update({precio:r2((+l.precio||0)-part),descCli:{pct,monto:part,precioNormal:+l.precio||0,motivo,por}})}}
 function cobroTotales(){
   const t=tickets.find(x=>x.id===cobroTicket);if(!t)return null;
-  const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),dCli=r2((bruto-dPts)*descPct()/100),cort=cortMontoDe(r2(bruto-dCli),dPts),sub=r2(bruto-dPts-dCli-cort), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
+  const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),dCli=r2(descBase()*descPct()/100),cort=cortMontoDe(r2(bruto-dCli),dPts),sub=r2(bruto-dPts-dCli-cort), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
   return {t,sub,imp,total:r2(sub+imp),bruto,dPts,dCli,cort};
 }
 let cdOpen=null;
@@ -3076,7 +3084,7 @@ function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab
   cdOpen=null;
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
   cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;
-  if(t.descSol&&t.descSol.estado!=='rechazada'&&+t.descSol.pct>0){const v=+t.descSol.pct;cobDesc=DESC_OP.includes(v)?{p:v,otro:false}:{p:0,otro:true};if(cobDesc.otro)$('#descOtro').value=v;$('#descMot').value=t.descSol.motivo||'';renderDesc()}cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
+  if(t.descSol&&t.descSol.estado!=='rechazada'&&+t.descSol.pct>0){const v=+t.descSol.pct;cobDesc=DESC_OP.includes(v)?{p:v,otro:false}:{p:0,otro:true};if(cobDesc.otro)$('#descOtro').value=v;$('#descMot').value=t.descSol.motivo||'';descSel=new Set((t.descSol.lineas||[]).filter(id=>lineasDe(t.id).some(l=>l.id===id)));renderDesc()}cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
   $('#cobroCliente').textContent=t.cliente;$('#cobroItbmsPct').textContent=cfg.itbms;
   $('#cobroItbms').checked=t.itbmsAplicado!==false;
   METODOS.forEach(m=>$(pId(m)).value='');
@@ -3141,6 +3149,7 @@ $('#cobroForm').addEventListener('submit',async e=>{
   if(cobroPts.canje&&(()=>{const sd=saldoPts(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).saldo;return sd<ptsMin()||sd<+cobroPts.canje.premio.puntos})()){toast('No le alcanzan los puntos para ese premio.');return}
   if(cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'){const cl=cobroPts.canje.lineaId;if(!cl){toast('Toca qué servicio de la cuenta cubre el premio.');return}const t0=tickets.find(x=>x.id===cobroTicket);if(t0&&!lineasDe(t0.id).some(l=>l.id!==cl&&!l.venta&&+l.precio>0)){toast('El premio de temporada se canjea junto con un servicio pagado.');return}}
   if(cobDesc.otro&&!descPct()){toast('Escribe el porcentaje del descuento.');$('#descOtro').focus();return}
+  if(descPct()&&!descSel.size){toast('Marca a qué servicio se le aplica el descuento.');$('#descBox').scrollIntoView({block:'center'});return}
   if(descPct()&&!$('#descMot').value.trim()){toast('Escribe el motivo del descuento.');$('#descMot').focus();return}
   if(!descAutOk()){toast(`Más de ${DESC_MAX_CAJA}% necesita autorización de gerencia. Toca «Pedir autorización a gerencia».`);$('#descBox').scrollIntoView({block:'center'});return}
   const p=c.net,propinas=c.props;
