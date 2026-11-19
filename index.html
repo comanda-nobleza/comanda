@@ -2500,10 +2500,18 @@ $('#ptsInfo').addEventListener('click',e=>{
   const l=e.target.closest('[data-canje-l]');if(l&&cobroPts.canje){cobroPts.canje.lineaId=l.dataset.canjeL;renderPtsCobro();refreshCobro();return}
   if(e.target.closest('[data-canje-x]')){cobroPts.canje=null;renderPtsCobro();refreshCobro()}
 });
+async function quitarPtsTicket(tid){try{const s=await db.collection('puntos').where('ticketId','==',tid).get();const tels=new Set();
+  for(const d of s.docs){const x=d.data();if(x.tipo==='gana'||x.tipo==='canje'){tels.add(x.tel+'|'+(x.cliente||''));await db.doc('puntos/'+d.id).delete()}}return [...tels]}catch(e){return []}}
+async function reabrirPts(tid){const tels=await quitarPtsTicket(tid);
+  for(const l of lineasDe(tid)){try{if(l.canje)await db.doc('lineas/'+l.id).update({precio:+l.canje.precioNormal||0,canje:{__delete__:true}});else if(l.canjeDesc)await db.doc('lineas/'+l.id).update({canjeDesc:{__delete__:true},canjeDescPremio:{__delete__:true}})}catch(e){}}
+  for(const x of tels){const [k,c]=x.split('|');await guardarResumenPts(k,c)}}
+function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).forEach(x=>(g[x.ticketId]=g[x.ticketId]||[]).push(x));
+  return Object.values(g).filter(a=>a.length>1).flatMap(a=>a.sort((p,q)=>(q.creado||'').localeCompare(p.creado||'')).slice(1))}
 async function aplicarPuntos(t,sub){
   const k=cobroPts.tel;if(!k||!db)return '';
   await db.doc('ticketsTel/'+t.id).set({tel:k,fecha:t.fecha||hoy()}).catch(()=>{});
   const now=new Date().toISOString(),f=hoy(),c=cobroPts.canje;let msg='';
+  await quitarPtsTicket(t.id);
   if(c){
     await db.collection('puntos').add({tel:k,cliente:t.cliente,tipo:'canje',puntos:-(+c.premio.puntos),premio:c.premio.nombre,premioTipo:c.premio.tipo,ticketId:t.id,fecha:f,creado:now,por:enCaja()});
     if(c.premio.tipo==='descuento'&&+c.premio.monto>0){const ls=lineasDe(t.id),sv=ls.filter(l=>!l.venta&&+l.precio>0),base=(sv.length?sv:ls.filter(l=>+l.precio>0)),tot=r2(base.reduce((x,l)=>x+(+l.precio||0),0)),D=Math.min(r2(+c.premio.monto),tot);let rest=D;
@@ -2553,6 +2561,8 @@ async function verPuntos(){
     out.innerHTML=`<div class="adel"><div class="pts-sum"><b>${saldo} puntos</b><small>${esc(nom||'Sin movimientos todavía')}${prox?` · ${prox.puntos} vencen el ${fechaCorta(prox.fecha)}`:''}</small>${s?`<span>Le faltan ${s.faltan} para ${esc(s.p.nombre)}</span>`:''}</div>
       ${cli&&cli.nombre&&cli.cumpleMes?`<div class="fc-box" id="fichaVer"><b>Ficha de la clienta</b><span>${esc((cli.nombre||'')+' '+(cli.apellido||''))} · 🎂 ${cumpleTxt(cli)}</span>${cli.ultimaVisita?`<small class="muted">Última visita: ${fechaCorta(cli.ultimaVisita)}</small>`:''}<button type="button" class="btn small ghost" style="justify-self:start" data-ficha-edit>Editar ficha</button></div>`:''}
       <form class="fc-box" id="fichaCliForm" ${cli&&cli.nombre&&cli.cumpleMes?'hidden style="display:none"':''}><b>${cli?'Editar ficha de la clienta':'🆕 Crear ficha de la clienta'}</b>${fichaCampos('fx',cli,nom.split(' / ')[0]||'')}${cli&&cli.ultimaVisita?`<small class="muted">Última visita: ${fechaCorta(cli.ultimaVisita)}${cli.cumplePts?` · regalo de cumpleaños ${cli.cumplePts}`:''}</small>`:''}<button class="btn small" style="justify-self:start">Guardar ficha</button></form>
+      ${(()=>{const d=ptsDuplicados(m),v=d.reduce((a,x)=>a+(+x.puntos||0),0);return d.length?`<div class="notice warn" style="display:grid;gap:8px"><span>⚠️ Esta clienta tiene <b>${v} puntos de más</b>: una misma cuenta le sumó puntos ${d.length+1>2?'varias veces':'dos veces'} (se cerró más de una vez).</span><button type="button" class="btn small primary" id="ptsDupBtn" style="justify-self:start">Quitar los ${v} puntos de más</button></div>`:''})()}
+      ${duena?`<form class="inline-form" id="ptsAjForm"><input id="ptsAjN" type="number" step="1" inputmode="numeric" placeholder="Ej.: -50 o 20" aria-label="Puntos a sumar o restar" style="flex:0 1 130px"><input id="ptsAjM" placeholder="Motivo del ajuste" aria-label="Motivo del ajuste"><button class="btn">Ajustar puntos</button></form><small class="muted">Solo gerencia. Usa número negativo para quitar puntos.</small>`:''}
       ${m.length?`<button type="button" class="btn small wa" id="ptsWaBtn" style="justify-self:start">Enviarle su saldo por WhatsApp</button>`:''}
       ${(()=>{const mg=m.find(x=>x.tipo==='migracion');return mg?`<small class="muted">✓ Tarjeta de sellos ya cargada (${mg.sellos} sellos, ${fechaCorta(mg.fecha)}).</small>`:''})()}
       ${m.some(x=>x.tipo==='migracion')?'':`<form class="inline-form" id="selloForm"><input id="selloNom" placeholder="Nombre de la clienta" value="${esc(nom.split(' / ')[0]||'')}" aria-label="Nombre"><input id="selloN" type="number" min="1" max="10" inputmode="numeric" placeholder="Sellos" aria-label="Sellos de la tarjeta" style="flex:0 1 100px"><button class="btn">Cargar tarjeta de sellos</button></form>
@@ -2561,9 +2571,12 @@ async function verPuntos(){
   }catch(e){out.innerHTML='<div class="empty">No se pudo buscar ('+esc(e.code||'error')+').</div>'}
 }
 $('#ptsForm').addEventListener('submit',e=>{e.preventDefault();verPuntos()});
-$('#ptsOut').addEventListener('click',async e=>{if(e.target.closest('[data-ficha-edit]')){const f=$('#fichaCliForm');f.hidden=false;f.style.display='';$('#fichaVer').style.display='none';return}if(!e.target.closest('#ptsWaBtn'))return;const k=telKey($('#ptsQ').value);const m=await movsPts(k),r=saldoPts(m),nom=(m.find(x=>x.cliente)||{}).cliente||'';abrirPostPuntos(nom,k,0,null,r.saldo,r.prox,m.some(x=>x.tipo==='canje'));$('#postTit').textContent='Puntos de '+(nom||'la clienta')});
+$('#ptsOut').addEventListener('click',async e=>{const db2=e.target.closest('#ptsDupBtn');if(db2){if(!armed(db2))return;db2.disabled=true;try{const k=telKey($('#ptsQ').value),m=await movsPts(k),d=ptsDuplicados(m);for(const x of d)await db.doc('puntos/'+x.id).delete();await guardarResumenPts(k,(m.find(x=>x.cliente)||{}).cliente||'');toast(`Listo: se quitaron ${d.reduce((a,x)=>a+(+x.puntos||0),0)} puntos de más`);verPuntos()}catch(err){toast('No se pudo quitar.');db2.disabled=false}return}
+  if(e.target.closest('[data-ficha-edit]')){const f=$('#fichaCliForm');f.hidden=false;f.style.display='';$('#fichaVer').style.display='none';return}if(!e.target.closest('#ptsWaBtn'))return;const k=telKey($('#ptsQ').value);const m=await movsPts(k),r=saldoPts(m),nom=(m.find(x=>x.cliente)||{}).cliente||'';abrirPostPuntos(nom,k,0,null,r.saldo,r.prox,m.some(x=>x.tipo==='canje'));$('#postTit').textContent='Puntos de '+(nom||'la clienta')});
 $('#ptsOut').addEventListener('submit',async e=>{
   if(e.target.id==='fichaCliForm'){e.preventDefault();if(!needDb())return;const k=telKey($('#ptsQ').value),d=leerFicha('fx');if(!d||!d.nombre){toast('Escribe el nombre.');return}if(($('#fxDia').value&&!$('#fxMes').value)||(!$('#fxDia').value&&$('#fxMes').value)){toast('Elige día y mes del cumpleaños.');return}try{await guardarCliente(k,d);toast('Ficha guardada');verPuntos()}catch(err){toast('No se pudo guardar.')}return}
+  if(e.target.id==='ptsAjForm'){e.preventDefault();if(!needDb()||!duena)return;const k=telKey($('#ptsQ').value),n=Math.round(+$('#ptsAjN').value||0),mo=$('#ptsAjM').value.trim();if(!n)return toast('Escribe cuántos puntos (negativo para quitar).');if(!mo)return toast('Escribe el motivo.');
+    try{const m=await movsPts(k),nom=(m.find(x=>x.cliente)||{}).cliente||'';if(n<0&&saldoPts(m).saldo+n<0)return toast('No puede quedar en negativo. Saldo actual: '+saldoPts(m).saldo);await db.collection('puntos').add({tel:k,cliente:nom,tipo:'ajuste',puntos:n,nota:'Ajuste de gerencia: '+mo,fecha:hoy(),creado:new Date().toISOString(),por:porGer()});await guardarResumenPts(k,nom);toast(`Ajuste guardado: ${n>0?'+':''}${n} puntos`);verPuntos()}catch(err){toast('No se pudo guardar.')}return}
   if(e.target.id!=='selloForm')return;e.preventDefault();if(!needDb())return;
   const k=telKey($('#ptsQ').value),n=Math.round(+$('#selloN').value||0),nom=$('#selloNom').value.trim();
   if(!k)return toast('Teléfono no válido.');if(!nom)return toast('Escribe el nombre de la clienta.');if(!(n>=1&&n<=10))return toast('Los sellos van de 1 a 10.');
@@ -2598,7 +2611,7 @@ document.addEventListener('click',async e=>{
   else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
     await db.doc('lineas/'+id).delete();if(l0&&l0.paqueteId)await paqRecontar(l0.paqueteId);if(l0&&l0.invId)try{await invMover(l0.invId,{dc:1,tipo:'Venta anulada',nota:l0.cliente||''})}catch(err){}}catch(err){toast('No se pudo quitar.')}}
   else if(act==='del-ticket'){if(!armed(b))return;try{await db.doc('tickets/'+id).delete()}catch(err){toast('No se pudo eliminar.')}}
-  else if(act==='reabrir'){if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta'});toast('Comanda reabierta')}catch(err){toast('No se pudo reabrir.')}}
+  else if(act==='reabrir'){if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta'});await reabrirPts(id);toast('Comanda reabierta. Los puntos de esa cuenta se quitaron; se vuelven a sumar al cerrarla.')}catch(err){toast('No se pudo reabrir.')}}
   else if(act==='del-gasto'){if(!armed(b))return;try{await db.doc('gastos/'+id).delete()}catch(err){toast('No se pudo borrar.')}}
 });
 $$('[data-close]').forEach(b=>b.onclick=()=>{b.closest('.sheet-bg').hidden=true});
