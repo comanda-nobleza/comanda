@@ -729,7 +729,7 @@ body:not(.es-web) .only-web{display:none!important}
       <div class="panel">
         <h3>Personal</h3>
         <small>En <b>Área</b> puedes poner varias separadas por coma, en el orden en que la persona las ve (ej.: <i>Barbería, Peluquería</i>). Marca <b>Pestañas</b> para que vea cada área en su propia pestaña. <b>Planta</b>: entra a la app y tiene agenda. <b>Externo</b>: no entra a la app; con alquiler es <b>alquilado</b>, sin alquiler es <b>eventual</b>. En Cuentas se elige con <b>Alquilado o eventual…</b> y sale en Quincena. Un alquilado nuevo que no esté aquí se puede escribir a mano y cobra la comisión base.</small>
-        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th></th></tr></thead><tbody></tbody></table></div>
         <button class="btn small" data-addrow="ajEst" style="justify-self:start">+ Estilista</button>
       </div>
       <div class="panel">
@@ -1081,8 +1081,20 @@ function renderInicio(){
   $('#nombres').innerHTML=todos().length?(verAlq?`<button class="alq-back" data-alq-ver="0">‹ Personal de planta</button>`:'')+lista.map(bt).join('')+(!verAlq&&evs.length?`<button class="alq-btn" data-alq-ver="ev">Soy eventual</button>`:'')+(!verAlq&&alqs.length?`<button class="alq-btn" data-alq-ver="alq">Soy alquilado</button>`:''):`<div class="empty" style="grid-column:1/-1">${cfgLoaded?'Todavía no hay estilistas. La encargada los agrega en Caja → Ajustes.':'Cargando nombres…'}</div>`;
   $('#cajaPin').hidden=!cfg.pinCaja;$('#duenaPin').hidden=!cfg.pinDuenas;
 }
-$('#nombres').addEventListener('click',e=>{const v=e.target.closest('[data-alq-ver]');if(v){verAlq=v.dataset.alqVer==='0'?false:v.dataset.alqVer;renderInicio();return}const b=e.target.closest('[data-nombre]');if(b){if(store.get('disp')!=='caja'){yo=b.dataset.nombre;store.set('yo',yo)}setModo('est',b.dataset.nombre)}});
-$('#yoEntrar').onclick=()=>setModo('est',yo);
+$('#nombres').addEventListener('click',e=>{const v=e.target.closest('[data-alq-ver]');if(v){verAlq=v.dataset.alqVer==='0'?false:v.dataset.alqVer;renderInicio();return}const b=e.target.closest('[data-nombre]');if(b){entrarEst(b.dataset.nombre,true)}});
+$('#yoEntrar').onclick=()=>entrarEst(yo,false);
+function pinDe(n){const e=cfg.estilistas.find(x=>x.nombre===n);return e&&String(e.pin||'').trim()}
+function entrarEst(n,recordar){const pin=pinDe(n),caja=store.get('disp')==='caja';
+  const ok=()=>{if(recordar&&!caja){yo=n;store.set('yo',yo)}setModo('est',n)};
+  if(!pin||PRAC||(!caja&&store.get('pin:'+n)===pin))return ok();
+  pinPedir(n,pin,()=>{if(!caja)store.set('pin:'+n,pin);ok()})}
+function pinPedir(n,pin,listo){let d=$('#pinEstSheet');if(!d){d=document.createElement('div');d.id='pinEstSheet';d.className='sheet-bg';document.body.appendChild(d)}
+  d.innerHTML=`<form class="sheet" style="max-width:380px;display:grid;gap:12px" novalidate><h3>Hola, ${esc(n)}</h3><small class="muted">Escribe tu PIN para entrar.${store.get('disp')==='caja'?'':' Este teléfono lo recordará.'}</small>
+    <input id="pinEstIn" type="password" inputmode="numeric" autocomplete="off" maxlength="8" style="font-size:1.6rem;text-align:center;letter-spacing:.4em" aria-label="PIN">
+    <small id="pinEstMsg" class="neg"></small><div class="actions"><button type="button" class="btn ghost" data-pinx>Cancelar</button><button class="btn primary">Entrar</button></div></form>`;
+  d.hidden=false;setTimeout(()=>$('#pinEstIn')?.focus(),50);
+  d.querySelector('[data-pinx]').onclick=()=>{d.hidden=true};
+  d.querySelector('form').onsubmit=e=>{e.preventDefault();if($('#pinEstIn').value.trim()===pin){d.hidden=true;listo()}else{$('#pinEstMsg').textContent='PIN incorrecto. Si lo olvidaste, pídeselo a gerencia.';$('#pinEstIn').value='';$('#pinEstIn').focus()}}}
 $('#yoNo').onclick=()=>{yo='';store.set('yo',null);renderInicio()};
 $('#cajaForm').addEventListener('submit',e=>{e.preventDefault();if(cfg.pinCaja&&$('#cajaPin').value!==String(cfg.pinCaja)){$('#cajaPinMsg').textContent='PIN incorrecto.';return}$('#cajaPin').value='';$('#cajaPinMsg').textContent='';
   $('#cajaNombres').innerHTML=[encargada(),...cubreCaja().filter(n=>n!==encargada())].map(n=>`<button type="button" data-cajero="${esc(n)}">${esc(n)}</button>`).join('');
@@ -3414,7 +3426,7 @@ function xlVis(){$$('.xl-btn').forEach(b=>b.disabled=!dl);$$('.xl-off').forEach(
 
 /* ---------- ajustes ---------- */
 const AJ={
-  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo']],src:()=>cfg.estilistas},
+  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin']],src:()=>cfg.estilistas},
   ajVAlq:{cols:[['nombre','text'],['precio','number']],src:()=>vaProds()},
   ajPrem:{cols:[['nombre','text'],['tipo','ptipo'],['puntos','number'],['monto','number'],['temporada','text'],['desde','date'],['hasta','date']],src:()=>cfg.premios||[]},
   ajSvc:{cols:[['nombre','text'],['area','text'],['pestana','text'],['categoria','text'],['precio','number'],['descuento','number'],['descuentoPct','number'],['libre','check'],['minimo','number'],['detalle','check'],['especial','check'],['formula','check'],['variantes','list'],['precios','list'],['descuentosPct','list'],['extra','check'],['productos','list'],['sesiones','number']],src:()=>cfg.servicios},
@@ -3423,6 +3435,7 @@ let ajSeq=0;
 function ajCell(id,k,ty,v){const fid=`${id}-${ajSeq++}`;
   if(ty==='ptipo')return `<td><select id="${fid}" aria-label="Tipo de premio" data-k="${k}">${Object.entries(PTS_TIPO).map(([a,b])=>`<option value="${a}" ${v===a?'selected':''}>${b}</option>`).join('')}</select></td>`;
   if(ty==='tipo')return `<td><select id="${fid}" aria-label="Tipo de personal" data-k="${k}" style="min-width:170px"><option value="planta">Planta</option><option value="externo" ${v==='externo'?'selected':''}>Externo</option></select></td>`;
+  if(ty==='pin')return `<td><input id="${fid}" aria-label="PIN del profesional" data-k="${k}" type="text" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="4 números" style="width:90px" value="${esc(v??'')}"></td>`;
   if(ty==='check')return `<td><input id="${fid}" aria-label="${k}" data-k="${k}" type="checkbox" ${v?'checked':''}></td>`;
   if(ty==='list')return `<td><input id="${fid}" aria-label="${k==='precios'?'Precios a elegir':k==='variantes'?'Opciones a elegir':k==='descuentosPct'?'Descuentos a la clienta':k==='sinComision'?'Servicios sin comisión':'Productos que descuenta'}" data-k="${k}" data-t="list" value="${esc(Array.isArray(v)?v.join(', '):'')}" placeholder="${k==='precios'?'Ej.: 60, 90':k==='descuentosPct'?'Ej.: 10, 20':k==='sinComision'?'Ej.: Lavado regular Fanola':k==='variantes'?'Ej.: Nutritive, Smoothing':v==null?'(todos los del área)':'ninguno'}" style="min-width:${k==='precios'?110:170}px"></td>`;
   return `<td${ty==='number'?' class="n"':''}><input id="${fid}" aria-label="${k}" data-k="${k}" type="${ty}" ${ty==='number'?'step="0.01" style="text-align:right;width:90px"':''} ${k==='area'?'list="areasList" style="min-width:130px"':k==='categoria'?'list="catsList" style="min-width:120px" placeholder="Ej.: Pedicura"':''} value="${esc(v??'')}"></td>`}
