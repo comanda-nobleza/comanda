@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="63d60c283af4"</script>
-<script src="web.js?v=63d60c283af4"></script>
+<script>window.BUILD="a95c3a0e8024"</script>
+<script src="web.js?v=a95c3a0e8024"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -436,6 +436,15 @@ body:not(.es-web) .only-web{display:none!important}
 #webLogin h1{font-family:var(--display);color:var(--accent);font-size:2.4rem;margin:0}#webLogin p{margin:0;letter-spacing:.2em;text-transform:uppercase;font-size:.8rem;color:var(--muted)}
 #webLogin form{display:grid;gap:12px;text-align:left;margin-top:12px}
 .th-box{gap:10px}.th-g>summary{cursor:pointer;padding:4px 0}.th-l{display:grid;gap:6px;margin-top:6px}.th-r{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.th-r>div:first-child{flex:1 1 320px;min-width:0}.th-b{gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}.th-sel{width:auto!important;flex:0 0 auto;min-height:0;padding:6px 28px 6px 10px;font-size:13px;border-radius:999px}.th-sel.danger{color:var(--bad,#e57373)}
+.tl{position:relative;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
+.tl-h{position:absolute;left:0;right:0;border-top:1px solid var(--line);height:0}.tl-h span{position:absolute;left:6px;top:-8px;font-size:.7rem;color:var(--muted);background:var(--surface);padding:0 3px}
+.tl-hh{position:absolute;left:52px;right:0;border-top:1px dashed var(--line);opacity:.5;height:0}
+.tl-ev{position:absolute;border:0;border-radius:8px;padding:4px 7px;text-align:left;font:inherit;font-size:.78rem;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.25);border-left:4px solid hsl(var(--h) 60% 50%)}
+.tl-ev b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-ev small{display:block;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tl-ev.pc{outline:1.5px dashed currentColor;outline-offset:-2px}.tl-ev.llego{opacity:.75}
+.tl-bl{position:absolute;left:56px;right:4px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--line) 0 6px,transparent 6px 12px);color:var(--muted);font-size:.75rem;padding:4px 8px}
+.tl-now{position:absolute;left:52px;right:0;height:0;border-top:2px solid #e5534b;z-index:3}.tl-now::before{content:'';position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:#e5534b}
+.tl-dia{display:grid;gap:4px;margin-bottom:6px}
 </style>
 
 <div id="pracBar" class="prac-bar" hidden><span>🎓 <b>Práctica</b> · nada se guarda</span><button type="button" class="btn small" id="pracSalir">Salir</button></div>
@@ -953,6 +962,7 @@ body:not(.es-web) .only-web{display:none!important}
     <div class="actions"><button class="btn primary" id="perfilGuardar">Guardar y entrar</button></div>
   </form>
 </div>
+<div class="sheet-bg" id="citaDetSheet" hidden><div class="sheet"><div id="citaDetBody" style="display:grid;gap:10px"></div><div class="actions"><button type="button" class="btn ghost" data-close>Cerrar</button></div></div></div>
 <div class="sheet-bg" id="citaSheet" hidden>
   <form class="sheet" id="citaForm" novalidate>
     <h3 id="ciTit">Nueva cita</h3>
@@ -3838,6 +3848,11 @@ async function renderEstRango(out){const [a,b]=rangoEst(),key=soy+a+b;
     if(rangoEst().join('')!==a+b||modo!=='est')return}
   const C=estRC.C.filter(activa),B=estRC.B,dias=[...new Set([...C.map(c=>c.fecha),...B.map(x=>x.fecha)])].sort();
   const n=C.length;
+  if(agVE==='mes'){const [ga,gb,first]=mesRango(),mm=first.getMonth(),cel=[];
+    for(let f=ga;f<=gb;f=addDias(f,1)){const d=new Date(f+'T12:00:00'),fuera=d.getMonth()!==mm,cs=C.filter(c=>c.fecha===f).sort((x,y)=>aMin(x.inicio)-aMin(y.inicio)),bs=B.filter(x=>x.fecha===f);
+      const items=[...bs.map(x=>`<span class="mi lib">${x.todoDia?'Libre':'Cerrado '+h12(x.desde).replace(' m.','')}</span>`),...cs.map(c=>`<span class="mi ec ${c.estado==='por_confirmar'?'pc':''}" style="--h:${estHue(soy)}">${h12(c.inicio).replace(' p. m.','p').replace(' a. m.','a')} ${esc(primerNombre(c.cliente))}</span>`)];
+      cel.push(`<button type="button" class="mc ${fuera?'fuera':''} ${f===hoy()?'hoy':''}" data-ve-dia="${f}" aria-label="${fechaLarga(f)}: ${cs.length} citas"><span class="mn">${d.getDate()}</span>${items.slice(0,4).join('')}${items.length>4?`<span class="mas">+${items.length-4} más</span>`:''}${cs.length?`<span class="cnt">${cs.length}</span>`:bs.some(x=>x.todoDia)?'<span class="cnt" style="color:var(--muted)">libre</span>':''}</button>`)}
+    out.innerHTML=`<div class="mes">${['D','L','M','M','J','V','S'].map(x=>`<div class="dow">${x}</div>`).join('')}${cel.join('')}</div><small>${n?`${n} cita${n===1?'':'s'} este mes. `:'No tienes citas este mes. '}Toca un día para ver tus citas por hora. Tu agenda la maneja <b>caja</b>.</small>`;return}
   out.innerHTML=(dias.length?`<div style="display:grid;gap:10px">${dias.map(f=>{const cs=C.filter(c=>c.fecha===f).sort((x,y)=>(x.inicio||'').localeCompare(y.inicio||'')),bs=B.filter(x=>x.fecha===f);
     return `<button type="button" class="ag-dia-r" data-ve-dia="${f}"><div class="row between"><b>${fechaCorta(f)}${f===hoy()?' · Hoy':''}</b><small>${cs.length?`${cs.length} cita${cs.length===1?'':'s'}`:''}</small></div>
       ${bs.map(x=>`<small class="muted">${x.todoDia?'Día libre':`Cerrado ${h12(x.desde)} a ${h12(x.hasta)}`}${x.motivo?' · '+esc(x.motivo):''}</small>`).join('')}
@@ -3886,12 +3901,38 @@ function citaHtml(c,mode,conEst){
 function bloqHtml(x,mode){
   return `<div class="bloq"><span>${x.todoDia?'Cerrado todo el día':`Cerrado ${h12(x.desde)} a ${h12(x.hasta)}`} · ${esc(x.motivo||'')}</span>${mode==='caja'?`<button class="btn ghost small danger" data-ag="quitar-bloq" data-id="${x.id}">Abrir de nuevo</button>`:''}</div>`;
 }
+/* ---------- vista de día tipo calendario (por horas) ---------- */
+const TL_PX=60;
+function tlHtml(cs,bs,mode,conEst){
+  const act=cs.filter(activa),todoDia=bs.filter(b=>b.todoDia),parc=bs.filter(b=>!b.todoDia);
+  let h0=8*60,h1=20*60;act.forEach(c=>{h0=Math.min(h0,Math.floor(aMin(c.inicio)/60)*60);h1=Math.max(h1,Math.ceil(finDe(c)/60)*60)});parc.forEach(b=>{h0=Math.min(h0,Math.floor(aMin(b.desde)/60)*60);h1=Math.max(h1,Math.ceil(aMin(b.hasta)/60)*60)});
+  const y=m=>(m-h0)*TL_PX/60+12,H=y(h1)+12;let g='';
+  for(let m=h0;m<=h1;m+=60){g+=`<div class="tl-h" style="top:${y(m)}px"><span>${h12(deMin(m)).replace(':00','')}</span></div>`;if(m<h1)g+=`<div class="tl-hh" style="top:${y(m+30)}px"></div>`}
+  parc.forEach(b=>{g+=`<div class="tl-bl" style="top:${y(aMin(b.desde))}px;height:${Math.max(20,y(aMin(b.hasta))-y(aMin(b.desde)))}px">${conEst?esc(b.estilista)+' · ':''}Cerrado · ${esc(b.motivo||'')}</div>`});
+  const ev=act.map(c=>({c,a:aMin(c.inicio),z:Math.max(finDe(c),aMin(c.inicio)+15)})).sort((p,q)=>p.a-q.a||q.z-p.z);
+  let grp=[],fin=-1;const grupos=[];ev.forEach(e=>{if(e.a>=fin&&grp.length){grupos.push(grp);grp=[]}grp.push(e);fin=Math.max(fin,e.z)});if(grp.length)grupos.push(grp);
+  grupos.forEach(G=>{const cols=[];G.forEach(e=>{let k=cols.findIndex(z=>z<=e.a);if(k<0){k=cols.length;cols.push(0)}cols[k]=e.z;e.k=k});const n=cols.length;
+    G.forEach(e=>{const c=e.c,hgt=Math.max(26,y(e.z)-y(e.a)-2);
+      g+=`<button type="button" class="tl-ev ec ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''}" data-tl="${c.id}" style="--h:${estHue(c.estilista)};top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
+        <b>${h12(c.inicio).replace(' a. m.','a').replace(' p. m.','p')} ${esc(c.cliente)}</b>${hgt>34?`<small>${esc(svcTodos(c)||'')}${conEst?' · '+esc(c.estilista):''}</small>`:''}${hgt>52?`<small>${c.estado==='por_confirmar'?'Por confirmar':c.estado==='llego'?'✓ Llegó':'Confirmada'}</small>`:''}</button>`})});
+  if(agDia===hoy()){const n=new Date(),m=n.getHours()*60+n.getMinutes();if(m>=h0&&m<=h1)g+=`<div class="tl-now" style="top:${y(m)}px"></div>`}
+  const inact=cs.filter(c=>!activa(c));
+  return `${todoDia.length?`<div class="tl-dia">${todoDia.map(b=>`<div class="tl-bl" style="position:static">${conEst?esc(b.estilista)+' · ':''}Día libre / agenda cerrada${b.motivo?' · '+esc(b.motivo):''}${mode==='caja'?` <button class="btn small ghost" data-ag="quitar-bloq" data-id="${b.id}">Abrir agenda</button>`:''}</div>`).join('')}</div>`:''}
+    <div class="tl" style="height:${H}px">${g}</div>
+    ${inact.length?`<details><summary><small class="muted">Canceladas / no vinieron (${inact.length})</small></summary><div style="display:grid;gap:8px;margin-top:8px">${inact.map(c=>citaHtml(c,mode,conEst)).join('')}</div></details>`:''}
+    <small class="muted">Toca una cita para ver los detalles y las opciones.</small>`}
+var tlSel=null;
+function renderTlDet(){const sh=$('#citaDetSheet');if(!sh||sh.hidden||!tlSel)return;const c=citas.find(x=>x.id===tlSel);if(!c){sh.hidden=true;tlSel=null;return}
+  const h=citaHtml(c,modo==='caja'?'caja':'est',modo==='caja');const bx=$('#citaDetBody');if(bx.innerHTML!==h)bx.innerHTML=h}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-tl]');if(t){tlSel=t.dataset.tl;$('#citaDetBody').innerHTML='';$('#citaDetSheet').hidden=false;renderTlDet();return}
+  const sh=$('#citaDetSheet');if(e.target===sh){sh.hidden=true;return}
+  const a=e.target.closest('#citaDetSheet [data-ag]');if(a&&['editar','agregar'].includes(a.dataset.ag))setTimeout(()=>{sh.hidden=true},0)});
 function itemsEst(est,mode){
   const cs=citas.filter(c=>c.estilista===est), bs=bloqueos.filter(b=>b.estilista===est);
   const it=[...bs.map(x=>({k:x.todoDia?-1:aMin(x.desde),h:bloqHtml(x,mode)})),...cs.map(c=>({k:aMin(c.inicio)+(activa(c)?0:.5),h:citaHtml(c,mode)}))].sort((a,b)=>a.k-b.k);
   return {cs,bs,html:it.map(i=>i.h).join('')};
 }
-function renderAgenda(){
+function renderAgenda(){try{renderTlDet()}catch(e){}
   const enMes=modo==='caja'&&agVista==='mes';
   if(agVista==='est')agVista='dia';
   $$('#agVista button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='mes'?agVista==='mes':agVista==='dia'&&agDia===(x.dataset.v==='man'?manana():hoy())));
@@ -3903,7 +3944,7 @@ function renderAgenda(){
     $$('#agVistaEst button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ve==='mes'?agVE==='mes':agVE==='dia'&&agDia===(x.dataset.ve==='man'?manana():hoy())));
     if(agVE!=='dia'){$('#agPrev').setAttribute('aria-label',agVE==='mes'?'Mes anterior':'Semana anterior');$('#agNext').setAttribute('aria-label',agVE==='mes'?'Mes siguiente':'Semana siguiente');renderEstRango(out);return}
     const {cs,bs,html}=itemsEst(soy,'est');
-    out.innerHTML=(cs.length||bs.length)?`<div class="ag-est">${html}</div><small>Tu agenda la maneja <b>caja</b>. Si necesitas una cita o un cambio, pídeselo a caja.</small>`:`<div class="empty">No tienes citas este día. Si una clienta te escribe para agendar, pásale el contacto a caja.</div>`;
+    out.innerHTML=(cs.length||bs.length)?`${tlHtml(cs,bs,'est',false)}<small>Tu agenda la maneja <b>caja</b>. Si necesitas una cita o un cambio, pídeselo a caja.</small>`:`<div class="empty">No tienes citas este día. Si una clienta te escribe para agendar, pásale el contacto a caja.</div>`;
     return;
   }
   // caja
@@ -3924,7 +3965,7 @@ function renderAgenda(){
     const bs=bloqueos.filter(x=>!agFiltro||x.estilista===agFiltro).sort((a,b)=>(a.todoDia?-1:aMin(a.desde))-(b.todoDia?-1:aMin(b.desde)));
     const act=cs.filter(activa).length;
     out.innerHTML=`${bs.length?`<div class="ag-est"><header><h3>Agenda cerrada</h3></header>${bs.map(x=>bloqHtml({...x,motivo:x.estilista+' · '+(x.motivo||'')},'caja')).join('')}</div>`:''}
-    ${cs.length?`<div class="ag-est"><header><h3>${act} cita${act===1?'':'s'} ${agFiltro?'de '+esc(agFiltro):'en el salón'}</h3><small>Ordenadas por hora</small></header>${cs.map(c=>citaHtml(c,'caja',true)).join('')}</div>`:`<div class="empty">No hay citas este día${agFiltro?' para '+esc(agFiltro):''}.</div>`}`;
+    ${cs.length?`<div class="row between"><h3 style="margin:0">${act} cita${act===1?'':'s'} ${agFiltro?'de '+esc(agFiltro):'en el salón'}</h3></div>${tlHtml(cs,[],'caja',!agFiltro)}`:`<div class="empty">No hay citas este día${agFiltro?' para '+esc(agFiltro):''}.</div>`}`;
     return;
   }
   const lista=agFiltro?[agFiltro]:todos, libres=[];
