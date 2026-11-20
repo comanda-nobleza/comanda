@@ -40,7 +40,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{border:0;background:none;padding:10px 12px;border-bottom:2px solid transparent;color:var(--muted);font-weight:600;white-space:nowrap;cursor:pointer}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-.badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:.75rem;line-height:20px;text-align:center}.badge.bad{background:var(--bad,#e57373);color:#fff}
+.badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:.75rem;line-height:20px;text-align:center}.badge.pt{background:var(--line);color:inherit}.badge.bad{background:var(--bad,#e57373);color:#fff}
 
 /* bottom nav (estilista) */
 .bnav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -447,7 +447,7 @@ body.tel #v-resumen.solo-pend > h2:not(:first-of-type),body.tel #v-resumen.solo-
 body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 .mas-l{display:grid;gap:8px}.mas-l button{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;font:inherit;font-weight:600;cursor:pointer}.mas-l .ic{font-size:1.3rem}
 #bnav .ic{font-size:1.45rem;line-height:1.2}#bnav button{gap:0}
-.tl-ev.baja{opacity:.45;filter:grayscale(.5)}.tl-ev.baja b{text-decoration:line-through}
+.tl-ev.puerta{background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.07) 8px 16px)}.tl-ev.puerta.sinas{--h:40!important;--s:8%!important}.tl-ev.baja{opacity:.45;filter:grayscale(.5)}.tl-ev.baja b{text-decoration:line-through}
 </style>
 
 <div id="pracBar" class="prac-bar" hidden><span>🎓 <b>Práctica</b> · nada se guarda</span><button type="button" class="btn small" id="pracSalir">Salir</button></div>
@@ -462,7 +462,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
   <nav class="wrap tabs only-caja" role="tablist" id="tabs">
     <button role="tab" data-tab="resumen" class="only-duena">📊 Resumen <span class="badge" id="resBadge" hidden></span></button>
     <button role="tab" data-tab="caja">🧾 Cuentas <span class="badge" id="cajaBadge" hidden></span></button>
-    <button role="tab" data-tab="agenda">📅 Agenda <span class="badge" id="agBadge" hidden></span></button>
+    <button role="tab" data-tab="agenda">📅 Agenda <span class="badge" id="agBadge" hidden></span><span class="badge pt" id="ptBadge" hidden></span></button>
     <button role="tab" data-tab="tareas">✅ Tareas <span class="badge" id="tarBadge" hidden></span></button>
     <button role="tab" data-tab="cierre">📋 Cierre del día</button>
     <button role="tab" data-tab="quincena" class="only-duena">💰 Quincena</button>
@@ -1940,7 +1940,7 @@ function subTareas(){if(thUn.length||!db||modo!=='caja')return;const h=hoy(),m=x
   on(db.collection('tareasHechas').where('fecha','==',h),L=>{TH.hechas=L.sort((a,b)=>(b.hora||'').localeCompare(a.hora||''))});
   thUn.push(db.collection('citasTel').where('fecha','>=',h).where('fecha','<=',addDias(h,2)).onSnapshot(x=>{x.docs.forEach(d=>TH.telT[d.id]=d.data().tel||'');renderTareas()},()=>{}));
   on(db.collection('mant').where('toca','<=',h).limit(500),L=>{TH.mant=L});
-  on(db.collection('citas').where('fecha','>=',h).limit(1000),L=>{TH.fut=new Set(L.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)));TH.hoyN=new Set(L.filter(c=>c.fecha===hoy()&&activa(c)).map(c=>c.clienteKey||ckey(c.cliente))).size;agBadgeSet()});
+  on(db.collection('citas').where('fecha','>=',h).limit(1000),L=>{TH.fut=new Set(L.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)));TH.citasHoy=L.filter(c=>c.fecha===hoy());TH.hoyN=new Set(L.filter(c=>c.fecha===hoy()&&activa(c)).map(c=>c.clienteKey||ckey(c.cliente))).size;agBadgeSet()});
   on(db.collection('contacto').where('ultimo','>=',addDias(h,-6)).limit(1000),L=>{TH.cont={};L.forEach(c=>TH.cont[c.id]=c)});
   on(db.collection('clientes').where('ultimaVisita','>=',addDias(h,-365)).where('ultimaVisita','<=',addDias(h,-45)).limit(500),L=>{TH.react=L});
   on(db.collection('avisosVence').where('vence','>=',h).limit(500),L=>{TH.av={};L.forEach(x=>TH.av[x.id]=x)});
@@ -1970,7 +1970,14 @@ function tareasDatos(){const h=hoy(),y=new Date().getFullYear(),tel=c=>telMap[c.
   const promo=Object.values(P);
   return {conf,rec,rep,form:formPend,mant:promo.filter(x=>x.t==='mant'),react:promo.filter(x=>x.t==='react'),otros:promo.filter(x=>x.t==='cum'||x.t==='ven')}}
 var thOpen={};try{thOpen=JSON.parse(localStorage.getItem('thOpen')||'{}')}catch(e){}
-function agBadgeSet(){const b=$('#agBadge');if(!b)return;const n=modo==='caja'?((TH&&TH.hoyN)||0):0;b.hidden=!n;b.textContent=n;b.title=n?`${n} clienta${n>1?'s':''} con cita hoy`:''}
+function agBadgeSet(){const b=$('#agBadge');if(!b)return;const n=modo==='caja'?((TH&&TH.hoyN)||0):0;b.hidden=!n;b.textContent=n;b.title=n?`${n} clienta${n>1?'s':''} con cita hoy`:'';
+  const q=$('#ptBadge');if(q){let k=0;try{k=modo==='caja'?puertaHoy().length:0}catch(e){}q.hidden=!k;q.textContent='🚶 '+k;q.title=k?`${k} clienta${k>1?'s':''} llegaron sin cita`:''}}
+function puertaHoy(){const h=hoy();if(!tickets.length)return [];
+  const cs=(modo==='caja'&&typeof TH!=='undefined'&&TH.citasHoy)?TH.citasHoy:(agDia===h?citas:[]);
+  const keys=new Set(cs.filter(activa).map(c=>c.clienteKey||ckey(c.cliente))),tids=new Set(cs.map(c=>c.ticketId).filter(Boolean));
+  return tickets.filter(t=>t.fecha===h&&(t.estado==='abierta'||t.estado==='cobrada')&&!t.citaId&&!tids.has(t.id)&&!keys.has(t.clienteKey||ckey(t.cliente))).map(t=>{
+    const ls=lineasDe(t.id).filter(l=>!l.venta),d=new Date(t.creado||Date.now()),ini=String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+    return {id:'pt_'+t.id,puerta:true,ticketId:t.id,tk:t,fecha:h,inicio:ini,duracion:60,cliente:t.cliente,estilista:t.atiende||(ls[0]&&ls[0].estilista)||'',servicio:[...new Set(ls.map(l=>l.servicio))].join(' + '),estado:'confirmada'}}).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio))}
 function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!bxs.length)return;if(modo!=='caja'){bxs.forEach(b=>b.innerHTML='');return}
   const a=document.activeElement;if(a&&a.closest&&a.closest('.tareas-hoy')&&a.tagName==='SELECT')return;
   const D=tareasDatos(),h=hoy(),wa=(tel,msg,attrs,lbl,cls)=>{const l=tel?waLink(tel,msg):'';return l?`<a class="btn small ${cls||'wa'}" href="${l}" target="_blank" rel="noopener" ${attrs}>${lbl}</a>`:''};
@@ -4048,8 +4055,8 @@ function tlHtml(cs,bs,mode,conEst){
   let grp=[],fin=-1;const grupos=[];ev.forEach(e=>{if(e.a>=fin&&grp.length){grupos.push(grp);grp=[]}grp.push(e);fin=Math.max(fin,e.z)});if(grp.length)grupos.push(grp);
   grupos.forEach(G=>{const cols=[];G.forEach(e=>{let k=cols.findIndex(z=>z<=e.a);if(k<0){k=cols.length;cols.push(0)}cols[k]=e.z;e.k=k});const n=cols.length;
     G.forEach(e=>{const c=e.c,hgt=Math.max(26,y(e.z)-y(e.a)-2);
-      g+=`<button type="button" class="tl-ev ec ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''} ${!activa(c)?'baja':''}" data-tl="${c.id}" style="--h:${estHue(c.estilista)};top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
-        <b>${h12(c.inicio).replace(' a. m.','a').replace(' p. m.','p')} ${esc(c.cliente)}</b>${hgt>34?`<small>${esc(svcTodos(c)||'')}${conEst?' · '+esc(c.estilista):''}</small>`:''}${hgt>52||!activa(c)?`<small>${c.estado==='por_confirmar'?'Por confirmar':c.estado==='llego'?'✓ Llegó':c.estado==='no_vino'?'✗ No vino':c.estado==='cancelada'?'✗ Cancelada':'Confirmada'}</small>`:''}</button>`})});
+      g+=`<button type="button" class="tl-ev ec ${c.puerta?'puerta'+(c.estilista?'':' sinas'):''} ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''} ${!activa(c)?'baja':''}" data-tl="${c.id}" style="--h:${estHue(c.estilista)};top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
+        <b>${h12(c.inicio).replace(' a. m.','a').replace(' p. m.','p')} ${esc(c.cliente)}</b>${hgt>34?`<small>${[svcTodos(c)||'',conEst?c.estilista||'sin asignar':''].filter(Boolean).map(esc).join(' · ')}</small>`:''}${hgt>52||!activa(c)?`<small>${c.puerta?'🚶 Sin cita'+(c.tk&&c.tk.estado==='cobrada'?' · cobrada':''):c.estado==='por_confirmar'?'Por confirmar':c.estado==='llego'?'✓ Llegó':c.estado==='no_vino'?'✗ No vino':c.estado==='cancelada'?'✗ Cancelada':'Confirmada'}</small>`:''}</button>`})});
   if(agDia===hoy()){const n=new Date(),m=n.getHours()*60+n.getMinutes();if(m>=h0&&m<=h1)g+=`<div class="tl-now" style="top:${y(m)}px"></div>`}
   const inact=cs.filter(c=>!activa(c)&&c.estado!=='no_vino'&&c.estado!=='cancelada');
   return `${todoDia.length?`<div class="tl-dia">${todoDia.map(b=>`<div class="tl-bl" style="position:static">${conEst?esc(b.estilista)+' · ':''}Día libre / agenda cerrada${b.motivo?' · '+esc(b.motivo):''}${mode==='caja'?` <button class="btn small ghost" data-ag="quitar-bloq" data-id="${b.id}">Abrir agenda</button>`:''}</div>`).join('')}</div>`:''}
@@ -4057,10 +4064,15 @@ function tlHtml(cs,bs,mode,conEst){
     ${inact.length?`<details><summary><small class="muted">Canceladas / no vinieron (${inact.length})</small></summary><div style="display:grid;gap:8px;margin-top:8px">${inact.map(c=>citaHtml(c,mode,conEst)).join('')}</div></details>`:''}
     <small class="muted">Toca una cita para ver los detalles y las opciones.</small>`}
 var tlSel=null;
-function renderTlDet(){const sh=$('#citaDetSheet');if(!sh||sh.hidden||!tlSel)return;const c=citas.find(x=>x.id===tlSel);if(!c){sh.hidden=true;tlSel=null;return}
+function renderTlDet(){const sh=$('#citaDetSheet');if(!sh||sh.hidden||!tlSel)return;
+  if(tlSel.startsWith('pt_')){const x=puertaHoy().find(z=>z.id===tlSel);if(!x){sh.hidden=true;tlSel=null;return}const t=x.tk;
+    const h=`<div class="cita"><div class="c-h"><b>${esc(x.cliente)}</b> <span class="chip gris">🚶 Sin cita</span></div><div class="c-sv">Llegó a las ${h12(x.inicio)} · ${x.estilista?'atiende <b>'+esc(x.estilista)+'</b>':'<span class="neg">todavía sin asignar</span>'}</div><div class="c-sv">${esc(x.servicio||'Sin servicios todavía')}</div><div class="c-sv">${t.estado==='cobrada'?'<span class="chip ok">✓ Cuenta cobrada</span>':'Cuenta abierta'}${t.creadoPor?' · abrió '+esc(t.creadoPor):''}</div>${modo==='caja'&&t.estado!=='cobrada'?'<div class="row" style="margin-top:8px"><button class="btn small primary" data-pt-ir>Ver la cuenta</button></div>':''}</div>`;
+    const bx=$('#citaDetBody');if(bx.innerHTML!==h)bx.innerHTML=h;return}
+  const c=citas.find(x=>x.id===tlSel);if(!c){sh.hidden=true;tlSel=null;return}
   const h=citaHtml(c,modo==='caja'?'caja':'est',modo==='caja');const bx=$('#citaDetBody');if(bx.innerHTML!==h)bx.innerHTML=h}
 document.addEventListener('click',e=>{const t=e.target.closest('[data-tl]');if(t){tlSel=t.dataset.tl;$('#citaDetBody').innerHTML='';$('#citaDetSheet').hidden=false;renderTlDet();return}
   const sh=$('#citaDetSheet');if(e.target===sh){sh.hidden=true;return}
+  if(e.target.closest('[data-pt-ir]')){sh.hidden=true;setTab('caja');return}
   const a=e.target.closest('#citaDetSheet [data-ag]');if(a&&['editar','agregar'].includes(a.dataset.ag))setTimeout(()=>{sh.hidden=true},0)});
 function itemsEst(est,mode){
   const cs=citas.filter(c=>c.estilista===est), bs=bloqueos.filter(b=>b.estilista===est);
@@ -4078,7 +4090,7 @@ function renderAgenda(){try{renderTlDet()}catch(e){}
   if(modo==='est'){
     $$('#agVistaEst button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ve==='mes'?agVE==='mes':agVE==='dia'&&agDia===(x.dataset.ve==='man'?manana():hoy())));
     if(agVE!=='dia'){$('#agPrev').setAttribute('aria-label',agVE==='mes'?'Mes anterior':'Semana anterior');$('#agNext').setAttribute('aria-label',agVE==='mes'?'Mes siguiente':'Semana siguiente');renderEstRango(out);return}
-    const {cs,bs,html}=itemsEst(soy,'est');
+    const {cs:cs0,bs,html}=itemsEst(soy,'est'),cs=[...cs0,...(agDia===hoy()?puertaHoy().filter(x=>x.estilista===soy):[])];
     out.innerHTML=(cs.length||bs.length)?`${tlHtml(cs,bs,'est',false)}<small>Tu agenda la maneja <b>caja</b>. Si necesitas una cita o un cambio, pídeselo a caja.</small>`:`<div class="empty">No tienes citas este día. Si una clienta te escribe para agendar, pásale el contacto a caja.</div>`;
     return;
   }
@@ -4098,9 +4110,9 @@ function renderAgenda(){try{renderTlDet()}catch(e){}
   if(agVista==='dia'){
     const cs=citas.filter(c=>!agFiltro||c.estilista===agFiltro).sort((a,b)=>(aMin(a.inicio)+(activa(a)?0:.5))-(aMin(b.inicio)+(activa(b)?0:.5)));
     const bs=bloqueos.filter(x=>!agFiltro||x.estilista===agFiltro).sort((a,b)=>(a.todoDia?-1:aMin(a.desde))-(b.todoDia?-1:aMin(b.desde)));
-    const act=cs.filter(activa).length;
+    const act=cs.filter(activa).length,pts=agDia===hoy()?puertaHoy().filter(x=>!agFiltro||x.estilista===agFiltro):[],cs2=[...cs,...pts];
     out.innerHTML=`${bs.length?`<div class="ag-est"><header><h3>Agenda cerrada</h3></header>${bs.map(x=>bloqHtml({...x,motivo:x.estilista+' · '+(x.motivo||'')},'caja')).join('')}</div>`:''}
-    ${cs.length?`<div class="row between"><h3 style="margin:0">${act} cita${act===1?'':'s'} ${agFiltro?'de '+esc(agFiltro):'en el salón'}</h3></div>${tlHtml(cs,[],'caja',!agFiltro)}`:`<div class="empty">No hay citas este día${agFiltro?' para '+esc(agFiltro):''}.</div>`}`;
+    ${cs2.length?`<div class="row between"><h3 style="margin:0">${act} con cita${pts.length?` · 🚶 ${pts.length} sin cita`:''}${agFiltro?' · '+esc(agFiltro):''}</h3></div>${tlHtml(cs2,[],'caja',!agFiltro)}`:`<div class="empty">No hay citas este día${agFiltro?' para '+esc(agFiltro):''}.</div>`}`;
     return;
   }
   const lista=agFiltro?[agFiltro]:todos, libres=[];
