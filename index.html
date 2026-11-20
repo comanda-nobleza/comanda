@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="11d630d551d3"</script>
-<script src="web.js?v=11d630d551d3"></script>
+<script>window.BUILD="c5728de65809"</script>
+<script src="web.js?v=c5728de65809"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -471,7 +471,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 <header class="top" id="top" hidden>
   <div class="wrap top-in">
     <div class="brand"><h1>Comanda</h1><span class="fecha" id="hoyLbl"></span></div>
-    <div class="row top-who"><b id="quienLbl"></b><button type="button" id="ayudaBtn" aria-label="Cómo se usa" title="Cómo se usa">?</button><button class="btn small ghost" id="salir">Cambiar</button></div>
+    <div class="row top-who"><b id="quienLbl"></b><button type="button" class="btn small" id="swRol" hidden style="display:none;border-color:var(--accent);color:var(--accent)"></button><button type="button" id="ayudaBtn" aria-label="Cómo se usa" title="Cómo se usa">?</button><button class="btn small ghost" id="salir">Cambiar</button></div>
   </div>
   <div class="wrap only-duena"><div class="gsw" id="gSwitch" role="group" aria-label="Sección"><button type="button" data-g="ger" aria-pressed="true">Gerencia</button><button type="button" data-g="op" aria-pressed="false">Operación</button></div></div>
   <div class="wrap caja-bar" id="cajaBar" hidden></div>
@@ -595,6 +595,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     <div id="mantTarBox"></div>
     <div id="turnoDifBox"></div>
     <div id="difRevBox"></div>
+    <div id="revisarBox"></div>
     <div id="turnosCierre" style="display:grid;gap:10px"></div>
     <div id="extPendBox"></div>
     <div id="alqRevBox"></div>
@@ -1110,6 +1111,13 @@ function armed(btn){if(btn.classList.contains('armed'))return true;const old=btn
 let cajero=store.get('cajero')||'', duena=!!store.get('duena');
 const encargada=()=>cfg.encargada||'Rita';
 const cubreCaja=()=>Array.isArray(cfg.cubreCaja)?cfg.cubreCaja:['Pedro'];
+/* ---------- cambio rápido entre «mi venta» y caja (para quien hace las dos cosas) ---------- */
+const esCajera=n=>!!n&&(n===encargada()||cubreCaja().includes(n));
+const esProf=n=>!!n&&cfg.estilistas.some(e=>e.nombre===n);
+function renderSwRol(){const b=$('#swRol');if(!b)return;let t='';if(!PRAC){if(modo==='est'&&esCajera(soy))t='🧾 Ir a caja';else if(modo==='caja'&&!duena&&esProf(cajero))t='🛍️ Ir a mi venta'}b.textContent=t;b.hidden=!t;b.style.display=t?'':'none'}
+document.addEventListener('click',e=>{if(!e.target.closest('#swRol'))return;
+  if(modo==='est'){const n=soy,ir=()=>{cajero=n;store.set('cajero',n);setModo('caja',null,false);toast(`${n} en caja`)};if(cfg.pinCaja)pinPedir(n+' · caja',String(cfg.pinCaja),ir);else ir();return}
+  if(modo==='caja'&&esProf(cajero)){const n=cajero;entrarEst(n,false)}});
 const enCaja=()=>cajero?'Caja ('+cajero+')':'Caja';
 const esCaja=x=>String(x||'').startsWith('Caja');
 var TOUR_AUTO=true; /* recorrido automático apagado mientras se ajusta la app; el botón ? sigue funcionando */
@@ -1243,7 +1251,7 @@ document.addEventListener('click',async e=>{
   const id=(ok||no).dataset.espOk||(no&&no.dataset.espNo),l=lineas.find(x=>x.id===id);if(!l)return;
   if(no&&!armed(no))return;
   try{
-    if(ok)await db.doc('lineas/'+id).update({especial:{estado:'autorizado',resuelto:new Date().toISOString()}});
+    if(ok){await db.doc('lineas/'+id).update({especial:{estado:'autorizado',resuelto:new Date().toISOString()}});if(modo==='caja'&&!duena&&l.estilista===cajero)revisarLog('esp-propio',l.cliente,`Se autorizó su propio precio especial en ${l.servicio}: ${money(l.precio)} (normal desde ${money(l.especial.minimo)})`)}
     else await db.doc('lineas/'+id).update({precio:l.especial.minimo,precioEspecialPedido:l.precio,especial:{estado:'rechazado',resuelto:new Date().toISOString()}});
     toast(ok?'Precio especial autorizado':'Rechazado: se cobra el precio normal');
   }catch(err){toast('No se pudo guardar.')}
@@ -2057,7 +2065,7 @@ async function renderReportes(){
 }
 $('#repPrev').onclick=()=>{const [y,m]=repMes.split('-').map(Number);repMes=ymd(new Date(y,m-2,1)).slice(0,7);renderReportes()};
 $('#repNext').onclick=()=>{const [y,m]=repMes.split('-').map(Number);repMes=ymd(new Date(y,m,1)).slice(0,7);renderReportes()};
-const COLS_TODAS=['config','perfiles','inventario','invMov','invAlertas','insumosPed','tickets','ticketsTel','lineas','citas','citasTel','bloqueos','vacaciones','clientes','puntos','puntosResumen','adelantos','pedidos','extras','descuentos','alquileres','gastos','cierres','turnos','decimos','mantenimientos','paquetes','ventasAlq','archivos','mant','contacto','avisosVence','tareasHechas'];
+const COLS_TODAS=['config','perfiles','inventario','invMov','invAlertas','insumosPed','tickets','ticketsTel','lineas','citas','citasTel','bloqueos','vacaciones','clientes','puntos','puntosResumen','adelantos','pedidos','extras','descuentos','alquileres','gastos','cierres','turnos','decimos','mantenimientos','paquetes','ventasAlq','archivos','mant','contacto','avisosVence','tareasHechas','revisar'];
 async function copiaLeer(c){if(ES_WEB)return (await db.collection(c).get()).docs;let out=[],sn=await db.collection(c).limit(1000).get();out=sn.docs;return out}
 $('#copiaBtn').onclick=async()=>{if(!needDb())return;if(PRAC){toast('Sal del modo práctica primero.');return}if(!dl){toast('Las descargas no están disponibles aquí.');return}const b=$('#copiaBtn'),m=$('#copiaMsg');b.disabled=true;
   try{const C={};let n=0;for(const c of COLS_TODAS){m.textContent=`Leyendo ${c}…`;const ds=await copiaLeer(c);if(!ds.length)continue;C[c]={};ds.forEach(d=>{C[c][d.id]=d.data();n++})}
@@ -2087,7 +2095,7 @@ function renderDifRev(){const bx=$('#difRevBox');if(!bx)return;if(!duena||!(difR
   bx.innerHTML=(cierreSols.length?`<div class="adel-pend"><h3>Piden abrir un cierre (${cierreSols.length})</h3>${cierreSols.map(x=>`<div class="adel-row"><div><b>${fechaCorta(x.fecha)}</b><br><small>${esc(x.reabrirSol.por)}: «${esc(x.reabrirSol.motivo)}»</small></div><button type="button" class="btn small" data-cierre-ir="${esc(x.fecha)}">Ver el cierre</button></div>`).join('')}</div>`:'')+(difRev.length?`<div class="adel" style="gap:8px"><h3>Diferencias explicadas por caja (${difRev.length})</h3>${difRev.map(x=>`<div style="display:grid;gap:4px;border-top:1px solid var(--line);padding-top:8px"><div class="row between"><b>${fechaCorta(x.fecha)}</b><button type="button" class="btn small" data-difrev="${esc(x.id)}">Revisado</button></div>${Object.values(x.difExp).map(d=>`<small>${esc(d.lbl||'')} · <b>${money(Math.abs(+d.monto||0))}</b> · ${esc(d.motivo||'')}: ${esc(d.detalle||'')} <span class="muted">(${esc(d.por||'')})</span></small>`).join('')}</div>`).join('')}</div>`:'')}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-cierre-ir]');if(!b)return;try{$('#gSwitch [data-g="op"]').click()}catch(err){}setTimeout(()=>{setDia(b.dataset.cierreIr);setTab('cierre')},50)});
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-difrev]');if(!b)return;try{await db.doc('cierres/'+b.dataset.difrev).update({difRev:{por:porGer(),fecha:new Date().toISOString()}})}catch(err){toast('No se pudo guardar.')}});
-function renderResumen(){subDifRev();renderDifRev();
+function renderResumen(){subDifRev();renderDifRev();subRevisar();renderRevisar();
   if(db&&!resCitasUn)resCitasUn=db.collection('citas').where('fecha','>=',hoy()).where('fecha','<=',manana()).onSnapshot(s=>{resCitas=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==='resumen')renderResumen()},()=>{});
   const k=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
   if(dia===hoy()){
@@ -2120,7 +2128,7 @@ function pintarResQ(d){
 }
 
 /* ---------- render ---------- */
-function renderDyn(){if(modo==='caja'){try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
+function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
   try{renderViejas()}catch(e){}
   try{revisarAvisos()}catch(e){}
   if(modo!=='caja'&&cajaLocked)aplicarLock();
@@ -2811,7 +2819,7 @@ document.addEventListener('click',async e=>{
   const id=b.dataset.id, act=b.dataset.act;
   if(act==='add-svc')openSvc(tickets.find(t=>t.id===id));
   else if(act==='cobrar')openCobro(id);
-  else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
+  else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&modo==='caja'&&!duena&&l0.estilista===cajero)revisarLog('quito-propio',l0.cliente,`Quitó su propio ${l0.servicio} (${money(l0.precio)}) de la cuenta`);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
     await db.doc('lineas/'+id).delete();if(l0&&l0.paqueteId)await paqRecontar(l0.paqueteId);if(l0&&l0.invId)try{await invMover(l0.invId,{dc:1,tipo:'Venta anulada',nota:l0.cliente||''})}catch(err){}}catch(err){toast('No se pudo quitar.')}}
   else if(act==='del-ticket'){if(!armed(b))return;try{await db.doc('tickets/'+id).delete()}catch(err){toast('No se pudo eliminar.')}}
   else if(act==='reabrir'){{const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede reabrir la cuenta. Pide a gerencia que abra el cierre.');return}}if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta'});await reabrirPts(id);toast('Comanda reabierta. Los puntos de esa cuenta se quitaron; se vuelven a sumar al cerrarla.')}catch(err){toast('No se pudo reabrir.')}}
@@ -3126,9 +3134,16 @@ document.addEventListener('click',async e=>{const ok=e.target.closest('[data-dso
 function descReset(){cobDesc={p:0,otro:false};descSel=new Set();if($('#descOtro')){$('#descOtro').value='';$('#descMot').value=''}renderDesc()}
 document.addEventListener('click',e=>{const b=e.target.closest('#descPick [data-desc]');if(!b)return;const v=b.dataset.desc;cobDesc=v==='otro'?{p:0,otro:true}:{p:+v,otro:false};if(v==='0')descSel=new Set();else if(!descSel.size){const L=descLineas();if(new Set(L.map(l=>l.estilista)).size===1)L.forEach(l=>descSel.add(l.id))}renderDesc();refreshCobro();{const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}}refreshCuadra();if(v==='otro')setTimeout(()=>$('#descOtro').focus(),30)});
 document.addEventListener('input',e=>{if(e.target.id!=='descOtro')return;renderDescAut();refreshCobro();const t=cobroTotales();if(t){$('#pTarjeta').value=t.total.toFixed(2);METODOS.filter(m=>m!=='tarjeta').forEach(m=>$(pId(m)).value='')}refreshCuadra()});
+async function revisarLog(tipo,cliente,txt){try{await db.collection('revisar').add({fecha:hoy(),hora:new Date().toISOString(),estado:'pend',tipo,por:cajero||encargada(),cliente:cliente||'',txt})}catch(e){}}
+var revPend=[],revUn=null;
+function subRevisar(){if(revUn||!db||!duena)return;revUn=db.collection('revisar').where('estado','==','pend').onSnapshot(s=>{revPend=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.hora||'').localeCompare(a.hora||''));renderRevisar();renderDyn()},()=>{revUn=null})}
+function renderRevisar(){const bx=$('#revisarBox');if(!bx)return;if(!duena||!revPend.length){bx.innerHTML='';return}
+  const h=`<div class="adel-pend"><h3>🔍 Para revisar (${revPend.length})</h3><small class="muted">Cosas que alguien de caja hizo sobre sus propios servicios. No necesitan autorización; solo para que estés al tanto.</small>${revPend.map(x=>`<div class="adel-row"><div><b>${esc(x.por)}</b> · ${esc(x.cliente)}<br><small>${esc(x.txt)} · ${fechaCorta(x.fecha)} ${hora(x.hora)}</small></div><button class="btn small" data-revok="${x.id}">Revisado</button></div>`).join('')}</div>`;
+  if(bx.innerHTML!==h)bx.innerHTML=h}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-revok]');if(!b)return;try{await db.doc('revisar/'+b.dataset.revok).update({estado:'ok',revisadoPor:porGer(),revisado:new Date().toISOString()})}catch(err){toast('No se pudo guardar.')}});
 async function aplicarDescCli(t,dCli,pct,motivo){if(!(dCli>0))return;const ex=cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'?cobroPts.canje.lineaId:null;
   const base=lineasDe(t.id).filter(l=>+l.precio>0&&!l.canje&&l.id!==ex&&descSel.has(l.id)),tot=r2(base.reduce((x,l)=>x+(+l.precio||0),0));if(!(tot>0))return;let rest=dCli;const por=cajero||encargada();
-  for(let i=0;i<base.length;i++){const l=base[i],part=i===base.length-1?r2(rest):r2(dCli*(+l.precio||0)/tot);rest=r2(rest-part);
+  for(let i=0;i<base.length;i++){const l=base[i],part=i===base.length-1?r2(rest):r2(dCli*(+l.precio||0)/tot);rest=r2(rest-part);if(!duena&&l.estilista===cajero)revisarLog('desc-propio',t.cliente,`Se dio ${pct}% de descuento en su propio ${l.servicio} (−${money(part)} de ${money(l.precio)}) · motivo: ${motivo}`);
     const np=r2((+l.precio||0)-part),ins=(l.insumos||[]).map(x=>{const m=/^material (\d+(?:\.\d+)?)%$/.exec(x.porcion||'');return m?{...x,costo:r2(np*(+m[1])/100)}:x}),cambia=ins.some((x,k)=>x.costo!==(l.insumos||[])[k].costo);
     await db.doc('lineas/'+l.id).update({precio:np,descCli:{pct,monto:part,precioNormal:+l.precio||0,motivo,por,...(cambia?{insumosNormal:l.insumos,insTotNormal:+l.insumosTotal||0}:{})},...(cambia?{insumos:ins,insumosTotal:r2(ins.reduce((a,x)=>a+(+x.costo||0),0))}:{})})}}
 function cobroTotales(){
