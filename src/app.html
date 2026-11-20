@@ -2004,9 +2004,9 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',D.otros.length,otros)+
     (D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día'));
   const hechHtml=sec('hech','✓','Hechas hoy',hh.length,'',hh.length?`<div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b><br><small>${esc(x.txt)} · ${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div>`:vacio('Todavía nada'));
-  const res=[nA?`<b class="neg">${nA} atrasada${nA>1?'s':''}</b>`:'',`${nH} de hoy`,hh.length?`${hh.length} hecha${hh.length>1?'s':''}`:''].filter(Boolean).join(' · ');
+  const res=[`${nH} de hoy`,hh.length?`${hh.length} hecha${hh.length>1?'s':''}`:'',nA?`<b class="neg">${nA} atrasada${nA>1?'s':''}</b>`:''].filter(Boolean).join(' · ');
   const html=`<div class="adel th-box"><div class="row between"><h3 style="margin:0">Tareas</h3><small class="muted">${res}</small></div>
-    <div class="th-cols">${atrHtml}${hoyHtml}${hechHtml}</div>
+    <div class="th-cols">${hoyHtml}${hechHtml}${atrHtml}</div>
     ${esMovil?'':`<small class="muted">WhatsApp se abre en ${waApp()?'la aplicación de esta computadora':'WhatsApp Web'} · <button type="button" class="btn small ghost" data-wamodo style="padding:2px 8px">cambiar</button></small>`}</div>`;
   bxs.forEach(b=>{if(b.innerHTML!==html)b.innerHTML=html})}
 document.addEventListener('toggle',e=>{const d=e.target;if(!d.matches||!d.matches('.th-g'))return;thOpen[d.dataset.thg]=d.open;try{localStorage.setItem('thOpen',JSON.stringify(thOpen))}catch(err){}},true);
