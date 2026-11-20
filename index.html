@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="6e16007803aa"</script>
-<script src="web.js?v=6e16007803aa"></script>
+<script>window.BUILD="11d630d551d3"</script>
+<script src="web.js?v=11d630d551d3"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2144,7 +2144,7 @@ function renderDyn(){if(modo==='caja'){try{subTareas();renderTareas()}catch(e){c
   if(usaInsumos()){subInsumos();const n=insPend().length;const ib=$('#insBadge');if(ib){ib.hidden=!n;ib.textContent=n}}
   {const l=modo==='est'&&esLimp(soy);['clientas','venta'].forEach(k=>{const b=document.querySelector(`#bnav [data-tab="${k}"]`);if(b){b.hidden=l;b.style.display=l?'none':''}})}
   {const bi=$('#bnIns');if(bi){const v=modo==='est'&&usaInsumos();bi.hidden=!v;bi.style.display=v?'':'none'}}
-  if(tab==='resumen'&&duena){renderAdelPend();renderExtPend();renderCortPend();renderDescSol();renderMantTareas();renderTurnoDifs();$('#resNada').hidden=!!(turnosDif.length+descSolPend.length+mantPend().length+mantProx().length+cortPend.length+adelPend.length+extPend.length+alqPorRevisar().length+cumplePendientes().length+cumpleEquipo().length+insPend().length);renderResumen();renderAlqRev();renderAlq();cumplesGerencia();renderCumpleBox();renderCumpleEquipo();renderInsTareas();renderReact();{const f=[!cfg.pinCaja&&'caja',!cfg.pinDuenas&&'gerencia'].filter(Boolean);$('#pinAviso').innerHTML=f.length?`<div class="notice warn"><span>🔒 Falta poner el PIN de ${f.join(' y de ')}. Hazlo en Ajustes antes de empezar a usar la app con el equipo.</span></div>`:''}}
+  if(tab==='resumen'&&duena){renderAdelPend();renderExtPend();renderCortPend();renderDescSol();renderMantTareas();renderTurnoDifs();$('#resNada').hidden=!!(turnosDif.length+descSolPend.length+mantPend().length+mantProx().length+cortPend.length+adelPend.length+extPend.length+alqPorRevisar().length+cumplePendientes().length+cumpleEquipo().length+insPend().length);renderResumen();renderAlqRev();renderAlq();cumplesGerencia();renderCumpleBox();renderCumpleEquipo();renderInsTareas();renderReact();{const f=cfgLoaded?[!cfg.pinCaja&&'caja',!cfg.pinDuenas&&'gerencia'].filter(Boolean):[];$('#pinAviso').innerHTML=f.length?`<div class="notice warn"><span>🔒 Falta poner el PIN de ${f.join(' y de ')}. Hazlo en Ajustes antes de empezar a usar la app con el equipo.</span></div>`:''}}
   if(tab==='clientas'&&modo==='est'){
     const tk=Object.fromEntries(tickets.map(t=>[t.id,t])),mh=lineas.filter(l=>l.estilista===soy&&l.fecha===hoy()).sort((a,b)=>(b.creado||'').localeCompare(a.creado||''));
     $('#misHoy').innerHTML=mh.length?`<div class="row between" style="margin-top:18px"><h2>Mis comandas de hoy</h2><small>${mh.length} · ${money(mh.reduce((s,l)=>s+(+l.precio||0),0))}</small></div><div class="dia-g">${mh.map(l=>{const t=tk[l.ticketId]||{},ok=t.estado==='cobrada';return `<div class="svc-row"><span class="s">${esc(l.servicio)}</span><span class="v">${money(valLinea(l))}</span><span class="c">${esc(l.cliente||t.cliente||'')} · ${hora(l.creado)}</span><span class="c" style="text-align:right">${ok?'<span class="chip ok">Cobrada</span>':'<span class="chip warn">En el salón</span>'}</span></div>`}).join('')}</div>`:'';
