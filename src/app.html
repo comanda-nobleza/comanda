@@ -3528,10 +3528,11 @@ function hojaCierre(c,fz){
   const [y,m,d]=dia.split('-');let r=1;
   put(r,0,`Fecha de cierre: ${d}/${m}/${y}`,{font:F(1,12)});r+=2;
   // 1 · Fiscal Z vs total real
-  put(r,0,'',H);box(r,1,2,'FISCAL Z',H);box(r,3,4,'TOTAL REAL',H);box(r,5,6,'DIFERENCIA',H);r++;
+  put(r,0,'',H);box(r,1,2,'FISCAL Z',H);box(r,3,4,'TOTAL REAL',H);box(r,5,6,'COMANDA',H);put(r,7,'Z − COMANDA',H);put(r,8,'REAL − COMANDA',H);r++;
   const lbl={tarjeta:'Tarjeta (Visa / MasterCard)',efectivo:'Efectivo',yappy:'Yappy'};
-  const K=concilia(c,fz);
-  K.met.forEach(x=>{put(r,0,lbl[x.m],LB);box(r,1,2,x.z==null?'':x.z,C);box(r,3,4,x.real,C);box(r,5,6,x.z==null?'':x.df,{...C,font:F(1,11,x.z==null?'111111':Math.abs(x.sinExp)<0.005?'2E7D32':'C00000')});r++});
+  const K=concilia(c,fz),RD=realDe(c);
+  K.met.forEach(x=>{const R=RD[x.m],esp=RD.esp[x.m],dR=R==null?null:r2(R-esp);put(r,0,lbl[x.m],LB);box(r,1,2,x.z==null?'':x.z,C);box(r,3,4,R==null?'':R,C);box(r,5,6,x.real,C);
+    put(r,7,x.z==null?'':x.df,{...C,font:F(1,11,x.z==null?'111111':Math.abs(x.sinExp)<0.005?'2E7D32':'C00000')});put(r,8,dR==null?'':dR,{...C,font:F(1,11,dR==null?'111111':Math.abs(dR)<0.005?'2E7D32':'C00000')});r++});
   r++;
   // 2 · Gastos (izq) y Propinas (der)
   const top=r;const adel=adelDia.map(x=>({detalle:'Adelanto '+x.estilista,metodo:x.metodo,monto:+x.monto||0}));
@@ -3632,10 +3633,12 @@ function dibujarCierre(doc){
   doc.setFont('times','bold');doc.setFontSize(16);doc.setTextColor(17);doc.text('Nobleza · Hoja de cierre',M,M+16);
   doc.setFont('helvetica','bold');doc.setFontSize(10);doc.text(`Fecha de cierre: ${dd}/${mm}/${yy}`,W-M,M+8,{align:'right'});doc.setFont('helvetica','normal');doc.setFontSize(8.5);
   doc.text(`Cerró: ${cierre.actualizadoPor||cajero||encargada()}`,W-M,M+20,{align:'right'});doc.setDrawColor(...NAVY);doc.setLineWidth(1.6);doc.line(M,M+28,W-M,M+28);
-  let y=M+42;const RH=18,cw=[168,124,124,132],cx=[M,M+168,M+292,M+416];
-  ['','FISCAL Z','TOTAL REAL','DIFERENCIA'].forEach((t,i)=>cell(cx[i],y,cw[i],RH,t,{bold:1}));y+=RH;
-  const lbl={tarjeta:'Tarjeta (Visa / MasterCard)',efectivo:'Efectivo',yappy:'Yappy'};
-  K.met.forEach(x=>{cell(cx[0],y,cw[0],RH,lbl[x.m],{bold:1,align:'left'});cell(cx[1],y,cw[1],RH,x.z==null?'':M$(x.z));cell(cx[2],y,cw[2],RH,M$(x.real));cell(cx[3],y,cw[3],RH,x.z==null?'':M$(x.df),{bold:1,color:x.z==null?[17,17,17]:Math.abs(x.sinExp)<0.005?GREEN:RED});y+=RH});
+  let y=M+42;const RH=18,cw=[124,84,84,84,86,86],cx=cw.reduce((a,w,i)=>(a.push(i?a[i-1]+cw[i-1]:M),a),[]);
+  ['','FISCAL Z','TOTAL REAL','COMANDA','Z − COMANDA','REAL − COMANDA'].forEach((t,i)=>cell(cx[i],y,cw[i],RH,t,{bold:1}));y+=RH;
+  const lbl={tarjeta:'Tarjeta (Visa / MC)',efectivo:'Efectivo',yappy:'Yappy'},RD=realDe(c);
+  K.met.forEach(x=>{const R=RD[x.m],esp=RD.esp[x.m],dR=R==null?null:r2(R-esp);cell(cx[0],y,cw[0],RH,lbl[x.m],{bold:1,align:'left'});cell(cx[1],y,cw[1],RH,x.z==null?'':M$(x.z));cell(cx[2],y,cw[2],RH,R==null?'':M$(R));cell(cx[3],y,cw[3],RH,M$(x.real));
+    cell(cx[4],y,cw[4],RH,x.z==null?'':M$(x.df),{bold:1,color:x.z==null?[17,17,17]:Math.abs(x.sinExp)<0.005?GREEN:RED});cell(cx[5],y,cw[5],RH,dR==null?'':M$(dR),{bold:1,color:dR==null?[17,17,17]:Math.abs(dR)<0.005?GREEN:RED});y+=RH});
+  doc.setFont('helvetica','normal');doc.setFontSize(7);doc.setTextColor(90);doc.text('Z − Comanda cuadra cuando es igual a las propinas. En efectivo, el real (sin el fondo) se compara con lo de Comanda menos los gastos y adelantos pagados en efectivo.',M,y+9);y+=6;
   y+=14;
   // gastos + propinas
   const G=[...gastos.map(g=>({d:g.detalle,m:g.metodo,v:+g.monto||0})),...adelDia.map(a=>({d:'Adelanto '+a.estilista,m:a.metodo,v:+a.monto||0}))];
