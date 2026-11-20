@@ -482,7 +482,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     <div class="caja-in" id="cajaBlk">
       <b id="cajaTit">Encargada de caja</b>
       <form class="inline-form" id="cajaForm">
-        <input id="cajaPin" type="password" inputmode="numeric" placeholder="PIN de caja" autocomplete="off">
+        <input id="cajaPin" type="password" inputmode="numeric" placeholder="Tu PIN" autocomplete="off" aria-label="Tu PIN">
         <button class="btn primary">Entrar a caja</button>
       </form>
       <small id="cajaPinMsg"></small>
@@ -785,7 +785,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
           <label class="f" for="ajAdMin">Adelanto mínimo $<input id="ajAdMin" type="number" step="1"></label>
           <label class="f" for="ajVenta">Comisión por venta %<input id="ajVenta" type="number" step="0.5"></label>
         </div>
-        <label class="f" for="ajPin">PIN de caja (vacío = sin PIN)<input id="ajPin" type="text" inputmode="numeric" autocomplete="off"></label>
+        <label class="f" for="ajPin">PIN de caja de respaldo (Rita y Pedro entran con su PIN personal; este solo se usa si ninguno tiene PIN)<input id="ajPin" type="text" inputmode="numeric" autocomplete="off"></label>
         <label class="f" for="ajPinD">PIN de gerencia (vacío = sin PIN)<input id="ajPinD" type="text" inputmode="numeric" autocomplete="off"></label>
         <label class="f" for="ajRes">Enlace para reseñas (Google)<input id="ajRes" type="url" autocomplete="off" placeholder="https://g.page/r/..."></label>
         <label class="f" for="ajDom">Pago por domingo trabajado $<input id="ajDom" type="number" step="1"></label>
@@ -1096,7 +1096,7 @@ const esCajera=n=>!!n&&(n===encargada()||cubreCaja().includes(n));
 const esProf=n=>!!n&&cfg.estilistas.some(e=>e.nombre===n);
 function renderSwRol(){const b=$('#swRol');if(!b)return;let t='';if(!PRAC){if(modo==='est'&&esCajera(soy))t='🧾 Ir a caja';else if(modo==='caja'&&!duena&&esProf(cajero))t='🛍️ Ir a mi venta'}b.textContent=t;b.hidden=!t;b.style.display=t?'':'none'}
 document.addEventListener('click',e=>{if(!e.target.closest('#swRol'))return;
-  if(modo==='est'){const n=soy,ir=()=>{cajero=n;store.set('cajero',n);setModo('caja',null,false);toast(`${n} en caja`)};if(cfg.pinCaja)pinPedir(n+' · caja',String(cfg.pinCaja),ir);else ir();return}
+  if(modo==='est'){const n=soy,pin=pinDe(n),ir=()=>{cajero=n;store.set('cajero',n);setModo('caja',null,false);toast(`${n} en caja`)};if(pin){if(store.get('disp')!=='caja'&&store.get('pin:'+n)===pin)ir();else pinPedir(n,pin,ir)}else if(cfg.pinCaja)pinPedir(n,String(cfg.pinCaja),ir);else ir();return}
   if(modo==='caja'&&esProf(cajero)){const n=cajero;entrarEst(n,false)}});
 const enCaja=()=>cajero?'Caja ('+cajero+')':'Caja';
 const esCaja=x=>String(x||'').startsWith('Caja');
@@ -1187,7 +1187,12 @@ function pinPedir(n,pin,listo){let d=$('#pinEstSheet');if(!d){d=document.createE
   d.querySelector('[data-pinx]').onclick=()=>{d.hidden=true};
   d.querySelector('form').onsubmit=e=>{e.preventDefault();if($('#pinEstIn').value.trim()===pin){d.hidden=true;listo()}else{$('#pinEstMsg').textContent='PIN incorrecto. Si lo olvidaste, pídeselo a gerencia.';$('#pinEstIn').value='';$('#pinEstIn').focus()}}}
 $('#yoNo').onclick=()=>{yo='';store.set('yo',null);renderInicio()};
-$('#cajaForm').addEventListener('submit',e=>{e.preventDefault();if(cfg.pinCaja&&$('#cajaPin').value!==String(cfg.pinCaja)){$('#cajaPinMsg').textContent='PIN incorrecto.';return}$('#cajaPin').value='';$('#cajaPinMsg').textContent='';
+/* Un solo PIN por persona: Rita y Pedro entran a caja con el mismo PIN de su usuario de profesional */
+const cajeras=()=>[encargada(),...cubreCaja().filter(n=>n!==encargada())];
+function cajeraPorPin(v){v=String(v||'').trim();if(!v)return null;return cajeras().find(n=>pinDe(n)&&pinDe(n)===v)||null}
+function entrarCaja(nom){store.set('disp',esMovil?null:'caja');cajero=nom;store.set('cajero',cajero);$('#cajaQuien').hidden=true;$('#cajaForm').hidden=false;setModo('caja',null,false);if(cajero!==encargada())toast(cajero+' está cubriendo caja. Todo lo que cobre queda a su nombre.');else toast('Hola, '+cajero+' 👋')}
+$('#cajaForm').addEventListener('submit',e=>{e.preventDefault();const v=$('#cajaPin').value.trim(),q=cajeraPorPin(v);if(q){$('#cajaPin').value='';$('#cajaPinMsg').textContent='';entrarCaja(q);return}
+  const conPin=cajeras().some(n=>pinDe(n));if(conPin||(cfg.pinCaja&&v!==String(cfg.pinCaja))){$('#cajaPinMsg').textContent='PIN incorrecto.';return}$('#cajaPin').value='';$('#cajaPinMsg').textContent='';
   $('#cajaNombres').innerHTML=[encargada(),...cubreCaja().filter(n=>n!==encargada())].map(n=>`<button type="button" data-cajero="${esc(n)}">${esc(n)}</button>`).join('');
   $('#cajaForm').hidden=true;$('#cajaQuien').hidden=false});
 const porGer=()=>duena&&cajero&&cajero!=='Gerencia'?cajero:'Gerencia';
@@ -1195,7 +1200,7 @@ const gerentes=()=>Array.isArray(cfg.gerentes)&&cfg.gerentes.length?cfg.gerentes
 $('#duenaForm').addEventListener('submit',e=>{e.preventDefault();if(cfg.pinDuenas&&$('#duenaPin').value!==String(cfg.pinDuenas)){$('#duenaMsg').textContent='PIN incorrecto.';return}$('#duenaPin').value='';$('#duenaMsg').textContent='';
   $('#gerNombres').innerHTML=gerentes().map(n=>`<button type="button" data-gerente="${esc(n)}">${esc(n)}</button>`).join('');$('#duenaForm').hidden=true;$('#duenaForm').style.display='none';$('#gerQuien').hidden=false;$('#gerQuien').style.display=''});
 $('#gerNombres').addEventListener('click',e=>{const b=e.target.closest('[data-gerente]');if(!b)return;cajero=b.dataset.gerente;store.set('cajero',cajero);$('#gerQuien').hidden=true;$('#gerQuien').style.display='none';$('#duenaForm').hidden=false;$('#duenaForm').style.display='';setModo('caja',null,true);toast('Hola, '+cajero+' 👋')});
-$('#cajaNombres').addEventListener('click',e=>{const b=e.target.closest('[data-cajero]');if(!b)return;const nom=b.dataset.cajero;store.set('disp','caja');cajero=nom;store.set('cajero',cajero);$('#cajaQuien').hidden=true;$('#cajaForm').hidden=false;setModo('caja',null,false);if(cajero!==encargada())toast(cajero+' está cubriendo caja. Todo lo que cobre queda a su nombre.')});
+$('#cajaNombres').addEventListener('click',e=>{const b=e.target.closest('[data-cajero]');if(!b)return;entrarCaja(b.dataset.cajero)});
 function setDia(d){if(d===dia)return;dia=d;$('#cierreFecha').value=d;if(db)subDia();renderDyn()}
 $('#volverHoy').onclick=()=>setDia(hoy());
 $('#cierreFecha').addEventListener('change',e=>{if(e.target.value)setDia(e.target.value)});
@@ -3809,6 +3814,8 @@ $('#ajGuardar').onclick=async()=>{
   const insumos=[...$$('#ajIns .ins-card')].map(c=>({nombre:c.querySelector('[data-k="pnombre"]').value.trim(),area:c.querySelector('[data-k="parea"]').value.trim(),opciones:[...c.querySelectorAll('tbody tr')].map(tr=>({nombre:tr.querySelector('[data-k="nombre"]').value.trim(),costo:r2(tr.querySelector('[data-k="costo"]').value)})).filter(o=>o.nombre)})).filter(p=>p.nombre);
   const vacio=insumos.find(p=>!p.opciones.length);
   if(vacio){toast(`Agrega al menos una porción a ${vacio.nombre}.`);return}
+  {const E=leer('ajEst'),vistos={};for(const e of E){const v=String(e.pin||'').trim();if(!v)continue;if(vistos[v]){toast(`${e.nombre} y ${vistos[v]} tienen el mismo PIN. Cada persona debe tener uno distinto.`);return}vistos[v]=e.nombre}
+    const pd=String($('#ajPinD')?$('#ajPinD').value:cfg.pinDuenas||'').trim();if(pd&&vistos[pd]){toast(`El PIN de gerencia es igual al de ${vistos[pd]}. Usa uno distinto.`);return}}
   const nuevo={estilistas:leer('ajEst').map(o=>({...(cfg.estilistas.find(e=>e.nombre===o.nombre)||{}),...o})),servicios,insumos,itbms:r2($('#ajItbms').value),fondo:r2($('#ajFondo').value),comisionDefault:r2($('#ajCom').value),pinCaja:$('#ajPin').value.trim(),encargada:$('#ajEnc').value.trim()||'Rita',pagoDomingo:r2($('#ajDom').value),cajaEstricta:$('#ajCajaEst').checked,linkResenas:$('#ajRes').value.trim(),pinDuenas:$('#ajPinD').value.trim(),cubreCaja:$('#ajCubre').value.split(',').map(x=>x.trim()).filter(Boolean),adelantoPct:r2($('#ajAdPct').value),adelantoMin:r2($('#ajAdMin').value),comisionVenta:r2($('#ajVenta').value),premios:leer('ajPrem'),ventaAlq:leer('ajVAlq').filter(x=>x.nombre&&+x.precio>0),puntosPorDolar:r2($('#ajPtsD').value),puntosVigencia:r2($('#ajPtsV').value),puntosSello:r2($('#ajPtsS').value),puntosMinCanje:r2($('#ajPtsM').value)};
   try{await db.doc('config/main').set(nuevo);ajDirty=false;toast('Ajustes guardados')}catch(e){toast('No se pudieron guardar ('+e.code+').')}
 };
