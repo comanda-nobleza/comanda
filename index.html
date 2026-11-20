@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="16990811083c"</script>
-<script src="web.js?v=16990811083c"></script>
+<script>window.BUILD="6e16007803aa"</script>
+<script src="web.js?v=6e16007803aa"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -445,6 +445,26 @@ body:not(.es-web) .only-web{display:none!important}
 .tl-bl{position:absolute;left:56px;right:4px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--line) 0 6px,transparent 6px 12px);color:var(--muted);font-size:.75rem;padding:4px 8px}
 .tl-now{position:absolute;left:52px;right:0;height:0;border-top:2px solid #e5534b;z-index:3}.tl-now::before{content:'';position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:#e5534b}
 .tl-dia{display:grid;gap:4px;margin-bottom:6px}
+
+/* ===== versión teléfono (caja y gerencia) ===== */
+#tnav,#cobroPasos,.cp-nav,.tel-only{display:none}
+body.tel.m-caja #tabs,body.tel.m-caja #gSwitch{display:none!important}
+body.tel.m-caja #tnav{display:block}
+body.tel.m-caja{padding-bottom:84px}
+body.tel.m-caja .tel-only{display:revert}
+body.tel #v-agenda .tareas-hoy,body.tel #v-caja .tareas-hoy{display:none}
+#tnav button{font-size:.75rem;gap:0;padding:8px 2px 12px}#tnav .ic{font-size:1.35rem;line-height:1.2}#tnav button[aria-selected="true"]{color:var(--accent);font-weight:800}
+.tel-pills{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}.tel-pills button{border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:99px;padding:7px 12px;font:inherit;font-size:.85rem;font-weight:600;cursor:pointer}
+body.tel #cobroSheet .sheet{max-height:100dvh;height:100dvh;border-radius:0;width:100%;max-width:none}
+body.tel #cobroPasos{display:flex;gap:4px;font-size:.72rem;margin:4px 0 8px}#cobroPasos span{flex:1;text-align:center;padding:7px 2px;border-radius:8px;background:var(--surface);color:var(--muted);border:1px solid var(--line)}#cobroPasos .ok{color:var(--ok)}#cobroPasos .cur{background:var(--accent);color:#111;font-weight:800;border-color:var(--accent)}
+body.tel #cobroForm[data-paso="1"] [data-p]:not([data-p~="1"]),body.tel #cobroForm[data-paso="2"] [data-p]:not([data-p~="2"]),body.tel #cobroForm[data-paso="3"] [data-p]:not([data-p~="3"]){display:none!important}
+body.tel .cp-nav{display:inline-flex}body.tel #cobroForm:not([data-paso="3"]) #cobrarBtn{display:none}body.tel #cobroForm[data-paso="1"] #cpAtras{display:none}body.tel #cobroForm[data-paso="3"] #cpSig{display:none}
+body.tel #cobroForm .actions{position:sticky;bottom:0;background:var(--surface);padding:10px 0 calc(10px + env(safe-area-inset-bottom,0px));gap:8px}
+body.tel #cobroForm .actions{flex-wrap:nowrap}body.tel #cobroForm .actions .btn{flex:1;min-height:50px}body.tel #cobroForm:not([data-paso="1"]) .actions [data-close]{display:none}body.tel #cobroForm #cobrarBtn{flex:2;font-size:1.05rem}
+body.tel.movil [data-todo="efectivo"],body.tel.movil label[for="pEfectivo"]{display:none!important}
+body.tel #v-resumen.solo-pend > h2:not(:first-of-type),body.tel #v-resumen.solo-pend #resQ,body.tel #v-resumen.solo-pend #alqBox,body.tel #v-resumen.solo-pend #reactBox{display:none}
+body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
+.mas-l{display:grid;gap:8px}.mas-l button{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;font:inherit;font-weight:600;cursor:pointer}.mas-l .ic{font-size:1.3rem}
 </style>
 
 <div id="pracBar" class="prac-bar" hidden><span>🎓 <b>Práctica</b> · nada se guarda</span><button type="button" class="btn small" id="pracSalir">Salir</button></div>
@@ -590,8 +610,11 @@ body:not(.es-web) .only-web{display:none!important}
   </section>
 
   <!-- CAJA -->
+  <section class="view" id="v-tareas" hidden><h2>Tareas de hoy</h2><div class="tareas-hoy only-caja"></div></section>
+  <section class="view" id="v-formulas" hidden><h2>Fórmulas por llenar</h2><div id="formTel"></div></section>
   <section class="view" id="v-caja" hidden>
     <div class="tareas-hoy only-caja"></div>
+    <div class="tel-pills tel-only" id="telPills"></div>
     <div id="formPendBox" hidden></div>
     <div id="cajaPendBox"></div>
     <div id="pedPendBox"></div>
@@ -827,6 +850,8 @@ body:not(.es-web) .only-web{display:none!important}
 </main>
 
 <!-- bottom nav estilista -->
+<nav class="bnav only-caja" id="tnav" role="tablist" aria-label="Secciones"><div class="wrap" id="tnavIn"></div></nav>
+<div class="sheet-bg" id="masSheet" hidden><div class="sheet"><h3>Más</h3><div class="mas-l" id="masL"></div><div class="actions"><button type="button" class="btn ghost" data-close>Cerrar</button></div></div></div>
 <nav class="bnav only-est" id="bnav" role="tablist">
   <div class="wrap">
     <button role="tab" data-tab="clientas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg>Agenda</button>
@@ -856,10 +881,11 @@ body:not(.es-web) .only-web{display:none!important}
 <div class="sheet-bg" id="cobroSheet" hidden>
   <form class="sheet wide" id="cobroForm">
     <h3>Cerrar cuenta · <span id="cobroCliente"></span></h3>
-    <small>Factura primero en Swift. Aquí solo se registra el control interno.</small>
-    <b class="paso">1 · Revisa los servicios</b>
-    <ul class="lines" id="cobroLineas"></ul>
-    <div id="pscBox" style="display:grid;gap:8px"><button type="button" class="btn small" id="pscAdd" style="justify-self:start">+ Producto sin comisión</button>
+    <div id="cobroPasos"><span data-cps="1">1 Servicios</span><span data-cps="2">2 Descuento</span><span data-cps="3">3 Pago</span><span data-cps="4">4 Listo</span></div>
+    <small data-p="1">Factura primero en Swift. Aquí solo se registra el control interno.</small>
+    <b class="paso" data-p="1">1 · Revisa los servicios</b>
+    <ul class="lines" id="cobroLineas" data-p="1"></ul>
+    <div id="pscBox" style="display:grid;gap:8px" data-p="1"><button type="button" class="btn small" id="pscAdd" style="justify-self:start">+ Producto sin comisión</button>
       <div id="pscForm" hidden style="display:grid;gap:8px;border:1px dashed var(--line);border-radius:12px;padding:12px">
         <small>Productos que se cobran en Swift y no le dan comisión a nadie (ej.: champú Fanola).</small>
         <label class="f" for="pscProd">Producto<input id="pscProd" list="pscList" autocomplete="off" placeholder="Ej.: Champú Fanola"></label><datalist id="pscList"></datalist>
@@ -867,14 +893,14 @@ body:not(.es-web) .only-web{display:none!important}
         <label class="f" for="pscEst">Lo entregó<select id="pscEst"></select></label>
         <div class="row" style="gap:8px"><button type="button" class="btn small primary" id="pscOk">Agregar</button><button type="button" class="btn small ghost" id="pscCancel">Cancelar</button></div>
       </div></div>
-    <label class="row" for="cobroItbms" style="gap:8px"><input type="checkbox" id="cobroItbms"> Aplicar ITBMS (<span id="cobroItbmsPct"></span>%)</label>
-    <div class="sumbox" id="cobroTot"></div>
-    <fieldset id="ptsBox"><legend>2 · Puntos y ficha de la clienta</legend>
+    <label class="row" for="cobroItbms" style="gap:8px" data-p="1"><input type="checkbox" id="cobroItbms"> Aplicar ITBMS (<span id="cobroItbmsPct"></span>%)</label>
+    <div class="sumbox" id="cobroTot" data-p="1 2 3"></div>
+    <fieldset id="ptsBox" data-p="3"><legend>2 · Puntos y ficha de la clienta</legend>
       <label class="f" for="ptsTel">Teléfono<input id="ptsTel" type="tel" inputmode="tel" autocomplete="off" placeholder="Ej.: 6123-4567"></label>
       <div id="ptsInfo" style="display:grid;gap:8px"></div>
       <div id="ptsFicha" style="display:grid;gap:8px"></div>
     </fieldset>
-    <fieldset id="descBox">
+    <fieldset id="descBox" data-p="2">
       <legend>Descuento a la clienta</legend>
       <div class="pick" id="descPick"></div>
       <div id="descCampos" hidden style="display:grid;gap:8px">
@@ -885,7 +911,7 @@ body:not(.es-web) .only-web{display:none!important}
         <small>Solo se descuenta de los servicios marcados; la comisión de ese profesional se calcula sobre el precio con descuento. Caja puede dar hasta 15%; más de 15% necesita autorización de gerencia.</small>
       </div>
     </fieldset>
-    <fieldset id="cortBox">
+    <fieldset id="cortBox" data-p="2">
       <legend>Cortesía de gerencia</legend>
       <label for="cortOn" style="display:flex;flex-wrap:nowrap;gap:10px;align-items:center;font-weight:600"><input type="checkbox" id="cortOn" style="width:22px;height:22px;flex:none"> La cubre gerencia (la clienta no paga en caja)</label>
       <div id="cortCampos" hidden style="display:grid;gap:8px">
@@ -895,8 +921,9 @@ body:not(.es-web) .only-web{display:none!important}
         <small>No se factura en Swift. El profesional cobra su comisión normal. Queda <b>pendiente hasta que gerencia la apruebe</b>.</small>
       </div>
     </fieldset>
-    <fieldset>
+    <fieldset data-p="3" id="pagoBox">
       <legend>3 · Lo que pagó la clienta</legend>
+      <div class="notice warn tel-movil-ef" hidden style="margin:0">Desde el teléfono se cobra <b>solo con tarjeta o Yappy</b>. El efectivo lo recibe quien tiene la caja, en la computadora.</div>
       <small>Escribe lo que pasó por tarjeta, lo que entregó en efectivo y lo que pagó por Yappy, <b>con la propina incluida</b>. El sistema calcula el vuelto.</small>
       <div class="row">
         <button type="button" class="btn small" data-todo="tarjeta">Todo tarjeta</button>
@@ -911,12 +938,12 @@ body:not(.es-web) .only-web{display:none!important}
       <div class="cuadra" id="cuadra"></div>
       <div id="termBox" hidden style="display:grid;gap:8px;border:1px solid var(--line);border-radius:12px;padding:12px"></div>
     </fieldset>
-    <fieldset>
+    <fieldset data-p="3">
       <legend>4 · Propinas</legend>
       <div id="propRows" style="display:grid;gap:8px"></div>
       <button type="button" class="btn small" id="addProp" style="justify-self:start">+ Propina</button>
     </fieldset>
-    <div class="actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary" id="cobrarBtn">Cerrar cuenta</button></div>
+    <div class="actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button type="button" class="btn cp-nav" id="cpAtras">← Atrás</button><button type="button" class="btn primary cp-nav" id="cpSig">Siguiente →</button><button class="btn primary" id="cobrarBtn">Cerrar cuenta</button></div>
   </form>
 </div>
 
@@ -1099,15 +1126,39 @@ function setModo(m,nombre,d){
   else setTab('inicio');
   if(m&&!PRAC&&TOUR_AUTO)setTimeout(()=>tourStart(false),900);else if(!m&&typeof tourEnd==='function'&&tourS)tourEnd();
 }
-const G_GER=['resumen','mant','inv','quincena','reportes','ajustes'],G_OP=['caja','agenda','cierre','fichas','mant','inv'];
+const G_GER=['resumen','autorizar','mant','inv','quincena','reportes','ajustes'],G_OP=['caja','agenda','tareas','formulas','cierre','fichas','mant','inv'];
+/* ---------- versión teléfono ---------- */
+const esMovil=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
+const TELQ=window.matchMedia?matchMedia('(max-width: 760px)'):{matches:false,addEventListener(){}};
+function telAplicar(){document.body.classList.toggle('tel',!!TELQ.matches);document.body.classList.toggle('movil',typeof esMovil!=='undefined'&&esMovil);try{renderTnav()}catch(e){}}
+try{TELQ.addEventListener('change',telAplicar)}catch(e){}
+const TN_OP=[['caja','🧾','Cuentas'],['agenda','📅','Agenda'],['tareas','✅','Tareas'],['formulas','🎨','Fórmulas'],['mas','☰','Más']],TN_GER=[['autorizar','⚡','Autorizar'],['resumen','📊','Resumen'],['reportes','📈','Reportes'],['inv','📦','Inventario'],['mas','☰','Más']];
+const enGer=()=>duena&&$('#gSwitch [data-g="ger"]')&&$('#gSwitch [data-g="ger"]').getAttribute('aria-pressed')==='true';
+telAplicar&&setTimeout(telAplicar,0);
+function renderTnav(){const n=$('#tnavIn');if(!n)return;const L=enGer()?TN_GER:TN_OP;
+  const badge=k=>{if(k==='tareas'){try{const D=tareasDatos(),x=D.conf.length+D.rec.length+D.form.length+D.mant.length+D.react.length+D.otros.length;return x?` <span class="badge">${x}</span>`:''}catch(e){return ''}}if(k==='formulas')return formPend.length?` <span class="badge">${formPend.length}</span>`:'';if(k==='autorizar'){const x=(descSolPend||[]).length+(cortPend||[]).length+(cierreSols||[]).length;return x?` <span class="badge">${x}</span>`:''}return ''};
+  const h=L.map(([k,ic,t])=>`<button type="button" role="tab" data-tn="${k}" aria-selected="${k===tab}"><span class="ic">${ic}</span>${t}${badge(k)}</button>`).join('');if(n.innerHTML!==h)n.innerHTML=h}
+function abrirMas(){const ger=enGer(),it=ger?[['quincena','🗓️','Quincena'],['mant','🔧','Mantenimiento'],['ajustes','⚙️','Ajustes'],['op','🧾','Ir a Operación (caja)']]:[['cierre','📋','Cierre del día'],['fichas','📇','Fichas de clientas'],['mant','🔧','Mantenimiento'],['inv','📦','Inventario'],...(duena?[['ger','⚡','Ir a Gerencia']]:[])];
+  $('#masL').innerHTML=it.map(([k,ic,t])=>`<button type="button" data-mas="${k}"><span class="ic">${ic}</span>${t}</button>`).join('')+`<button type="button" data-mas="cambiar"><span class="ic">👤</span>Cambiar de usuario</button>`;$('#masSheet').hidden=false}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-tn]');if(b){const k=b.dataset.tn;if(k==='mas'){abrirMas();return}setTab(k);window.scrollTo(0,0);return}
+  const m=e.target.closest('[data-mas]');if(m){const k=m.dataset.mas;$('#masSheet').hidden=true;if(k==='op'){$('#gSwitch [data-g="op"]').click();return}if(k==='ger'){$('#gSwitch [data-g="ger"]').click();return}if(k==='cambiar'){const c=$('#salir');if(c)c.click();return}setTab(k);window.scrollTo(0,0);return}
+  const tp=e.target.closest('[data-tpill]');if(tp){setTab(tp.dataset.tpill);window.scrollTo(0,0)}});
+function renderTelExtra(){if(!document.body.classList.contains('tel')||modo!=='caja')return;
+  try{const D=tareasDatos(),pc=D.conf.length,fp=D.form.length,rc=D.rec.length,ot=D.mant.length+D.react.length+D.otros.length;
+    const h=[pc&&`<button type="button" data-tpill="tareas">📅 ${pc} por confirmar</button>`,fp&&`<button type="button" data-tpill="formulas">🎨 ${fp} fórmula${fp>1?'s':''}</button>`,rc&&`<button type="button" data-tpill="tareas">💬 ${rc} recordar</button>`,ot&&`<button type="button" data-tpill="tareas">🔁 ${ot} más</button>`].filter(Boolean).join('');const tpl=$('#telPills');if(tpl&&tpl.innerHTML!==h)tpl.innerHTML=h}catch(e){}
+  const f=$('#formTel');if(f){const h=formPend.length?formPend.map(l=>`<div class="adel-row th-r"><div><b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}<br><small>${l.fecha===hoy()?'Hoy':fechaCorta(l.fecha)}</small></div><button class="btn small primary" data-fx="${l.id}">Llenar fórmula</button></div>`).join(''):'<div class="empty">✓ No hay fórmulas por llenar.</div>';if(f.innerHTML!==h)f.innerHTML=h}
+  renderTnav()}
+/* cobro por pasos en el teléfono */
+function cobroPaso(n){const f=$('#cobroForm');f.dataset.paso=n;$$('#cobroPasos [data-cps]').forEach(x=>{const k=+x.dataset.cps;x.className=k<n?'ok':k===n?'cur':''});const sh=$('#cobroSheet .sheet');if(sh)sh.scrollTop=0}
+document.addEventListener('click',e=>{if(e.target.closest('#cpSig')){const n=+($('#cobroForm').dataset.paso||1);cobroPaso(Math.min(3,n+1));return}if(e.target.closest('#cpAtras')){const n=+($('#cobroForm').dataset.paso||1);cobroPaso(Math.max(1,n-1))}});
 function setTab(t){
   if(modo==='caja'&&t==='insumos'){t='inv';invSub=duena?'comp':'cmp'}
   if(modo==='est'&&esLimp(soy)&&(t==='clientas'||t==='venta'))t='mias';
   if(!duena&&G_GER.includes(t)&&!G_OP.includes(t))t='caja';
   if(modo==='caja'){const g=duena&&G_GER.includes(t)&&!(['mant','inv'].includes(t)&&$('#gSwitch [data-g="op"]').getAttribute('aria-pressed')==='true')?'ger':'op';$$('#gSwitch button').forEach(b=>b.setAttribute('aria-pressed',b.dataset.g===g));$$('#tabs button[data-tab]').forEach(b=>b.hidden=duena&&!(g==='ger'?G_GER:G_OP).includes(b.dataset.tab));if(t==='resumen'&&dia!==hoy())setDia(hoy())}
-  tab=t;
+  tab=t;const vt=t==='autorizar'?'resumen':t;{const vr=$('#v-resumen');if(vr)vr.classList.toggle('solo-pend',t==='autorizar')}
   $$('#tabs button,#bnav button').forEach(b=>b.setAttribute('aria-selected',b.dataset.tab===t));
-  $$('.view').forEach(v=>v.hidden=v.id!=='v-'+t);
+  $$('.view').forEach(v=>v.hidden=v.id!=='v-'+vt);try{renderTnav()}catch(e){}if(t==='formulas'||t==='tareas')try{renderDyn()}catch(e){}
   if(modo==='est'&&t==='clientas')$('#v-agenda').hidden=false;
   if(t==='ajustes'&&!ajDirty)renderAjustes();
   if(t==='mias'){miasCache=null;renderMias()}
@@ -1763,10 +1814,11 @@ function lockHtml(){const ab=turnoAbierto(),pr=turnoPorRecibir(),yo=esc(cajero);
   const alCierre=turnosHoy.some(t=>t.entrega&&t.entrega.a==='cierre');
   return `<div class="ic">💰</div><h2>Hola, ${yo}</h2><p>${alCierre?'La caja se entregó al cierre. Si vas a seguir trabajando, recíbela de nuevo.':'Antes de empezar, cuenta el fondo de caja y recíbela. Hasta entonces no se puede usar nada de caja.'}</p><button type="button" class="btn primary" data-caja-recibir>Recibir caja</button>`}
 function aplicarLock(){const L=$('#cajaLock');if(!L)return false;const ab=turnoAbierto();
-  const lock=modo==='caja'&&!duena&&!PRAC&&cajaEstricta()&&!(turnosOk&&ab&&ab.cajero===cajero);
+  const lock=modo==='caja'&&!duena&&!PRAC&&!esMovil&&cajaEstricta()&&!(turnosOk&&ab&&ab.cajero===cajero);
   if(lock){L.innerHTML=lockHtml();L.hidden=false;$('#tabs').hidden=true;$$('.view').forEach(v=>v.hidden=true);$('#cajaBar').hidden=true;cajaLocked=true;return true}
   L.hidden=true;$('#tabs').hidden=false;if(cajaLocked){cajaLocked=false;if(modo==='caja')setTimeout(()=>setTab(duena?'resumen':'caja'),0)}return false}
 function renderCajaBar(){const bar=$('#cajaBar');if(!bar)return;if(aplicarLock())return;if(modo!=='caja'||duena||PRAC){bar.hidden=true;return}subTurnos();bar.hidden=false;const ab=turnoAbierto(),pr=turnoPorRecibir();
+  if(esMovil){bar.innerHTML=`<span>💰 ${ab?`Caja: <b>${esc(ab.cajero)}</b> (en la computadora)`:'Nadie tiene la caja abierta'} · desde el teléfono cobras con tarjeta o Yappy</span>`;return}
   if(pr){bar.innerHTML=pr.entrega.a===cajero?`<span>💰 <b>${esc(pr.cajero)}</b> te entregó la caja</span><button type="button" class="btn small primary" data-caja-recibir>Recibir caja de ${esc(pr.cajero)}</button>`:`<span>💰 Caja entregada a <b>${esc(pr.entrega.a)}</b> · esperando que la reciba</span>${pr.cajero===cajero?`<button type="button" class="btn small ghost" data-caja-cancelar>Cancelar entrega</button>`:''}`;return}
   if(ab){bar.innerHTML=`<span>💰 Caja: <b>${esc(ab.cajero)}</b> · desde ${hora(ab.inicio)}</span>${ab.cajero===cajero?`<button type="button" class="btn small" data-caja-entregar>Entregar caja</button>`:`<small class="muted">${esc(ab.cajero)} tiene la caja.</small>`}`;return}
   bar.innerHTML=`<span>💰 Nadie tiene la caja${turnosHoy.some(t=>t.entrega&&t.entrega.a==='cierre')?' (se entregó al cierre)':' hoy'}</span><button type="button" class="btn small primary" data-caja-recibir>Recibir caja</button>`}
@@ -2068,7 +2120,7 @@ function pintarResQ(d){
 }
 
 /* ---------- render ---------- */
-function renderDyn(){if(modo==='caja'){try{subTareas();renderTareas()}catch(e){console.warn(e)}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
+function renderDyn(){if(modo==='caja'){try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
   try{renderViejas()}catch(e){}
   try{revisarAvisos()}catch(e){}
   if(modo!=='caja'&&cajaLocked)aplicarLock();
@@ -3111,11 +3163,11 @@ $('#cobroLineas').addEventListener('click',async e=>{
     const insumos=(l.insumos||[]).filter((_,j)=>j!==+x.dataset.j);
     try{await db.doc('lineas/'+l.id).update({insumos,insumosTotal:r2(insumos.reduce((s,y)=>s+(+y.costo||0),0))});toast('Descuento quitado')}catch(err){toast('No se pudo guardar.')}}
 });
-function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab=turnoAbierto(),pr=turnoPorRecibir();if(pr){toast(`Hay un cambio de caja en curso: ${pr.entrega.a} debe recibirla primero.`);return}if(!ab){toast('Primero recibe la caja (botón arriba).');return}if(ab.cajero!==cajero){toast(`${ab.cajero} tiene la caja. Para cobrar, primero que te la entregue.`);return}}
+function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&!esMovil&&cajaEstricta()){const ab=turnoAbierto(),pr=turnoPorRecibir();if(pr){toast(`Hay un cambio de caja en curso: ${pr.entrega.a} debe recibirla primero.`);return}if(!ab){toast('Primero recibe la caja (botón arriba).');return}if(ab.cajero!==cajero){toast(`${ab.cajero} tiene la caja. Para cobrar, primero que te la entregue.`);return}}
   cdOpen=null;
   {const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede cobrar. Pide a gerencia que abra el cierre.');return}}
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
-  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;
+  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;cobroPaso(1);{const w=$('#cobroSheet .tel-movil-ef');if(w)w.hidden=!esMovil}
   if(t.descSol&&t.descSol.estado!=='rechazada'&&+t.descSol.pct>0){const v=+t.descSol.pct;cobDesc=DESC_OP.includes(v)?{p:v,otro:false}:{p:0,otro:true};if(cobDesc.otro)$('#descOtro').value=v;$('#descMot').value=t.descSol.motivo||'';descSel=new Set((t.descSol.lineas||[]).filter(id=>lineasDe(t.id).some(l=>l.id===id)));renderDesc()}cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
   $('#cobroCliente').textContent=t.cliente;$('#cobroItbmsPct').textContent=cfg.itbms;
   $('#cobroItbms').checked=t.itbmsAplicado!==false;
@@ -3180,6 +3232,7 @@ $('#cobroForm').addEventListener('submit',async e=>{
   if(cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'&&!cobroPts.canje.lineaId){toast('Elige qué servicio cubre el premio de puntos.');return}
   if(cobroPts.canje&&(()=>{const sd=saldoPts(Array.isArray(cobroPts.movs)?cobroPts.movs:[]).saldo;return sd<ptsMin()||sd<+cobroPts.canje.premio.puntos})()){toast('No le alcanzan los puntos para ese premio.');return}
   if(cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'){const cl=cobroPts.canje.lineaId;if(!cl){toast('Toca qué servicio de la cuenta cubre el premio.');return}const t0=tickets.find(x=>x.id===cobroTicket);if(t0&&!lineasDe(t0.id).some(l=>l.id!==cl&&!l.venta&&+l.precio>0)){toast('El premio de temporada se canjea junto con un servicio pagado.');return}}
+  if(esMovil&&(+$('#pEfectivo').value||0)>0){toast('Desde el teléfono no se cobra efectivo. Cóbralo en la computadora de caja.');return}
   if(cobDesc.otro&&!descPct()){toast('Escribe el porcentaje del descuento.');$('#descOtro').focus();return}
   if(descPct()&&!descSel.size){toast('Marca a qué servicio se le aplica el descuento.');$('#descBox').scrollIntoView({block:'center'});return}
   if(descPct()&&!$('#descMot').value.trim()){toast('Escribe el motivo del descuento.');$('#descMot').focus();return}
@@ -3227,7 +3280,7 @@ function renderCierre(){
   <div class="row" style="margin-top:8px;gap:16px"></div>`;
   $('#cierreConc').innerHTML=conciliaHtml(c,concilia(c,cierre.fz||{}));
   {const bx=$('#difBox'),a=document.activeElement;if(bx){const h=difHtml(difLista(c,concilia(c,cierre.fz||{})));if(bx.innerHTML!==h){const fk=a&&bx.contains(a)&&a.tagName==='INPUT'?a.closest('[data-dk]').dataset.dk:null,fv=fk&&a.value,fp=fk&&a.selectionStart;bx.innerHTML=h;if(fk){const r=[...bx.querySelectorAll('[data-dk]')].find(x=>x.dataset.dk===fk),i=r&&r.querySelector('[data-ddet]');if(i){i.value=fv;i.focus();try{i.setSelectionRange(fp,fp)}catch(e){}}}}}}
-  try{renderCierreLock()}catch(e){}
+  try{renderCierreLock()}catch(e){}setTimeout(()=>{try{renderCierreLock()}catch(e){}},0);
   const tb=$('#fzTable tbody');
   if(cierreRendered!==dia||!tb.children.length){
     tb.innerHTML=METODOS.map(m=>`<tr data-m="${m}"><td><b>${MET_LBL[m]}</b></td><td class="n"><input id="fz-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Fiscal Z ${MET_LBL[m]}"></td><td class="n"><input id="real-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Total real ${MET_LBL[m]}"></td><td class="n tr"></td><td class="ex" style="white-space:normal"></td><td class="rx" style="white-space:normal"></td></tr>`).join('');
@@ -3271,7 +3324,7 @@ function renderCierre(){
   $('#prodTable tfoot').innerHTML=pr.length?`<tr><td>Total</td><td class="n">${T.n}</td><td class="n">${money(T.b)}</td><td class="n">${T.s?'−'+money(T.s):''}</td><td class="n">−${money(T.i)}</td><td class="n">${money(T.ne)}</td><td class="only-duena"></td><td class="n only-duena">${money(T.pa)}</td><td></td></tr>`:'';
 }
 $('#cierreNotas').addEventListener('change',e=>saveCierre({notas:e.target.value}));
-$('#gastoForm').addEventListener('submit',async e=>{if(diaCerrado()){e.preventDefault();toast('El cierre de este día ya se guardó. Pide a gerencia que lo abra.');return}
+$('#gastoForm').addEventListener('submit',async e=>{if(esMovil){e.preventDefault();toast('Los gastos de caja se registran en la computadora del salón.');return}if(diaCerrado()){e.preventDefault();toast('El cierre de este día ya se guardó. Pide a gerencia que lo abra.');return}
   e.preventDefault();if(!needDb())return;
   try{await db.collection('gastos').add({fecha:dia,detalle:$('#gastoDet').value.trim(),monto:r2($('#gastoMonto').value),metodo:$('#gastoMet').value,creado:new Date().toISOString(),por:cajero||encargada()});$('#gastoDet').value='';$('#gastoMonto').value=''}
   catch(err){toast('No se pudo agregar el gasto.')}
@@ -3631,11 +3684,12 @@ function dibujarCierre(doc){
   y+=40;doc.setLineWidth(.7);doc.setDrawColor(17);const fw=(W-2*M-40)/2;doc.line(M,y,M+fw,y);doc.line(W-M-fw,y,W-M,y);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(17);doc.text('Cerró caja',M+fw/2,y+11,{align:'center'});doc.text('Revisó gerencia',W-M-fw/2,y+11,{align:'center'});
 }
 const diaCerrado=f=>!!(cierre&&cierre.cerrado&&(f||dia)===dia);
-function renderCierreLock(){const bx=$('#cierreLock');if(!bx)return;const z=cierre.cerrado,sol=cierre.reabrirSol;
+function renderCierreLock(){const bx=$('#cierreLock');if(!bx)return;const z=cierre.cerrado||(esMovil?{movil:1}:null),sol=cierre.reabrirSol;
   $('#expDia').textContent=z?'Descargar cierre (PDF)':'Guardar y descargar cierre';
   $$('#v-cierre input,#v-cierre textarea,#v-cierre select').forEach(i=>{if(i.id!=='cierreFecha'&&!i.closest('#cierreLock'))i.disabled=!!z});
   $$('#v-cierre [data-dmot],#v-cierre #gastoForm button,#v-cierre [data-act="del-gasto"]').forEach(b=>b.disabled=!!z);
   if(!z){if(bx.innerHTML)bx.innerHTML='';return}
+  if(z.movil&&!cierre.cerrado){const h='<div class="notice">🖥️ El cierre del día se llena y se guarda en la computadora del salón. Aquí solo lo puedes ver.</div>';if(bx.innerHTML!==h)bx.innerHTML=h;return}
   const h=`<div class="notice ok" style="display:grid;gap:8px"><span>🔒 <b>Cierre guardado</b> por ${esc(z.por||'')} el ${fechaCorta(ymd(new Date(z.fecha)))} a las ${hora(z.fecha)} · Ya no se puede modificar: ni cobros, ni reaperturas, ni gastos, ni números de este día.</span>
     ${duena?`<div class="row" style="gap:8px;flex-wrap:wrap">${sol&&!sol.resuelta?`<small>${esc(sol.por)} pidió abrirlo: «${esc(sol.motivo)}»</small>`:''}<button type="button" class="btn small" id="cierreAbrir">Abrir el cierre para corregir</button></div>`
       :sol&&!sol.resuelta?`<small>⏳ Se le pidió a gerencia que lo abra: «${esc(sol.motivo)}»</small>`:`<div class="row" style="gap:8px;flex-wrap:wrap"><input id="cierreSolMot" placeholder="¿Qué hay que corregir?" style="flex:1 1 220px" aria-label="Motivo para abrir el cierre"><button type="button" class="btn small" id="cierreSol">Pedir a gerencia que lo abra</button></div>`}</div>`;
@@ -3644,7 +3698,7 @@ document.addEventListener('click',async e=>{
   if(e.target.closest('#cierreSol')){const m=($('#cierreSolMot').value||'').trim();if(!m){toast('Escribe qué hay que corregir.');$('#cierreSolMot').focus();return}await saveCierre({reabrirSol:{por:cajero||encargada(),fecha:new Date().toISOString(),motivo:m}});toast('Solicitud enviada a gerencia');return}
   const ab=e.target.closest('#cierreAbrir');if(ab){if(!duena)return;if(!armed(ab))return;const ap=[...(cierre.aperturas||[]),{por:porGer(),fecha:new Date().toISOString(),motivo:(cierre.reabrirSol&&cierre.reabrirSol.motivo)||'Corrección de gerencia',cerradoAntes:cierre.cerrado}];
     await saveCierre({cerrado:null,aperturas:ap,reabrirSol:cierre.reabrirSol?{...cierre.reabrirSol,resuelta:true}:null});toast('Cierre abierto. Cuando termines, vuelve a «Guardar y descargar cierre».')}});
-async function pdfCierre(){
+async function pdfCierre(){if(esMovil&&!cierre.cerrado){toast('El cierre del día se guarda en la computadora del salón. Desde el teléfono solo puedes verlo.');return}
   if(!dl){toast('La descarga no está disponible en esta vista.');return}
   const c=calcCierre(tickets,lineas,gastos),K0=concilia(c,cierre.fz||{});if(K0.faltaZ.length){toast(`Falta el Fiscal Z de ${K0.faltaZ.join(', ')}. Escríbelo (pon 0 si no hubo).`);return}if(difFaltan()){toast('Hay diferencias sin explicar. Explícalas en «Diferencias por explicar».');$('#difBox').scrollIntoView({block:'center'});return}
   try{await cargarJs('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')}catch(e){toast('No cargó el generador de PDF. Recarga la página.');return}
@@ -3817,7 +3871,6 @@ const relDia=f=>f===hoy()?'Hoy':f===manana()?'Mañana':f===addDias(hoy(),-1)?'Ay
 const diaCita=f=>{const r=relDia(f);const l=new Date(f+'T12:00:00').toLocaleDateString('es-PA',{weekday:'long',day:'numeric',month:'long'});return r&&r!=='Ayer'?`${r.toLowerCase()}, ${l}`:l};
 function waNum(t){let d=String(t||'').replace(/\D/g,'');if(!d)return '';if(d.length===7||d.length===8)d='507'+d;return d.length>=10?d:''}
 /* En la computadora, WhatsApp se abre directo en la aplicación instalada; en el teléfono, wa.me ya abre la app */
-const esMovil=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
 function waApp(){if(esMovil)return false;try{return localStorage.getItem('waModo')!=='web'}catch(e){return true}}
 function waLink(tel,msg){const n=waNum(tel);if(!n)return '';return waApp()?`whatsapp://send?phone=${n}&text=${encodeURIComponent(msg)}`:`https://wa.me/${n}?text=${encodeURIComponent(msg)}`}
 document.addEventListener('click',e=>{const a=e.target.closest&&e.target.closest('a[href^="whatsapp://"]');if(!a)return;e.preventDefault();location.href=a.href},true);
