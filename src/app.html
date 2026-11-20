@@ -596,6 +596,7 @@ body:not(.es-web) .only-web{display:none!important}
       <h2>Cierre de caja</h2>
       <label class="f" for="cierreFecha">Fecha<input type="date" id="cierreFecha"></label>
     </div>
+    <div id="cierreLock"></div>
     <div id="cierreAviso"></div>
     <div id="cierrePasos"></div>
     <div id="difBox"></div>
@@ -642,7 +643,7 @@ body:not(.es-web) .only-web{display:none!important}
       <h3>Producción por estilista</h3>
       <div class="tw"><table id="prodTable"><thead><tr><th>Estilista</th><th class="n">Servicios</th><th class="n">Bruto</th><th class="n">Insumos</th><th class="n">Neto</th><th class="n only-duena">Comisión</th><th class="n only-duena">Le toca</th><th class="n">Propinas</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
     </div>
-    <div class="row"><button class="btn primary xl-btn" id="expDia">Descargar cierre (PDF)</button><small class="xl-off" hidden>La descarga no está disponible en esta vista.</small></div>
+    <div class="row"><button class="btn primary xl-btn" id="expDia">Guardar y descargar cierre</button><small class="xl-off" hidden>La descarga no está disponible en esta vista.</small></div>
   </section>
 
   <!-- QUINCENA -->
@@ -2007,10 +2008,11 @@ $('#respaldoBtn').onclick=async()=>{if(!needDb())return;if(typeof XLSX==='undefi
 
 /* ---------- resumen de gerencia ---------- */
 let resCitas=[],resCitasUn=null,resQc=null;
-var difRev=[],difRevUn=null;
-function subDifRev(){if(difRevUn||!db||!duena)return;difRevUn=db.collection('cierres').where('fecha','>=',addDias(hoy(),-45)).onSnapshot(s=>{difRev=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.difExp&&Object.keys(x.difExp).length&&!x.difRev).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));renderDifRev()},()=>{})}
-function renderDifRev(){const bx=$('#difRevBox');if(!bx)return;if(!duena||!difRev.length){bx.innerHTML='';return}
-  bx.innerHTML=`<div class="adel" style="gap:8px"><h3>Diferencias explicadas por caja (${difRev.length})</h3>${difRev.map(x=>`<div style="display:grid;gap:4px;border-top:1px solid var(--line);padding-top:8px"><div class="row between"><b>${fechaCorta(x.fecha)}</b><button type="button" class="btn small" data-difrev="${esc(x.id)}">Revisado</button></div>${Object.values(x.difExp).map(d=>`<small>${esc(d.lbl||'')} · <b>${money(Math.abs(+d.monto||0))}</b> · ${esc(d.motivo||'')}: ${esc(d.detalle||'')} <span class="muted">(${esc(d.por||'')})</span></small>`).join('')}</div>`).join('')}</div>`}
+var difRev=[],difRevUn=null,cierreSols=[];
+function subDifRev(){if(difRevUn||!db||!duena)return;difRevUn=db.collection('cierres').where('fecha','>=',addDias(hoy(),-45)).onSnapshot(s=>{cierreSols=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.cerrado&&x.reabrirSol&&!x.reabrirSol.resuelta);difRev=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.difExp&&Object.keys(x.difExp).length&&!x.difRev).sort((a,b)=>(b.fecha||'').localeCompare(a.fecha||''));renderDifRev()},()=>{})}
+function renderDifRev(){const bx=$('#difRevBox');if(!bx)return;if(!duena||!(difRev.length||cierreSols.length)){bx.innerHTML='';return}
+  bx.innerHTML=(cierreSols.length?`<div class="adel-pend"><h3>Piden abrir un cierre (${cierreSols.length})</h3>${cierreSols.map(x=>`<div class="adel-row"><div><b>${fechaCorta(x.fecha)}</b><br><small>${esc(x.reabrirSol.por)}: «${esc(x.reabrirSol.motivo)}»</small></div><button type="button" class="btn small" data-cierre-ir="${esc(x.fecha)}">Ver el cierre</button></div>`).join('')}</div>`:'')+(difRev.length?`<div class="adel" style="gap:8px"><h3>Diferencias explicadas por caja (${difRev.length})</h3>${difRev.map(x=>`<div style="display:grid;gap:4px;border-top:1px solid var(--line);padding-top:8px"><div class="row between"><b>${fechaCorta(x.fecha)}</b><button type="button" class="btn small" data-difrev="${esc(x.id)}">Revisado</button></div>${Object.values(x.difExp).map(d=>`<small>${esc(d.lbl||'')} · <b>${money(Math.abs(+d.monto||0))}</b> · ${esc(d.motivo||'')}: ${esc(d.detalle||'')} <span class="muted">(${esc(d.por||'')})</span></small>`).join('')}</div>`).join('')}</div>`:'')}
+document.addEventListener('click',e=>{const b=e.target.closest('[data-cierre-ir]');if(!b)return;try{$('#gSwitch [data-g="op"]').click()}catch(err){}setTimeout(()=>{setDia(b.dataset.cierreIr);setTab('cierre')},50)});
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-difrev]');if(!b)return;try{await db.doc('cierres/'+b.dataset.difrev).update({difRev:{por:porGer(),fecha:new Date().toISOString()}})}catch(err){toast('No se pudo guardar.')}});
 function renderResumen(){subDifRev();renderDifRev();
   if(db&&!resCitasUn)resCitasUn=db.collection('citas').where('fecha','>=',hoy()).where('fecha','<=',manana()).onSnapshot(s=>{resCitas=s.docs.map(d=>({id:d.id,...d.data()}));if(tab==='resumen')renderResumen()},()=>{});
@@ -2739,8 +2741,8 @@ document.addEventListener('click',async e=>{
   else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
     await db.doc('lineas/'+id).delete();if(l0&&l0.paqueteId)await paqRecontar(l0.paqueteId);if(l0&&l0.invId)try{await invMover(l0.invId,{dc:1,tipo:'Venta anulada',nota:l0.cliente||''})}catch(err){}}catch(err){toast('No se pudo quitar.')}}
   else if(act==='del-ticket'){if(!armed(b))return;try{await db.doc('tickets/'+id).delete()}catch(err){toast('No se pudo eliminar.')}}
-  else if(act==='reabrir'){if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta'});await reabrirPts(id);toast('Comanda reabierta. Los puntos de esa cuenta se quitaron; se vuelven a sumar al cerrarla.')}catch(err){toast('No se pudo reabrir.')}}
-  else if(act==='del-gasto'){if(!armed(b))return;try{await db.doc('gastos/'+id).delete()}catch(err){toast('No se pudo borrar.')}}
+  else if(act==='reabrir'){{const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede reabrir la cuenta. Pide a gerencia que abra el cierre.');return}}if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta'});await reabrirPts(id);toast('Comanda reabierta. Los puntos de esa cuenta se quitaron; se vuelven a sumar al cerrarla.')}catch(err){toast('No se pudo reabrir.')}}
+  else if(act==='del-gasto'){if(diaCerrado()){toast('El cierre de este día ya se guardó.');return}if(!armed(b))return;try{await db.doc('gastos/'+id).delete()}catch(err){toast('No se pudo borrar.')}}
 });
 $$('[data-close]').forEach(b=>b.onclick=()=>{b.closest('.sheet-bg').hidden=true});
 $$('.sheet-bg').forEach(bg=>bg.addEventListener('click',e=>{if(e.target===bg&&!bg.hasAttribute('data-fijo'))bg.hidden=true}));
@@ -3089,6 +3091,7 @@ $('#cobroLineas').addEventListener('click',async e=>{
 });
 function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&cajaEstricta()){const ab=turnoAbierto(),pr=turnoPorRecibir();if(pr){toast(`Hay un cambio de caja en curso: ${pr.entrega.a} debe recibirla primero.`);return}if(!ab){toast('Primero recibe la caja (botón arriba).');return}if(ab.cajero!==cajero){toast(`${ab.cajero} tiene la caja. Para cobrar, primero que te la entregue.`);return}}
   cdOpen=null;
+  {const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede cobrar. Pide a gerencia que abra el cierre.');return}}
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
   cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();descReset();tarjUser=false;
   if(t.descSol&&t.descSol.estado!=='rechazada'&&+t.descSol.pct>0){const v=+t.descSol.pct;cobDesc=DESC_OP.includes(v)?{p:v,otro:false}:{p:0,otro:true};if(cobDesc.otro)$('#descOtro').value=v;$('#descMot').value=t.descSol.motivo||'';descSel=new Set((t.descSol.lineas||[]).filter(id=>lineasDe(t.id).some(l=>l.id===id)));renderDesc()}cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
@@ -3193,7 +3196,7 @@ function renderCierreInputs(){
   if(document.activeElement!==$('#cierreNotas'))$('#cierreNotas').value=cierre.notas||'';
   {const lo=cierre.lote||{};TERM_K.forEach(k=>{const i=$('#lote-'+k);if(i&&document.activeElement!==i)i.value=lo[k]??''})}
 }
-async function saveCierre(patch){if(!needDb())return;try{await db.doc('cierres/'+dia).set({...cierre,...patch,fecha:dia,actualizado:new Date().toISOString(),actualizadoPor:cajero||encargada()})}catch(e){toast('No se pudo guardar el cierre.')}}
+async function saveCierre(patch){if(!needDb())return;if(cierre.cerrado&&!('cerrado' in patch)&&!('reabrirSol' in patch)){toast('El cierre de este día ya se guardó y no se puede modificar. Pide a gerencia que lo abra.');renderCierreInputs();renderDyn();return}try{await db.doc('cierres/'+dia).set({...cierre,...patch,fecha:dia,actualizado:new Date().toISOString(),actualizadoPor:cajero||encargada()})}catch(e){toast('No se pudo guardar el cierre.')}}
 function renderCierre(){
   $('#cierreFecha').value=dia;
   const c=calcCierre(tickets,lineas,gastos), fz=cierre.fz||{};
@@ -3202,6 +3205,7 @@ function renderCierre(){
   <div class="row" style="margin-top:8px;gap:16px"></div>`;
   $('#cierreConc').innerHTML=conciliaHtml(c,concilia(c,cierre.fz||{}));
   {const bx=$('#difBox'),a=document.activeElement;if(bx){const h=difHtml(difLista(c,concilia(c,cierre.fz||{})));if(bx.innerHTML!==h){const fk=a&&bx.contains(a)&&a.tagName==='INPUT'?a.closest('[data-dk]').dataset.dk:null,fv=fk&&a.value,fp=fk&&a.selectionStart;bx.innerHTML=h;if(fk){const r=[...bx.querySelectorAll('[data-dk]')].find(x=>x.dataset.dk===fk),i=r&&r.querySelector('[data-ddet]');if(i){i.value=fv;i.focus();try{i.setSelectionRange(fp,fp)}catch(e){}}}}}}
+  try{renderCierreLock()}catch(e){}
   const tb=$('#fzTable tbody');
   if(cierreRendered!==dia||!tb.children.length){
     tb.innerHTML=METODOS.map(m=>`<tr data-m="${m}"><td><b>${MET_LBL[m]}</b></td><td class="n"><input id="fz-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Fiscal Z ${MET_LBL[m]}"></td><td class="n"><input id="real-${m}" type="number" step="0.01" inputmode="decimal" style="width:100px;text-align:right" aria-label="Total real ${MET_LBL[m]}"></td><td class="n tr"></td><td class="ex" style="white-space:normal"></td><td class="rx" style="white-space:normal"></td></tr>`).join('');
@@ -3245,7 +3249,7 @@ function renderCierre(){
   $('#prodTable tfoot').innerHTML=pr.length?`<tr><td>Total</td><td class="n">${T.n}</td><td class="n">${money(T.b)}</td><td class="n">−${money(T.i)}</td><td class="n">${money(T.ne)}</td><td class="only-duena"></td><td class="n only-duena">${money(T.pa)}</td><td></td></tr>`:'';
 }
 $('#cierreNotas').addEventListener('change',e=>saveCierre({notas:e.target.value}));
-$('#gastoForm').addEventListener('submit',async e=>{
+$('#gastoForm').addEventListener('submit',async e=>{if(diaCerrado()){e.preventDefault();toast('El cierre de este día ya se guardó. Pide a gerencia que lo abra.');return}
   e.preventDefault();if(!needDb())return;
   try{await db.collection('gastos').add({fecha:dia,detalle:$('#gastoDet').value.trim(),monto:r2($('#gastoMonto').value),metodo:$('#gastoMet').value,creado:new Date().toISOString(),por:cajero||encargada()});$('#gastoDet').value='';$('#gastoMonto').value=''}
   catch(err){toast('No se pudo agregar el gasto.')}
@@ -3604,6 +3608,20 @@ function dibujarCierre(doc){
     cell(M,y,DW,h,t.replace('✓','(ok)'),{align:'left',bold:bad||bold,color:col});cell(M+DW,y,80,h,v,{bold:bad||bold,color:col,align:'right'});y+=h});
   y+=40;doc.setLineWidth(.7);doc.setDrawColor(17);const fw=(W-2*M-40)/2;doc.line(M,y,M+fw,y);doc.line(W-M-fw,y,W-M,y);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(17);doc.text('Cerró caja',M+fw/2,y+11,{align:'center'});doc.text('Revisó gerencia',W-M-fw/2,y+11,{align:'center'});
 }
+const diaCerrado=f=>!!(cierre&&cierre.cerrado&&(f||dia)===dia);
+function renderCierreLock(){const bx=$('#cierreLock');if(!bx)return;const z=cierre.cerrado,sol=cierre.reabrirSol;
+  $('#expDia').textContent=z?'Descargar cierre (PDF)':'Guardar y descargar cierre';
+  $$('#v-cierre input,#v-cierre textarea,#v-cierre select').forEach(i=>{if(i.id!=='cierreFecha'&&!i.closest('#cierreLock'))i.disabled=!!z});
+  $$('#v-cierre [data-dmot],#v-cierre #gastoForm button,#v-cierre [data-act="del-gasto"]').forEach(b=>b.disabled=!!z);
+  if(!z){if(bx.innerHTML)bx.innerHTML='';return}
+  const h=`<div class="notice ok" style="display:grid;gap:8px"><span>🔒 <b>Cierre guardado</b> por ${esc(z.por||'')} el ${fechaCorta(ymd(new Date(z.fecha)))} a las ${hora(z.fecha)} · Ya no se puede modificar: ni cobros, ni reaperturas, ni gastos, ni números de este día.</span>
+    ${duena?`<div class="row" style="gap:8px;flex-wrap:wrap">${sol&&!sol.resuelta?`<small>${esc(sol.por)} pidió abrirlo: «${esc(sol.motivo)}»</small>`:''}<button type="button" class="btn small" id="cierreAbrir">Abrir el cierre para corregir</button></div>`
+      :sol&&!sol.resuelta?`<small>⏳ Se le pidió a gerencia que lo abra: «${esc(sol.motivo)}»</small>`:`<div class="row" style="gap:8px;flex-wrap:wrap"><input id="cierreSolMot" placeholder="¿Qué hay que corregir?" style="flex:1 1 220px" aria-label="Motivo para abrir el cierre"><button type="button" class="btn small" id="cierreSol">Pedir a gerencia que lo abra</button></div>`}</div>`;
+  if(bx.innerHTML!==h)bx.innerHTML=h}
+document.addEventListener('click',async e=>{
+  if(e.target.closest('#cierreSol')){const m=($('#cierreSolMot').value||'').trim();if(!m){toast('Escribe qué hay que corregir.');$('#cierreSolMot').focus();return}await saveCierre({reabrirSol:{por:cajero||encargada(),fecha:new Date().toISOString(),motivo:m}});toast('Solicitud enviada a gerencia');return}
+  const ab=e.target.closest('#cierreAbrir');if(ab){if(!duena)return;if(!armed(ab))return;const ap=[...(cierre.aperturas||[]),{por:porGer(),fecha:new Date().toISOString(),motivo:(cierre.reabrirSol&&cierre.reabrirSol.motivo)||'Corrección de gerencia',cerradoAntes:cierre.cerrado}];
+    await saveCierre({cerrado:null,aperturas:ap,reabrirSol:cierre.reabrirSol?{...cierre.reabrirSol,resuelta:true}:null});toast('Cierre abierto. Cuando termines, vuelve a «Guardar y descargar cierre».')}});
 async function pdfCierre(){
   if(!dl){toast('La descarga no está disponible en esta vista.');return}
   const c=calcCierre(tickets,lineas,gastos),K0=concilia(c,cierre.fz||{});if(K0.faltaZ.length){toast(`Falta el Fiscal Z de ${K0.faltaZ.join(', ')}. Escríbelo (pon 0 si no hubo).`);return}if(difFaltan()){toast('Hay diferencias sin explicar. Explícalas en «Diferencias por explicar».');$('#difBox').scrollIntoView({block:'center'});return}
@@ -3611,7 +3629,7 @@ async function pdfCierre(){
   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'pt',format:'letter'});
   dibujarCierre(doc);if(lineas.length){doc.addPage();dibujarComandas(doc)}
   const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(120);doc.text(`Hoja ${i} de ${n} · ${SALON} · Control interno`,306,776,{align:'center'})}
-  try{await dl.save({filename:`Cierre ${dia}.pdf`,data:doc.output('blob')});toast('Cierre en PDF listo')}catch(err){if(!(err&&err.code==='declined'))toast('No se pudo crear el PDF.')}}
+  try{await dl.save({filename:`Cierre ${dia}.pdf`,data:doc.output('blob')});if(!cierre.cerrado){await saveCierre({cerrado:{por:cajero||encargada()||porGer(),fecha:new Date().toISOString()}});toast('Cierre guardado y descargado. Ya no se puede modificar.')}else toast('Cierre en PDF listo')}catch(err){if(!(err&&err.code==='declined'))toast('No se pudo crear el PDF.')}}
 
 async function exportDia(){
   if(typeof XLSX==='undefined'){toast('No cargó el generador de Excel. Recarga la página.');return}
