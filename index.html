@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="88b27afa29de"</script>
-<script src="web.js?v=88b27afa29de"></script>
+<script>window.BUILD="19da112d2bcd"</script>
+<script src="web.js?v=19da112d2bcd"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -729,9 +729,10 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
   <!-- FICHAS -->
   <!-- INSUMOS -->
   <section class="view" id="v-inv" hidden>
-    <div class="row between" style="flex-wrap:wrap;gap:8px"><h2>Inventario</h2><small class="muted" id="invResumen"></small></div>
+    <div class="row between" style="flex-wrap:wrap;gap:8px"><h2>Inventario</h2><span class="row" style="gap:8px;align-items:center"><small class="muted" id="invResumen"></small><button type="button" class="btn small only-duena" id="invNuevoBtn">+ Producto nuevo</button></span></div>
     <div class="pick" id="invSub" role="group" aria-label="Sección del inventario"><button type="button" data-inv-sub="inv" aria-pressed="true">Productos</button><button type="button" data-inv-sub="comp" aria-pressed="false">Por comprar <span id="invCompN"></span></button><button type="button" data-inv-sub="cmp" aria-pressed="false">Comprados <span id="invCmpN"></span></button><button type="button" data-inv-sub="mov" aria-pressed="false">Movimientos</button></div>
     <div id="invTools" style="display:grid;gap:8px"><label class="f" for="invQ">Buscar<input id="invQ" type="search" placeholder="Producto, marca o tono" autocomplete="off"></label><div class="inv-ub" id="invUb" role="group" aria-label="Ubicación"></div></div>
+    <div id="invCarga"></div>
     <div id="invAl"></div>
     <div id="invOut"></div>
   </section>
@@ -1611,6 +1612,38 @@ async function invMover(pid,o){if(!db||!pid)return null;const ref=db.doc('invent
 var invB={},invBL={};
 function invBundle(u){if(invBL[u])return;invBL[u]=1;fetch(u).then(r=>r.json()).then(j=>{Object.assign(invB,j);if(modo==='caja'&&tab==='inv'&&$('#invSheet').hidden)renderInv()}).catch(()=>{invBL[u]=0})}
 const invFoto=p=>{if(!p)return '';if(p.foto)return `<img src="${esc(p.foto)}" alt="" loading="lazy">`;if(p.fotoB){if(invB[p.id])return `<img src="${invB[p.id]}" alt="" loading="lazy">`;invBundle(p.fotoB)}return ''};
+const INV_CARGA=[
+ {ubic:'Cafetería y Bar',marca:'Coca-Cola',nombre:'Coca-Cola Sabor Original',pres:'botella 250 ml',cerr:3,abie:1},
+ {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Flor de Jamaica',pres:'caja de 20 sobres',cerr:3,abie:0},
+ {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Canela',pres:'caja de 20 sobres',cerr:2,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Corona',nombre:'Coronita (cerveza pequeña)',pres:'botella',cerr:1,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Sello Rojo',nombre:'Café molido',pres:'bolsa 1000 g',cerr:1,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Beringer',nombre:'Vino Main & Vine White Zinfandel',pres:'botella 750 ml',cerr:4,abie:0},
+ {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Mini Bum surtido',pres:'bolsa de 100 caramelos',cerr:1,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Coffee Delight original',pres:'bolsa de 100 caramelos (380 g)',cerr:2,abie:1}];
+const invKey=x=>norm((x.marca||'')+' '+(x.nombre||'')).toLowerCase();
+const invCargaPend=()=>{const ya=new Set(invs.map(invKey));return INV_CARGA.filter(x=>!ya.has(invKey(x)))};
+function invCargaHtml(){if(!duena||!invUn||!invs.length)return '';const L=invCargaPend();if(!L.length)return '';return `<div class="notice warn" style="display:grid;gap:8px;margin:6px 0"><b>📦 ${L.length} producto${L.length>1?'s':''} nuevo${L.length>1?'s':''} listo${L.length>1?'s':''} para agregar</b><small>${L.map(x=>esc(x.nombre)).join(' · ')}</small><button type="button" class="btn small primary" data-inv-carga style="justify-self:start">Revisar y agregar</button></div>`}
+async function invAlta(x,tipo){const k=invKey(x);if(invs.some(p=>invKey(p)===k))return null;const cerr=Math.max(0,Math.round(+x.cerr||0)),abie=Math.max(0,Math.round(+x.abie||0));
+  const doc={ubic:x.ubic||'Otros',marca:norm(x.marca||''),nombre:norm(x.nombre),pres:norm(x.pres||''),cerr,abie,min:Math.max(0,Math.round(+x.min||0)),precio:+x.precio>0?r2(+x.precio):null,tinte:false,foto:'',orden:9999,creado:new Date().toISOString(),creadoPor:invQuien()};
+  const r=await db.collection('inventario').add(doc);await db.collection('invMov').add({fecha:new Date().toISOString(),dia:hoy(),pid:r.id,marca:doc.marca,producto:doc.nombre,pres:doc.pres,dc:cerr,da:abie,cerr,abie,tipo:tipo||'Producto nuevo',nota:'',por:invQuien()});invMovs=null;return r.id}
+function invNuevoForm(){const ub=INV_UB.map(u=>`<option>${esc(u)}</option>`).join('');
+  $('#invBody').innerHTML=`<h3>Producto nuevo</h3><label class="f" for="inNUb">Área<select id="inNUb">${ub}</select></label><label class="f" for="inNMk">Marca<input id="inNMk" autocomplete="off" placeholder="Ej.: Biokera"></label><label class="f" for="inNNm">Nombre del producto<input id="inNNm" autocomplete="off" placeholder="Ej.: Vial reconstructor (R)"></label><label class="f" for="inNPr">Presentación<input id="inNPr" autocomplete="off" placeholder="Ej.: ampolla 13 ml, frasco 1000 ml"></label>
+  <div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><label class="f" for="inNC">Cerrados<input id="inNC" type="number" min="0" step="1" value="0" inputmode="numeric"></label><label class="f" for="inNA">Abiertos<input id="inNA" type="number" min="0" step="1" value="0" inputmode="numeric"></label><label class="f" for="inNMi">Mínimo (avisa para comprar)<input id="inNMi" type="number" min="0" step="1" value="0" inputmode="numeric"></label><label class="f" for="inNP">Precio de venta (opcional)<input id="inNP" type="number" min="0" step="0.01" inputmode="decimal" placeholder="$"></label></div>
+  <div class="actions"><button type="button" class="btn ghost" data-inv-cerrar>Cancelar</button><button type="button" class="btn primary" data-inv-nuevo-ok>Agregar al inventario</button></div>`;$('#invSheet').hidden=false;setTimeout(()=>$('#inNMk').focus(),50)}
+function invCargaForm(){const L=invCargaPend();
+  $('#invBody').innerHTML=`<h3>Productos nuevos para agregar</h3><small class="muted">Revisa las cantidades. Quita la marca ✓ de los que no quieras agregar.</small>${L.map((x,j)=>`<div class="inv-cg" data-cg="${j}" style="display:grid;gap:6px;border:1px solid var(--line);border-radius:10px;padding:8px 10px"><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-cg-on checked> <b>${esc(x.marca)} · ${esc(x.nombre)}</b></label><small class="muted">${esc(x.ubic)} · ${esc(x.pres)}</small><div class="grid2" style="grid-template-columns:repeat(2,minmax(0,1fr));gap:8px"><label class="f">Cerrados<input data-cg-c type="number" min="0" step="1" value="${x.cerr}" inputmode="numeric"></label><label class="f">Abiertos<input data-cg-a type="number" min="0" step="1" value="${x.abie}" inputmode="numeric"></label></div></div>`).join('')}
+  <div class="actions"><button type="button" class="btn ghost" data-inv-cerrar>Cancelar</button><button type="button" class="btn primary" data-inv-carga-ok>Agregar ${L.length} al inventario</button></div>`;$('#invSheet').hidden=false}
+document.addEventListener('click',async e=>{
+  if(e.target.closest('#invNuevoBtn')){if(!duena)return;subInv();invNuevoForm();return}
+  if(e.target.closest('[data-inv-carga]')){if(!duena)return;invCargaForm();return}
+  if(e.target.closest('[data-inv-cerrar]')){$('#invSheet').hidden=true;return}
+  const ok=e.target.closest('[data-inv-nuevo-ok]');if(ok){const x={ubic:$('#inNUb').value,marca:$('#inNMk').value,nombre:$('#inNNm').value,pres:$('#inNPr').value,cerr:$('#inNC').value,abie:$('#inNA').value,min:$('#inNMi').value,precio:$('#inNP').value};
+    if(!norm(x.nombre)){toast('Escribe el nombre del producto.');$('#inNNm').focus();return}if(invs.some(p=>invKey(p)===invKey(x))){toast('Ese producto ya está en el inventario.');return}
+    ok.disabled=true;try{await invAlta(x);toast(`Listo: ${norm(x.nombre)} quedó en el inventario.`);$('#invSheet').hidden=true}catch(err){ok.disabled=false;toast('No se pudo agregar.')}return}
+  const ck=e.target.closest('[data-inv-carga-ok]');if(ck){const L=invCargaPend(),sel=[...document.querySelectorAll('#invBody [data-cg]')].map(r=>({r,x:L[+r.dataset.cg]})).filter(o=>o.x&&o.r.querySelector('[data-cg-on]').checked);
+    if(!sel.length){toast('No marcaste ningún producto.');return}ck.disabled=true;let n=0;try{for(const {r,x} of sel){if(await invAlta({...x,cerr:r.querySelector('[data-cg-c]').value,abie:r.querySelector('[data-cg-a]').value}))n++}toast(`Listo: ${n} producto${n!==1?'s':''} agregado${n!==1?'s':''} al inventario.`);$('#invSheet').hidden=true}catch(err){ck.disabled=false;toast('No se pudo agregar todo. Revisa y vuelve a intentar.')}return}
+});
 const INV_SIN_CONTROL=['Cafetería y Bar','Limpieza','Mantenimiento','Oficina y Papelería'];
 document.addEventListener('change',async e=>{const i=e.target.closest('[data-inv-min]');if(!i)return;const v=+i.value;if(!(v>0))return;try{await invMover(i.dataset.invMin,{min:v,tipo:'Mínimo'});toast('Mínimo guardado')}catch(err){toast('No se pudo guardar.')}});
 function invCard(p){const [k,t]=invEst(p),dir=duena;return `<div class="inv-c"><button type="button" class="ph" data-inv-open="${p.id}" aria-label="Ver ${esc(p.nombre)}">${invFoto(p)}<span class="ist ${k} st">${t}</span></button>
@@ -1619,7 +1652,7 @@ function invCard(p){const [k,t]=invEst(p),dir=duena;return `<div class="inv-c"><
 function renderInv(){const out=$('#invOut');if(!out||modo!=='caja')return;subInv();subInvAl();
   $$('#invSub [data-inv-sub]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.invSub===invSub));subInsumos();const C=invComprar(),PC=porComprar(),PL=porLlegar();$('#invCompN').textContent=PC.length?`(${PC.length})`:'';$('#invCmpN').textContent=PL.length?`(${PL.length})`:'';
   $('#invResumen').textContent=invs.length?`${invs.length} productos · ${invs.reduce((s,p)=>s+(+p.cerr||0),0)} cerrados · ${invs.reduce((s,p)=>s+(+p.abie||0),0)} abiertos`:'';
-  $('#invTools').hidden=invSub==='mov';{const al=$('#invAl');if(al)al.innerHTML=invAlHtml()}
+  $('#invTools').hidden=invSub==='mov';{const al=$('#invAl');if(al)al.innerHTML=invAlHtml()}{const cg=$('#invCarga');if(cg){const h=invCargaHtml();if(cg.innerHTML!==h)cg.innerHTML=h}}
   if(!invs.length){out.innerHTML=`<div class="empty">${invUn?'Todavía no hay productos en el inventario.':'Cargando inventario…'}</div>`;return}
   const SMIN=p=>!(+p.min>0)&&!INV_SIN_CONTROL.includes(p.ubic),nsm=invs.filter(SMIN).length;
   const ubs=['Todas',...(duena&&nsm?['Sin mínimo']:[]),...INV_UB.filter(u=>invs.some(p=>p.ubic===u)),...[...new Set(invs.map(p=>p.ubic))].filter(u=>!INV_UB.includes(u))];
