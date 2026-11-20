@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="063b4d2045f8"</script>
-<script src="web.js?v=063b4d2045f8"></script>
+<script>window.BUILD="88b27afa29de"</script>
+<script src="web.js?v=88b27afa29de"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -468,12 +468,7 @@ body.tel #v-resumen.solo-pend > h2:not(:first-of-type),body.tel #v-resumen.solo-
 body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 .mas-l{display:grid;gap:8px}.mas-l button{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;font:inherit;font-weight:600;cursor:pointer}.mas-l .ic{font-size:1.3rem}
 #bnav .ic{font-size:1.45rem;line-height:1.2}#bnav button{gap:0}
-.tl-ev.puerta{background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.07) 8px 16px)}.tl-ev.puerta.sinas{--h:40!important;--s:8%!important}.tl-ev.dos{background:var(--gs),var(--gl)!important;border-left:0;padding-left:calc(var(--gw) + 7px)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tl-ev.dos{background:var(--gs),var(--gd)!important}}
-:root[data-theme="dark"] .tl-ev.dos{background:var(--gs),var(--gd)!important}
-.tl-ev.dos .lav b{display:inline;color:inherit;text-shadow:inherit}.tl-ev.dos small.lav{white-space:normal}.tl-ev.dos b,.tl-ev.dos small{color:#1b1712;text-shadow:0 0 3px rgba(255,255,255,.95),0 0 1px #fff}.tl-ev.dos.llego{opacity:.9}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .tl-ev.dos b,:root:not([data-theme="light"]) .tl-ev.dos small{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 1px #000}}
-:root[data-theme="dark"] .tl-ev.dos b,:root[data-theme="dark"] .tl-ev.dos small{color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 1px #000}.tl-ev.dos small{opacity:1}.tl-ev.baja{opacity:.45;filter:grayscale(.5)}.tl-ev.baja b{text-decoration:line-through}
+.tl-ev.puerta{background-image:repeating-linear-gradient(135deg,transparent 0 8px,rgba(255,255,255,.07) 8px 16px)}.tl-ev.puerta.sinas{--h:40!important;--s:8%!important}.tl-ev.dos{background-image:var(--gs);background-repeat:no-repeat;border-left:0;padding-left:calc(var(--gw) + 7px)}.tl-ev.dos .lav b{display:inline;color:inherit}.tl-ev.dos small.lav{white-space:normal;opacity:1}.tl-ev.baja{opacity:.45;filter:grayscale(.5)}.tl-ev.baja b{text-decoration:line-through}
 </style>
 
 <div id="pracBar" class="prac-bar" hidden><span>🎓 <b>Práctica</b> · nada se guarda</span><button type="button" class="btn small" id="pracSalir">Salir</button></div>
@@ -4034,7 +4029,8 @@ function equipoDe(c){const t=c.tk||(c.puerta?null:(typeof ticketDeCita==='functi
   const ls=lineasDe(t.id).filter(l=>!l.venta&&l.estilista),P=[],add=(n,lav)=>{let o=P.find(x=>x.n===n);if(!o){o={n,sv:[],lav:false};P.push(o)}if(lav)o.lav=true;return o};
   ls.filter(esLavado).forEach(l=>add(l.estilista,true).sv.push(String(l.servicio).split(':')[0]));ls.filter(l=>!esLavado(l)).forEach(l=>add(l.estilista).sv.push(String(l.servicio).split(':')[0]));
   if(c.estilista){const a=P.find(x=>x.n===c.estilista)||add(c.estilista);a.at=true;P.splice(P.indexOf(a),1);P.push(a)}
-  return P.length>1?P:[]}
+  if(P.length<2)return [];const at=P.find(x=>x.at);let pr=at;if(!at||esInq(at.n)){const sal=P.filter(x=>!esInq(x.n));pr=sal.find(x=>!x.lav)||sal[0]||at||P[P.length-1]}P.forEach(x=>x.pr=x===pr);return P}
+function franjasDe(P){const W=5,O=P.filter(x=>!x.pr),fr=O.map((x,i)=>{const [h,sa,,l2]=COLORES[colorDe(x.n)];return `hsl(${h} ${sa}% ${Math.min(45,l2+12)}%) ${i*W}px ${(i+1)*W}px`}).join(',');return `--gs:linear-gradient(90deg,${fr},transparent ${O.length*W}px);--gw:${O.length*W}px`}
 function gradDe(P){const st=(k)=>P.map((x,i)=>{const [h,sa,l1,l2]=COLORES[colorDe(x.n)];const col=k?`hsl(${h} ${sa*.75}% ${l2}%)`:`hsl(${h} ${sa}% ${l1}%)`;return `${col} ${Math.round(i*100/(P.length-1))}%`}).join(',');const W=5,fr=P.map((x,i)=>{const [h,sa,,l2]=COLORES[colorDe(x.n)];return `hsl(${h} ${sa}% ${Math.min(45,l2+12)}%) ${i*W}px ${(i+1)*W}px`}).join(',');return `--gs:linear-gradient(90deg,${fr},transparent ${P.length*W}px);--gw:${P.length*W}px;--gl:linear-gradient(90deg,${st(0)});--gd:linear-gradient(90deg,${st(1)})`}
 function lavadorDe(c){const t=c.tk||(c.puerta?null:(typeof ticketDeCita==='function'?ticketDeCita(c):null));if(!t)return '';const l=lineasDe(t.id).find(x=>esLavado(x)&&x.estilista&&x.estilista!==c.estilista);return l?l.estilista:''}
 function estHue(n){const [h,sat,l1,l2,t1]=COLORES[colorDe(n)];return `${h};--s:${sat}%;--l1:${l1}%;--l2:${l2}%${t1?`;--t1:${t1}%`:''}`}
@@ -4126,7 +4122,7 @@ function tlHtml(cs,bs,mode,conEst){
   let grp=[],fin=-1;const grupos=[];ev.forEach(e=>{if(e.a>=fin&&grp.length){grupos.push(grp);grp=[]}grp.push(e);fin=Math.max(fin,e.z)});if(grp.length)grupos.push(grp);
   grupos.forEach(G=>{const cols=[];G.forEach(e=>{let k=cols.findIndex(z=>z<=e.a);if(k<0){k=cols.length;cols.push(0)}cols[k]=e.z;e.k=k});const n=cols.length;
     G.forEach(e=>{const c=e.c,hgt=Math.max(26,y(e.z)-y(e.a)-2),eq=activa(c)?equipoDe(c):[],lav=eq.length?1:'';
-      g+=`<button type="button" class="tl-ev ec ${c.puerta?'puerta'+(c.estilista?'':' sinas'):''} ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''} ${!activa(c)?'baja':''} ${lav?'dos':''}" data-tl="${c.id}" style="--h:${estHue(c.estilista)};${lav?gradDe(eq)+';':''}top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
+      g+=`<button type="button" class="tl-ev ec ${c.puerta?'puerta'+(c.estilista?'':' sinas'):''} ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''} ${!activa(c)?'baja':''} ${lav?'dos':''}" data-tl="${c.id}" style="--h:${estHue(lav?eq.find(x=>x.pr).n:c.estilista)};${lav?franjasDe(eq)+';':''}top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
         <b>${h12(c.inicio).replace(' a. m.','a').replace(' p. m.','p')} ${esc(c.cliente)}</b>${lav?`<small class="lav">👥 ${eq.map(x=>`${x.lav?'🚿 ':''}<b>${esc(x.n)}</b>${x.sv.length?': '+esc([...new Set(x.sv)].join(' + ')):''}${x.at?' (atiende)':''}`).join(' · ')}</small>`:''}${hgt>34&&!lav?`<small>${[svcTodos(c)||'',conEst?c.estilista||'sin asignar':''].filter(Boolean).map(esc).join(' · ')}</small>`:''}${hgt>52||!activa(c)?`<small>${c.puerta?'🚶 Sin cita'+(c.tk&&c.tk.estado==='cobrada'?' · cobrada':''):c.estado==='por_confirmar'?'Por confirmar':c.estado==='llego'?'✓ Llegó':c.estado==='no_vino'?'✗ No vino':c.estado==='cancelada'?'✗ Cancelada':'Confirmada'}</small>`:''}</button>`})});
   if(agDia===hoy()){const n=new Date(),m=n.getHours()*60+n.getMinutes();if(m>=h0&&m<=h1)g+=`<div class="tl-now" style="top:${y(m)}px"></div>`}
   const inact=cs.filter(c=>!activa(c)&&c.estado!=='no_vino'&&c.estado!=='cancelada');
