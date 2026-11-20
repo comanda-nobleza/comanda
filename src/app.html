@@ -641,7 +641,7 @@ body:not(.es-web) .only-web{display:none!important}
     </div>
     <div class="panel only-duena">
       <h3>Producción por estilista</h3>
-      <div class="tw"><table id="prodTable"><thead><tr><th>Estilista</th><th class="n">Servicios</th><th class="n">Bruto</th><th class="n">Insumos</th><th class="n">Neto</th><th class="n only-duena">Comisión</th><th class="n only-duena">Le toca</th><th class="n">Propinas</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
+      <div class="tw"><table id="prodTable"><thead><tr><th>Estilista</th><th class="n">Servicios</th><th class="n">Bruto</th><th class="n">Sin comisión</th><th class="n">Material</th><th class="n">Neto</th><th class="n only-duena">Comisión</th><th class="n only-duena">Le toca</th><th class="n">Propinas</th></tr></thead><tbody></tbody><tfoot></tfoot></table></div>
     </div>
     <div class="row"><button class="btn primary xl-btn" id="expDia">Guardar y descargar cierre</button><small class="xl-off" hidden>La descarga no está disponible en esta vista.</small></div>
   </section>
@@ -2100,7 +2100,7 @@ function renderDyn(){if(modo==='caja'){try{subTareas();renderTareas()}catch(e){c
 function produccion(ls){
   const m={};
   ls.forEach(l=>{const e=l.estilista||'—';m[e]=m[e]||{n:0,bruto:0,ins:0,pago:0,sc:0};m[e].n++;m[e].bruto+=valLinea(l);if(l.paqueteSes)m[e].sc+=+l.precio||0;m[e].ins+=+l.insumosTotal||0;if(l.canje||(!l.venta&&sinComision(l.estilista,l.servicio)))m[e].sc+=(+l.precio||0)-(+l.insumosTotal||0);if(!l.canje&&+l.canjeDesc>0)m[e].sc+=+l.canjeDesc;m[e].pago+=comLinea(l)});
-  return Object.entries(m).map(([e,v])=>{const neto=v.bruto-v.ins-v.sc,c=comisionDe(e);return {estilista:e,n:v.n,bruto:r2(v.bruto),ins:r2(v.ins),neto:r2(neto),com:c,pago:r2(v.pago)}}).sort((a,b)=>a.estilista.localeCompare(b.estilista));
+  return Object.entries(m).map(([e,v])=>{const neto=v.bruto-v.ins-v.sc,c=comisionDe(e);return {estilista:e,n:v.n,bruto:r2(v.bruto),ins:r2(v.ins),sc:r2(v.sc),neto:r2(neto),com:c,pago:r2(v.pago)}}).sort((a,b)=>a.estilista.localeCompare(b.estilista));
 }
 
 /* ---------- mis ganancias (estilista) ---------- */
@@ -3245,9 +3245,9 @@ function renderCierre(){
   {const by={};[...lineas].sort((a,b)=>(a.creado||'').localeCompare(b.creado||'')).forEach(l=>(by[l.estilista||'—']=by[l.estilista||'—']||[]).push(l));
    const tk=Object.fromEntries(tickets.map(t=>[t.id,t])),ab=new Set([...document.querySelectorAll('#cxeOut details[open]')].map(d=>d.dataset.e));
    $('#cxeOut').innerHTML=Object.keys(by).length?Object.keys(by).sort((a,b)=>a.localeCompare(b)).map(n=>`<details data-e="${esc(n)}" ${ab.has(n)?'open':''}><summary>${esc(n)}</summary><div class="tw"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Servicio</th><th class="n">Precio</th><th class="n">Descuento</th><th>Estado</th></tr></thead><tbody>${by[n].map(l=>{const ok=tk[l.ticketId]&&tk[l.ticketId].estado==='cobrada';return `<tr><td>${hora(l.creado)}</td><td>${esc(l.cliente||(tk[l.ticketId]||{}).cliente||'')}</td><td>${esc(l.servicio)}</td><td class="n">${money(l.precio)}</td><td class="n">${l.insumosTotal?'−'+money(l.insumosTotal):''}</td><td>${ok?'Cobrada':'<span class="neg">Sin cobrar</span>'}</td></tr>`}).join('')}</tbody></table></div></details>`).join(''):'<div class="empty">Sin comandas este día.</div>'}
-  $('#prodTable tbody').innerHTML=pr.length?pr.map(p=>{const pp=c.propEst[p.estilista]||{};const pt=(pp.tarjeta||0)+(pp.yappy||0)+(pp.efectivo||0);return `<tr><td>${esc(p.estilista)}</td><td class="n">${p.n}</td><td class="n">${money(p.bruto)}</td><td class="n">${p.ins?'−'+money(p.ins):''}</td><td class="n">${money(p.neto)}</td><td class="n only-duena">${p.com}%</td><td class="n only-duena"><b>${money(p.pago)}</b></td><td class="n">${pt?money(pt):''}</td></tr>`}).join(''):`<tr><td colspan="8" class="muted">Sin servicios este día.</td></tr>`;
-  const T=pr.reduce((a,p)=>({n:a.n+p.n,b:a.b+p.bruto,i:a.i+p.ins,ne:a.ne+p.neto,pa:a.pa+p.pago}),{n:0,b:0,i:0,ne:0,pa:0});
-  $('#prodTable tfoot').innerHTML=pr.length?`<tr><td>Total</td><td class="n">${T.n}</td><td class="n">${money(T.b)}</td><td class="n">−${money(T.i)}</td><td class="n">${money(T.ne)}</td><td class="only-duena"></td><td class="n only-duena">${money(T.pa)}</td><td></td></tr>`:'';
+  $('#prodTable tbody').innerHTML=pr.length?pr.map(p=>{const pp=c.propEst[p.estilista]||{};const pt=(pp.tarjeta||0)+(pp.yappy||0)+(pp.efectivo||0);return `<tr><td>${esc(p.estilista)}</td><td class="n">${p.n}</td><td class="n">${money(p.bruto)}</td><td class="n">${p.sc?'−'+money(p.sc):''}</td><td class="n">${p.ins?'−'+money(p.ins):''}</td><td class="n">${money(p.neto)}</td><td class="n only-duena">${p.com}%</td><td class="n only-duena"><b>${money(p.pago)}</b></td><td class="n">${pt?money(pt):''}</td></tr>`}).join(''):`<tr><td colspan="9" class="muted">Sin servicios este día.</td></tr>`;
+  const T=pr.reduce((a,p)=>({n:a.n+p.n,b:a.b+p.bruto,s:a.s+(p.sc||0),i:a.i+p.ins,ne:a.ne+p.neto,pa:a.pa+p.pago}),{n:0,b:0,s:0,i:0,ne:0,pa:0});
+  $('#prodTable tfoot').innerHTML=pr.length?`<tr><td>Total</td><td class="n">${T.n}</td><td class="n">${money(T.b)}</td><td class="n">${T.s?'−'+money(T.s):''}</td><td class="n">−${money(T.i)}</td><td class="n">${money(T.ne)}</td><td class="only-duena"></td><td class="n only-duena">${money(T.pa)}</td><td></td></tr>`:'';
 }
 $('#cierreNotas').addEventListener('change',e=>saveCierre({notas:e.target.value}));
 $('#gastoForm').addEventListener('submit',async e=>{if(diaCerrado()){e.preventDefault();toast('El cierre de este día ya se guardó. Pide a gerencia que lo abra.');return}
