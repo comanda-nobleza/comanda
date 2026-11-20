@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="9c15c888a080"</script>
-<script src="web.js?v=9c15c888a080"></script>
+<script>window.BUILD="b779a802c065"</script>
+<script src="web.js?v=b779a802c065"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,7 +117,7 @@ label.f > input, label.f > select, label.f > textarea{color:var(--ink)}
 .ticket::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;border-radius:var(--r) var(--r) 0 0;background:radial-gradient(circle at 6px -2px,var(--bg) 4px,transparent 4.5px) 0 0/12px 6px repeat-x}
 .ticket .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .ticket .cliente{font-family:var(--display);font-size:1.3rem;overflow-wrap:anywhere}
-.ticket .hora{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.at-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.85rem;margin:2px 0 4px}.at-l{display:flex;align-items:center;gap:6px;color:var(--muted)}.at-sel{width:auto!important;min-height:0;padding:4px 26px 4px 10px;font-size:13px;border-radius:999px}.ticket .hora{font-size:.8rem;color:var(--muted);white-space:nowrap}
 .lines{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 .lines li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding-bottom:6px;border-bottom:1px dashed var(--line)}
 .lines .svc{font-weight:600}
@@ -532,6 +532,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     <button class="btn primary big" id="nuevaBtn" hidden style="display:none">+ Llegó una clienta</button>
     <form class="inline-form" id="nuevaForm" hidden>
       <input id="nuevaNombre" placeholder="Nombre de la clienta" autocomplete="off" required>
+      <select id="nuevaAtiende" class="at-sel" aria-label="Quién la atiende (opcional)"></select>
       <button class="btn primary">Abrir</button>
       <button type="button" class="btn ghost" id="nuevaCancel">Cancelar</button>
     </form>
@@ -627,6 +628,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     <form class="inline-form" id="nuevaFormCaja" hidden>
       <input id="nuevaNombreCaja" placeholder="Nombre de la clienta" autocomplete="off" required>
       <input id="nuevaTelCaja" type="tel" inputmode="tel" placeholder="Teléfono (para sus puntos)" autocomplete="off" aria-label="Teléfono de la clienta">
+      <select id="nuevaAtiendeCaja" class="at-sel" aria-label="Quién la atiende (opcional)"></select>
       <button class="btn primary">Abrir comanda</button>
       <button type="button" class="btn ghost" data-cancel-nueva>Cancelar</button>
     </form>
@@ -1277,7 +1279,10 @@ function ticketCard(t,mode){
     ?`${del}<button class="btn primary" data-act="add-svc" data-id="${t.id}">+ Mi servicio</button>`
     :`${del}<button class="btn small" data-act="add-svc" data-id="${t.id}">+ Servicio</button><button class="btn primary small" data-act="cobrar" data-id="${t.id}" ${ls.length&&!espPend?'':'disabled'} ${espPend?'title="Primero autoriza o rechaza el precio especial"':''}>Cerrar cuenta</button>`;
   const tot=mode==='est'?`<small>${ls.length} servicio${ls.length===1?'':'s'}</small>`:`<span class="tot">${money(sub)}<small style="font-weight:400"> + ITBMS</small></span>`;
+  const puedeAt=mode==='caja'||(mode==='est'&&abreCuentas(soy));
+  const atHtml=`<div class="at-row">${puedeAt?`<label class="at-l">👤 Atiende <select class="at-sel" data-atiende="${t.id}" aria-label="Quién la atiende">${atOpts(t.atiende||'','').replace('¿Quién la atiende? (opcional)','— sin elegir —')}${t.atiende&&!atienden().some(e=>e.nombre===t.atiende)?`<option selected>${esc(t.atiende)}</option>`:''}</select></label>`:t.atiende?`<span>👤 Atiende: <b>${esc(t.atiende)}</b></span>`:''}${t.atiende&&t.creadoPor&&t.creadoPor!==t.atiende?`<small class="muted">abrió ${esc(t.creadoPor)}</small>`:''}</div>`;
   return `<article class="ticket"><div class="head"><span class="cliente">${esc(t.cliente)}</span><span class="hora">llegó ${hora(t.creado)}</span></div>
+  ${atHtml}
   <ul class="lines">${items}</ul>
   ${mode!=='est'&&t.descSol?(()=>{const d=t.descSol,con=r2(sub-(d.base!=null?+d.base:sub)*(+d.pct||0)/100);return d.estado==='aprobada'?`<div class="notice ok" style="margin:6px 0"><span>✓ Descuento de <b>${d.pct}%</b>${d.detalle?' en '+esc(d.detalle):''} autorizado por ${esc(d.resp||'gerencia')} · con descuento: <b>${money(con)}</b> + ITBMS. Se aplica al tocar «Cerrar cuenta».</span></div>`:d.estado==='pendiente'?`<div class="notice warn" style="margin:6px 0"><span>⏳ Descuento de ${d.pct}% esperando autorización de gerencia.</span></div>`:`<div class="notice warn" style="margin:6px 0"><span>✗ Gerencia no autorizó el descuento de ${d.pct}%.</span></div>`})():''}
   <div class="foot">${tot}<span class="row" style="gap:6px">${btns}</span></div></article>`;
@@ -2185,7 +2190,7 @@ function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas
   }
   if(tab==='clientas'){
     $('#abiertasN').textContent=abiertas.length?abiertas.length+' clienta'+(abiertas.length===1?'':'s'):'';
-    $('#estAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'est')).join(''):`<div class="empty">No tienes clientas en el salón ahora. Cuando llegue tu clienta con cita, toca <b>Llegó</b> en tu agenda; si llega sin cita, caja le abre la cuenta.</div>`;
+    if(!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#estAbiertas [data-atiende]')))$('#estAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'est')).join(''):`<div class="empty">No tienes clientas en el salón ahora. Cuando llegue tu clienta con cita, toca <b>Llegó</b> en tu agenda; si llega sin cita, caja le abre la cuenta.</div>`;
   }
   if(tab==='mias'&&per==='dia'&&perOff===0)renderMias();
   if(tab==='caja'){
@@ -2193,7 +2198,7 @@ function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas
      const it=[esp&&`<button class="btn small" data-cp="esp">💲 ${esp} precio${esp>1?'s':''} especial${esp>1?'es':''} por autorizar</button>`,pp&&`<button class="btn small" data-cp="ped">📦 ${pp} producto${pp>1?'s':''} pedido${pp>1?'s':''} por el equipo</button>`,ir&&`<button class="btn small" data-cp="ins">📦 ${ir} insumo${ir>1?'s':''} por recibir</button>`].filter(Boolean);
      $('#cajaPendBox').innerHTML=it.length?`<div class="adel-pend"><h3>Por atender</h3><div class="row" style="gap:8px;flex-wrap:wrap">${it.join('')}</div></div>`:'';}
     renderPedPend();
-    $('#cajaAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'caja')).join(''):`<div class="empty">No hay cuentas abiertas. Las clientas aparecen aquí en cuanto un estilista agrega un servicio.</div>`;
+    if(!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#cajaAbiertas [data-atiende]')))$('#cajaAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'caja')).join(''):`<div class="empty">No hay cuentas abiertas. Las clientas aparecen aquí en cuanto un estilista agrega un servicio.</div>`;
     $('#cajaCobradas').innerHTML=cobradas.length?`<div class="tw"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Estilistas</th><th class="n">Total</th><th>Pago</th><th class="n">Propina</th><th>Cobró</th><th></th></tr></thead><tbody>${cobradas.map(t=>{const p=t.pagos||{};const met=METODOS.filter(m=>+p[m]>0).map(m=>MET_LBL[m]).join(' + ');const pr=(t.propinas||[]).reduce((s,x)=>s+(+x.monto||0),0);const ests=[...new Set(lineasDe(t.id).map(l=>l.estilista))].join(', ');return `<tr><td>${hora(t.cobrado)}</td><td>${esc(t.cliente)}</td><td>${esc(ests)}</td><td class="n">${money(t.total)}</td><td>${met}</td><td class="n">${pr?money(pr):''}</td><td>${esc(t.cobradoPor&&t.cobradoPor!=='Caja'?t.cobradoPor:'')}</td><td><button class="btn ghost small" data-act="reabrir" data-id="${t.id}">Reabrir</button></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">Todavía no hay cuentas cerradas este día.</div>`;
   }
   if(tab==='cierre')renderCierre();
@@ -2822,22 +2827,25 @@ $('#ptsOut').addEventListener('submit',async e=>{
 function textoPremios(){const v=premiosVigentes();return `Programa de puntos – ${SALON}\nCada $1 que gastas = 1 punto.\nPuedes canjear a partir de ${ptsMin()} puntos.\n\nPremios disponibles:\n${v.map(p=>`• ${p.nombre}: ${p.puntos} puntos${p.hasta?` (hasta el ${fechaCorta(p.hasta)})`:''}`).join('\n')}\n\nPregunta en caja cuántos puntos tienes. Los puntos vencen a los ${ptsVig()} meses.`}
 
 /* ---------- nueva clienta ---------- */
-async function crearClienta(nombre,form,tel){
+function atOpts(sel,yo){return `<option value="">¿Quién la atiende? (opcional)</option>${yo?`<option value="${esc(yo)}">Solo yo (${esc(yo)})</option>`:''}`+atienden().filter(e=>e.nombre!==yo).map(e=>`<option ${e.nombre===sel?'selected':''}>${esc(e.nombre)}</option>`).join('')}
+function atFill(){const a=$('#nuevaAtiende'),b=$('#nuevaAtiendeCaja');if(a)a.innerHTML=atOpts('',modo==='est'?soy:'');if(b)b.innerHTML=atOpts('','')}
+async function crearClienta(nombre,form,tel,atiende){
   if(!needDb())return;nombre=nombre.trim();if(!nombre)return;
   if(dia!==hoy())setDia(hoy());
-  {const ya=tickets.find(t=>t.estado==='abierta'&&t.fecha===hoy()&&t.clienteKey===ckey(nombre));if(ya){form.reset();form.hidden=true;toast(`${ya.cliente} ya tiene la cuenta abierta. Agrega aquí el servicio.`);openSvc(ya);return}}
-  try{const k=modo==='caja'?telKey(tel||''):'';const ref=await db.collection('tickets').add({fecha:hoy(),cliente:nombre,clienteKey:ckey(nombre),estado:'abierta',creado:new Date().toISOString(),creadoPor:soy||enCaja()});
+  {const ya=tickets.find(t=>t.estado==='abierta'&&t.fecha===hoy()&&t.clienteKey===ckey(nombre));if(ya){if(atiende&&!ya.atiende)db.doc('tickets/'+ya.id).update({atiende}).catch(()=>{});form.reset();form.hidden=true;toast(`${ya.cliente} ya tiene la cuenta abierta. Agrega aquí el servicio.`);openSvc(ya);return}}
+  try{const k=modo==='caja'?telKey(tel||''):'';const ref=await db.collection('tickets').add({fecha:hoy(),cliente:nombre,clienteKey:ckey(nombre),estado:'abierta',creado:new Date().toISOString(),creadoPor:soy||enCaja(),...(atiende?{atiende}:{})});
     form.reset();form.hidden=true;if(k)await db.doc('ticketsTel/'+ref.id).set({tel:k,fecha:hoy()}).catch(()=>{});
     openSvc({id:ref.id,cliente:nombre,fecha:hoy()});
   }catch(err){toast('No se pudo abrir la comanda ('+err.code+').')}
 }
 const abreCuentas=n=>!!(cfg.estilistas.find(e=>e.nombre===n)||{}).abreCuentas;
-$('#nuevaBtn').onclick=()=>{if(modo==='est'&&!abreCuentas(soy))return;$('#nuevaForm').hidden=false;$('#nuevaNombre').focus()};
+$('#nuevaBtn').onclick=()=>{if(modo==='est'&&!abreCuentas(soy))return;atFill();$('#nuevaForm').hidden=false;$('#nuevaNombre').focus()};
 $('#nuevaCancel').onclick=()=>{$('#nuevaForm').reset();$('#nuevaForm').hidden=true};
-$('#nuevaForm').addEventListener('submit',e=>{e.preventDefault();crearClienta($('#nuevaNombre').value,e.target,'')});
-$('#nuevaBtnCaja').onclick=()=>{$('#nuevaFormCaja').hidden=false;$('#nuevaNombreCaja').focus()};
+$('#nuevaForm').addEventListener('submit',e=>{e.preventDefault();crearClienta($('#nuevaNombre').value,e.target,'',$('#nuevaAtiende').value)});
+$('#nuevaBtnCaja').onclick=()=>{atFill();$('#nuevaFormCaja').hidden=false;$('#nuevaNombreCaja').focus()};
 $('[data-cancel-nueva]').onclick=()=>{$('#nuevaFormCaja').reset();$('#nuevaFormCaja').hidden=true};
-$('#nuevaFormCaja').addEventListener('submit',e=>{e.preventDefault();crearClienta($('#nuevaNombreCaja').value,e.target,$('#nuevaTelCaja').value)});
+$('#nuevaFormCaja').addEventListener('submit',e=>{e.preventDefault();crearClienta($('#nuevaNombreCaja').value,e.target,$('#nuevaTelCaja').value,$('#nuevaAtiendeCaja').value)});
+document.addEventListener('change',async e=>{const s=e.target.closest&&e.target.closest('[data-atiende]');if(!s||!db)return;const v=s.value;try{await db.doc('tickets/'+s.dataset.atiende).update({atiende:v||null,atiendePor:soy||enCaja()});toast(v?`Listo: la atiende ${v}.`:'Listo, se quitó quién la atiende.')}catch(err){toast('No se pudo guardar.')}});
 
 /* ---------- acciones ---------- */
 document.addEventListener('click',async e=>{
