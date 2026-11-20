@@ -2622,7 +2622,7 @@ async function quitarPtsTicket(tid){try{const s=await db.collection('puntos').wh
   for(const d of s.docs){const x=d.data();if(x.tipo==='gana'||x.tipo==='canje'){tels.add(x.tel+'|'+(x.cliente||''));await db.doc('puntos/'+d.id).delete()}}return [...tels]}catch(e){return []}}
 async function reabrirPts(tid){const tels=await quitarPtsTicket(tid);
   try{await db.doc('tickets/'+tid).update({descCli:null})}catch(e){}
-  for(const l of lineasDe(tid)){try{if(l.descCli)await db.doc('lineas/'+l.id).update({precio:+l.descCli.precioNormal||0,descCli:{__delete__:true}})}catch(e){}}
+  for(const l of lineasDe(tid)){try{if(l.descCli)await db.doc('lineas/'+l.id).update({precio:+l.descCli.precioNormal||0,descCli:{__delete__:true},...(l.descCli.insumosNormal?{insumos:l.descCli.insumosNormal,insumosTotal:+l.descCli.insTotNormal||0}:{})})}catch(e){}}
   for(const l of lineasDe(tid)){try{if(l.canje)await db.doc('lineas/'+l.id).update({precio:+l.canje.precioNormal||0,canje:{__delete__:true}});else if(l.canjeDesc)await db.doc('lineas/'+l.id).update({canjeDesc:{__delete__:true},canjeDescPremio:{__delete__:true}})}catch(e){}}
   for(const x of tels){const [k,c]=x.split('|');await guardarResumenPts(k,c)}}
 function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).forEach(x=>(g[x.ticketId]=g[x.ticketId]||[]).push(x));
@@ -3056,7 +3056,8 @@ document.addEventListener('input',e=>{if(e.target.id!=='descOtro')return;renderD
 async function aplicarDescCli(t,dCli,pct,motivo){if(!(dCli>0))return;const ex=cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'?cobroPts.canje.lineaId:null;
   const base=lineasDe(t.id).filter(l=>+l.precio>0&&!l.canje&&l.id!==ex&&descSel.has(l.id)),tot=r2(base.reduce((x,l)=>x+(+l.precio||0),0));if(!(tot>0))return;let rest=dCli;const por=cajero||encargada();
   for(let i=0;i<base.length;i++){const l=base[i],part=i===base.length-1?r2(rest):r2(dCli*(+l.precio||0)/tot);rest=r2(rest-part);
-    await db.doc('lineas/'+l.id).update({precio:r2((+l.precio||0)-part),descCli:{pct,monto:part,precioNormal:+l.precio||0,motivo,por}})}}
+    const np=r2((+l.precio||0)-part),ins=(l.insumos||[]).map(x=>{const m=/^material (\d+(?:\.\d+)?)%$/.exec(x.porcion||'');return m?{...x,costo:r2(np*(+m[1])/100)}:x}),cambia=ins.some((x,k)=>x.costo!==(l.insumos||[])[k].costo);
+    await db.doc('lineas/'+l.id).update({precio:np,descCli:{pct,monto:part,precioNormal:+l.precio||0,motivo,por,...(cambia?{insumosNormal:l.insumos,insTotNormal:+l.insumosTotal||0}:{})},...(cambia?{insumos:ins,insumosTotal:r2(ins.reduce((a,x)=>a+(+x.costo||0),0))}:{})})}}
 function cobroTotales(){
   const t=tickets.find(x=>x.id===cobroTicket);if(!t)return null;
   const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),dCli=r2(descBase()*descPct()/100),cort=cortMontoDe(r2(bruto-dCli),dPts),sub=r2(bruto-dPts-dCli-cort), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
