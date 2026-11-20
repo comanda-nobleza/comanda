@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="4bc66b938183"</script>
-<script src="web.js?v=4bc66b938183"></script>
+<script>window.BUILD="16990811083c"</script>
+<script src="web.js?v=16990811083c"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3649,8 +3649,10 @@ async function pdfCierre(){
   const c=calcCierre(tickets,lineas,gastos),K0=concilia(c,cierre.fz||{});if(K0.faltaZ.length){toast(`Falta el Fiscal Z de ${K0.faltaZ.join(', ')}. Escríbelo (pon 0 si no hubo).`);return}if(difFaltan()){toast('Hay diferencias sin explicar. Explícalas en «Diferencias por explicar».');$('#difBox').scrollIntoView({block:'center'});return}
   try{await cargarJs('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js')}catch(e){toast('No cargó el generador de PDF. Recarga la página.');return}
   const {jsPDF}=window.jspdf,doc=new jsPDF({unit:'pt',format:'letter'});
+  /* margen arriba para perforar la hoja y meterla en la carpeta: todo baja 30 pt (~1 cm) */
+  const BAJA=30,sh=()=>doc.internal.write(`q 1 0 0 1 0 ${-BAJA} cm`),ap=doc.addPage.bind(doc);doc.addPage=(...a)=>{const r=ap(...a);sh();return r};sh();
   dibujarCierre(doc);if(lineas.length){doc.addPage();dibujarComandas(doc)}
-  const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(120);doc.text(`Hoja ${i} de ${n} · ${SALON} · Control interno`,306,776,{align:'center'})}
+  const n=doc.getNumberOfPages();for(let i=1;i<=n;i++){doc.setPage(i);doc.internal.write('Q');doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(120);doc.text(`Hoja ${i} de ${n} · ${SALON} · Control interno`,306,776,{align:'center'})}
   try{await dl.save({filename:`Cierre ${dia}.pdf`,data:doc.output('blob')});if(!cierre.cerrado){await saveCierre({cerrado:{por:cajero||encargada()||porGer(),fecha:new Date().toISOString()}});toast('Cierre guardado y descargado. Ya no se puede modificar.')}else toast('Cierre en PDF listo')}catch(err){if(!(err&&err.code==='declined'))toast('No se pudo crear el PDF.')}}
 
 async function exportDia(){
