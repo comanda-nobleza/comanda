@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="a35bd2979c65"</script>
-<script src="web.js?v=a35bd2979c65"></script>
+<script>window.BUILD="29c969881e49"</script>
+<script src="web.js?v=29c969881e49"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1616,13 +1616,13 @@ const INV_CARGA=[
  {ubic:'Cafetería y Bar',marca:'Coca-Cola',nombre:'Coca-Cola Sabor Original',foto:'fotos/cb01.jpg',pres:'botella 250 ml',cerr:3,abie:1},
  {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Flor de Jamaica',foto:'fotos/cb02.jpg',pres:'caja de 20 sobres',cerr:3,abie:0},
  {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Canela',foto:'fotos/cb03.jpg',pres:'caja de 20 sobres',cerr:2,abie:1},
- {ubic:'Cafetería y Bar',marca:'Corona',nombre:'Coronita (cerveza pequeña)',foto:'fotos/cb04.jpg',pres:'botella',cerr:1,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Corona',nombre:'Coronita Extra (cerveza)',foto:'fotos/cb04.jpg',pres:'six pack (6 botellas)',cerr:1,abie:1},
  {ubic:'Cafetería y Bar',marca:'Sello Rojo',nombre:'Café molido',foto:'fotos/cb05.jpg',pres:'bolsa 1000 g',cerr:1,abie:1},
  {ubic:'Cafetería y Bar',marca:'Beringer',nombre:'Vino Main & Vine White Zinfandel',foto:'fotos/cb06.jpg',pres:'botella 750 ml',cerr:4,abie:0},
  {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Mini Bum surtido',foto:'fotos/cb07.jpg',pres:'bolsa de 100 caramelos',cerr:1,abie:1},
  {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Coffee Delight original',foto:'fotos/cb08.jpg',pres:'bolsa de 100 caramelos (380 g)',cerr:2,abie:1}];
 const invKey=x=>norm((x.marca||'')+' '+(x.nombre||'')).toLowerCase();
-function invCargaFotos(){if(!duena||!db)return;const F={};INV_CARGA.forEach(x=>{if(x.foto)F[invKey(x)]=x.foto});invs.forEach(p=>{const f=F[invKey(p)];if(f&&!p.foto&&!p._fx){p._fx=1;db.doc('inventario/'+p.id).update({foto:f}).catch(()=>{p._fx=0})}})}
+function invCargaFotos(){if(!duena||!db)return;invs.forEach(p=>{if(p.marca==='Corona'&&p.nombre==='Coronita (cerveza pequeña)'&&!p._rn){p._rn=1;p.nombre='Coronita Extra (cerveza)';p.pres='six pack (6 botellas)';db.doc('inventario/'+p.id).update({nombre:p.nombre,pres:p.pres}).catch(()=>{p._rn=0})}});const F={};INV_CARGA.forEach(x=>{if(x.foto)F[invKey(x)]=x.foto});invs.forEach(p=>{const f=F[invKey(p)];if(f&&!p.foto&&!p._fx){p._fx=1;db.doc('inventario/'+p.id).update({foto:f}).catch(()=>{p._fx=0})}})}
 const invCargaPend=()=>{const ya=new Set(invs.map(invKey));return INV_CARGA.filter(x=>!ya.has(invKey(x)))};
 function invCargaHtml(){if(!duena||!invUn||!invs.length)return '';const L=invCargaPend();if(!L.length)return '';return `<div class="notice warn" style="display:grid;gap:8px;margin:6px 0"><b>📦 ${L.length} producto${L.length>1?'s':''} nuevo${L.length>1?'s':''} listo${L.length>1?'s':''} para agregar</b><small>${L.map(x=>esc(x.nombre)).join(' · ')}</small><button type="button" class="btn small primary" data-inv-carga style="justify-self:start">Revisar y agregar</button></div>`}
 async function invAlta(x,tipo){const k=invKey(x);if(invs.some(p=>invKey(p)===k))return null;const cerr=Math.max(0,Math.round(+x.cerr||0)),abie=Math.max(0,Math.round(+x.abie||0));
