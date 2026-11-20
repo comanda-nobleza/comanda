@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="c5728de65809"</script>
-<script src="web.js?v=c5728de65809"></script>
+<script>window.BUILD="c7042bdfaf38"</script>
+<script src="web.js?v=c7042bdfaf38"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -465,6 +465,7 @@ body.tel.movil [data-todo="efectivo"],body.tel.movil label[for="pEfectivo"]{disp
 body.tel #v-resumen.solo-pend > h2:not(:first-of-type),body.tel #v-resumen.solo-pend #resQ,body.tel #v-resumen.solo-pend #alqBox,body.tel #v-resumen.solo-pend #reactBox{display:none}
 body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 .mas-l{display:grid;gap:8px}.mas-l button{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;font:inherit;font-weight:600;cursor:pointer}.mas-l .ic{font-size:1.3rem}
+#bnav .ic{font-size:1.45rem;line-height:1.2}#bnav button{gap:0}
 </style>
 
 <div id="pracBar" class="prac-bar" hidden><span>🎓 <b>Práctica</b> · nada se guarda</span><button type="button" class="btn small" id="pracSalir">Salir</button></div>
@@ -477,16 +478,16 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
   <div class="wrap caja-bar" id="cajaBar" hidden></div>
   <div class="wrap" id="vaDebe" hidden></div>
   <nav class="wrap tabs only-caja" role="tablist" id="tabs">
-    <button role="tab" data-tab="resumen" class="only-duena">Resumen <span class="badge" id="resBadge" hidden></span></button>
-    <button role="tab" data-tab="caja">Cuentas <span class="badge" id="cajaBadge" hidden></span></button>
-    <button role="tab" data-tab="agenda">Agenda <span class="badge" id="agBadge" hidden></span></button>
-    <button role="tab" data-tab="cierre">Cierre del día</button>
-    <button role="tab" data-tab="quincena" class="only-duena">Quincena</button>
-    <button role="tab" data-tab="reportes" class="only-duena">Reportes</button>
-    <button role="tab" data-tab="fichas">Fichas</button>
-    <button role="tab" data-tab="mant">Mantenimiento <span class="badge" id="mantBadge" hidden></span></button>
-    <button role="tab" data-tab="inv">Inventario <span class="badge" id="invBadge" hidden></span></button>
-    <button role="tab" data-tab="ajustes" class="only-duena">Ajustes</button>
+    <button role="tab" data-tab="resumen" class="only-duena">📊 Resumen <span class="badge" id="resBadge" hidden></span></button>
+    <button role="tab" data-tab="caja">🧾 Cuentas <span class="badge" id="cajaBadge" hidden></span></button>
+    <button role="tab" data-tab="agenda">📅 Agenda <span class="badge" id="agBadge" hidden></span></button>
+    <button role="tab" data-tab="cierre">📋 Cierre del día</button>
+    <button role="tab" data-tab="quincena" class="only-duena">💰 Quincena</button>
+    <button role="tab" data-tab="reportes" class="only-duena">📈 Reportes</button>
+    <button role="tab" data-tab="fichas">📇 Fichas</button>
+    <button role="tab" data-tab="mant">🔧 Mantenimiento <span class="badge" id="mantBadge" hidden></span></button>
+    <button role="tab" data-tab="inv">📦 Inventario <span class="badge" id="invBadge" hidden></span></button>
+    <button role="tab" data-tab="ajustes" class="only-duena">⚙️ Ajustes</button>
   </nav>
 </header>
 <div class="wrap"><div id="banner" class="banner">Conectando con el salón…</div></div>
@@ -855,10 +856,10 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 <div class="sheet-bg" id="masSheet" hidden><div class="sheet"><h3>Más</h3><div class="mas-l" id="masL"></div><div class="actions"><button type="button" class="btn ghost" data-close>Cerrar</button></div></div></div>
 <nav class="bnav only-est" id="bnav" role="tablist">
   <div class="wrap">
-    <button role="tab" data-tab="clientas"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3.5" y="5" width="17" height="15" rx="2"/><path d="M3.5 10h17M8 3v4M16 3v4"/><path d="M8 14h3M8 17h6"/></svg>Agenda</button>
-    <button role="tab" data-tab="venta"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M6 7h12l-1 13H7z"/><path d="M9 7a3 3 0 0 1 6 0"/><path d="M12 11v5M9.5 13.5h5"/></svg>Mi venta</button>
-    <button role="tab" data-tab="insumos" id="bnIns" hidden style="display:none"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7l8-4 8 4-8 4z"/><path d="M4 7v10l8 4 8-4V7"/><path d="M12 11v10"/></svg>Insumos</button>
-    <button role="tab" data-tab="mias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="2.6"/><path d="M6.5 9.5v5M17.5 9.5v5"/></svg>Mis ganancias</button>
+    <button role="tab" data-tab="clientas"><span class="ic">📅</span>Agenda</button>
+    <button role="tab" data-tab="venta"><span class="ic">🛍️</span>Mi venta</button>
+    <button role="tab" data-tab="insumos" id="bnIns" hidden style="display:none"><span class="ic">📦</span>Insumos</button>
+    <button role="tab" data-tab="mias"><span class="ic">💵</span>Mis ganancias</button>
   </div>
 </nav>
 
@@ -1135,19 +1136,21 @@ function setModo(m,nombre,d){
   if(m&&!PRAC&&TOUR_AUTO)setTimeout(()=>tourStart(false),900);else if(!m&&typeof tourEnd==='function'&&tourS)tourEnd();
 }
 const G_GER=['resumen','autorizar','mant','inv','quincena','reportes','ajustes'],G_OP=['caja','agenda','tareas','formulas','cierre','fichas','mant','inv'];
+/* ---------- íconos: uno por tema, iguales en todo el sistema ---------- */
+const IC={caja:'🧾',agenda:'📅',clientas:'📅',tareas:'✅',formulas:'🎨',mas:'☰',autorizar:'⚡',resumen:'📊',reportes:'📈',inv:'📦',insumos:'📦',venta:'🛍️',mias:'💵',cierre:'📋',fichas:'📇',mant:'🔧',quincena:'💰',ajustes:'⚙️',cambiar:'👤'};
 /* ---------- versión teléfono ---------- */
 const esMovil=/Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent||'');
 const TELQ=window.matchMedia?matchMedia('(max-width: 760px)'):{matches:false,addEventListener(){}};
 function telAplicar(){document.body.classList.toggle('tel',!!TELQ.matches);document.body.classList.toggle('movil',typeof esMovil!=='undefined'&&esMovil);try{renderTnav()}catch(e){}}
 try{TELQ.addEventListener('change',telAplicar)}catch(e){}
-const TN_OP=[['caja','🧾','Cuentas'],['agenda','📅','Agenda'],['tareas','✅','Tareas'],['formulas','🎨','Fórmulas'],['mas','☰','Más']],TN_GER=[['autorizar','⚡','Autorizar'],['resumen','📊','Resumen'],['reportes','📈','Reportes'],['inv','📦','Inventario'],['mas','☰','Más']];
+const TN_OP=[['caja','Cuentas'],['agenda','Agenda'],['tareas','Tareas'],['formulas','Fórmulas'],['mas','Más']].map(([k,t])=>[k,IC[k],t]),TN_GER=[['autorizar','Autorizar'],['resumen','Resumen'],['reportes','Reportes'],['inv','Inventario'],['mas','Más']].map(([k,t])=>[k,IC[k],t]);
 const enGer=()=>duena&&$('#gSwitch [data-g="ger"]')&&$('#gSwitch [data-g="ger"]').getAttribute('aria-pressed')==='true';
 telAplicar&&setTimeout(telAplicar,0);
 function renderTnav(){const n=$('#tnavIn');if(!n)return;const L=enGer()?TN_GER:TN_OP;
   const badge=k=>{if(k==='tareas'){try{const D=tareasDatos(),x=D.conf.length+D.rec.length+D.form.length+D.mant.length+D.react.length+D.otros.length;return x?` <span class="badge">${x}</span>`:''}catch(e){return ''}}if(k==='formulas')return formPend.length?` <span class="badge">${formPend.length}</span>`:'';if(k==='autorizar'){const x=(descSolPend||[]).length+(cortPend||[]).length+(cierreSols||[]).length;return x?` <span class="badge">${x}</span>`:''}return ''};
   const h=L.map(([k,ic,t])=>`<button type="button" role="tab" data-tn="${k}" aria-selected="${k===tab}"><span class="ic">${ic}</span>${t}${badge(k)}</button>`).join('');if(n.innerHTML!==h)n.innerHTML=h}
-function abrirMas(){const ger=enGer(),it=ger?[['quincena','🗓️','Quincena'],['mant','🔧','Mantenimiento'],['ajustes','⚙️','Ajustes'],['op','🧾','Ir a Operación (caja)']]:[['cierre','📋','Cierre del día'],['fichas','📇','Fichas de clientas'],['mant','🔧','Mantenimiento'],['inv','📦','Inventario'],...(duena?[['ger','⚡','Ir a Gerencia']]:[])];
-  $('#masL').innerHTML=it.map(([k,ic,t])=>`<button type="button" data-mas="${k}"><span class="ic">${ic}</span>${t}</button>`).join('')+`<button type="button" data-mas="cambiar"><span class="ic">👤</span>Cambiar de usuario</button>`;$('#masSheet').hidden=false}
+function abrirMas(){const ger=enGer(),it=ger?[['quincena',IC.quincena,'Quincena'],['mant',IC.mant,'Mantenimiento'],['ajustes',IC.ajustes,'Ajustes'],['op',IC.caja,'Ir a Operación (caja)']]:[['cierre',IC.cierre,'Cierre del día'],['fichas',IC.fichas,'Fichas de clientas'],['mant',IC.mant,'Mantenimiento'],['inv',IC.inv,'Inventario'],...(duena?[['ger',IC.autorizar,'Ir a Gerencia']]:[])];
+  $('#masL').innerHTML=it.map(([k,ic,t])=>`<button type="button" data-mas="${k}"><span class="ic">${ic}</span>${t}</button>`).join('')+`<button type="button" data-mas="cambiar"><span class="ic">${IC.cambiar}</span>Cambiar de usuario</button>`;$('#masSheet').hidden=false}
 document.addEventListener('click',e=>{const b=e.target.closest('[data-tn]');if(b){const k=b.dataset.tn;if(k==='mas'){abrirMas();return}setTab(k);window.scrollTo(0,0);return}
   const m=e.target.closest('[data-mas]');if(m){const k=m.dataset.mas;$('#masSheet').hidden=true;if(k==='op'){$('#gSwitch [data-g="op"]').click();return}if(k==='ger'){$('#gSwitch [data-g="ger"]').click();return}if(k==='cambiar'){const c=$('#salir');if(c)c.click();return}setTab(k);window.scrollTo(0,0);return}
   const tp=e.target.closest('[data-tpill]');if(tp){setTab(tp.dataset.tpill);window.scrollTo(0,0)}});
@@ -1428,14 +1431,14 @@ setInterval(()=>{try{revisarAvisos()}catch(e){}},2500);
 function revisarAvisos(){if(!modo)return;
   if(modo==='caja'&&duena){
     avDiff('adel',adelPend,x=>`💵 <b>${esc(x.estilista)}</b> pide un adelanto de ${money(x.monto)}`,'resumen');
-    avDiff('tdif',turnosDif,x=>{const d=difDe(x).pop();return d?`💰 Diferencia de caja: <b>${esc(x.cajero)}</b> · ${d.v<0?'faltan':'sobran'} ${money(Math.abs(d.v))}`:null},'resumen');
+    avDiff('tdif',turnosDif,x=>{const d=difDe(x).pop();return d?`🧾 Diferencia de caja: <b>${esc(x.cajero)}</b> · ${d.v<0?'faltan':'sobran'} ${money(Math.abs(d.v))}`:null},'resumen');
     avDiff('mant',mants.filter(m=>m.estado!=='pagado'),x=>`🔧 Mantenimiento por pagar: <b>${esc(x.categoria)}</b>${x.monto?' · '+money(x.monto):''}`,'mant');
     avDiff('dsol',descSolPend.map(x=>({...x,estado:'p'})),x=>`🏷️ Descuento por autorizar: <b>${esc(x.cliente)}</b> · ${(x.descSol||{}).pct}%`,'resumen');
     avDiff('cort',cortPend,x=>`🎁 Cortesía por aprobar: <b>${esc(x.cliente)}</b> · ${money((x.cortesia||{}).monto)}`,'resumen');
     avDiff('ext',extPend,x=>`⏰ <b>${esc(x.estilista)}</b> pide ${x.tipo==='domingo'?'pago de domingo':`${x.horas||1} hora${(x.horas||1)>1?'s':''} extra`}`,'resumen');
     try{avDiff('alq',alqPorRevisar(),x=>`🏠 <b>${esc(x.estilista)}</b> envió su pago de alquiler (${money(x.monto)})`,'resumen')}catch(e){}
     avDiff('inva',invAl,x=>`🎨 ${x.tipo==='exceso'?'Gramos de más':x.tipo==='sinAbrir'?'Tubo usado sin abrir en caja':x.tipo==='sinStock'?'Tinte sin existencia':'Tinte fuera del inventario'}: <b>${esc(x.producto)}</b> · ${esc(x.estilista)}`,'inv');
-    avDiff('ins',insumos.filter(x=>x.estado==='pedido'),x=>`🧴 Se está acabando: <b>${esc(x.producto)}</b>${x.urgente?' · urgente':''}`,'inv');
+    avDiff('ins',insumos.filter(x=>x.estado==='pedido'),x=>`📦 Se está acabando: <b>${esc(x.producto)}</b>${x.urgente?' · urgente':''}`,'inv');
   }
   if(modo==='caja'){subInv();avDiff('tubo',invs.filter(p=>p.tinte&&tuboResta(p)!=null&&tuboResta(p)<=tuboCap(p)*0.2).map(p=>({id:p.id,estado:'bajo',p})),x=>`🎨 Al tubo abierto de <b>${esc(x.p.marca||'')} ${esc(x.p.nombre)}</b> le quedan ~${tuboResta(x.p)} g. Ten listo uno nuevo${+x.p.cerr?'':' (no quedan cerrados)'}.`,'inv')}
   if(modo==='caja')avDiff('form',formPend.map(l=>({...l,estado:'p'})),x=>`🎨 ${esc(x.estilista)} hizo <b>${esc(x.servicio)}</b> a ${esc(x.cliente)} · falta anotar la fórmula`,'caja');
@@ -1814,22 +1817,22 @@ const resumenTurno=(nom,E,contado,dif)=>`<dl class="kv"><dt>${esc(nom)} recibió
 function difDe(t){const o=[];if(NZ(t.difApertura))o.push({tipo:'apertura',v:+t.difApertura});if(t.entrega&&NZ(t.entrega.dif))o.push({tipo:'entrega',v:+t.entrega.dif});if(t.recepcion&&NZ(t.recepcion.dif))o.push({tipo:'recepcion',v:+t.recepcion.dif});return o}
 /* franja de caja */
 function lockHtml(){const ab=turnoAbierto(),pr=turnoPorRecibir(),yo=esc(cajero);
-  if(!turnosOk)return `<div class="ic">💰</div><p>Revisando la caja…</p>`;
-  if(pr&&pr.entrega.a===cajero)return `<div class="ic">💰</div><h2>${esc(pr.cajero)} te entregó la caja</h2><p>Para empezar a trabajar, cuenta el efectivo y recíbela.</p><button type="button" class="btn primary" data-caja-recibir>Recibir caja de ${esc(pr.cajero)}</button>`;
+  if(!turnosOk)return `<div class="ic">🧾</div><p>Revisando la caja…</p>`;
+  if(pr&&pr.entrega.a===cajero)return `<div class="ic">🧾</div><h2>${esc(pr.cajero)} te entregó la caja</h2><p>Para empezar a trabajar, cuenta el efectivo y recíbela.</p><button type="button" class="btn primary" data-caja-recibir>Recibir caja de ${esc(pr.cajero)}</button>`;
   if(pr&&pr.cajero===cajero)return `<div class="ic">⏳</div><h2>Entregaste la caja a ${esc(pr.entrega.a)}</h2><p>Esperando que ${esc(pr.entrega.a)} la reciba desde su usuario. Mientras tanto no se puede cobrar.</p><button type="button" class="btn ghost" data-caja-cancelar>Cancelar entrega</button>`;
   if(pr)return `<div class="ic">⏳</div><h2>Caja entregada a ${esc(pr.entrega.a)}</h2><p>${esc(pr.cajero)} le entregó la caja a ${esc(pr.entrega.a)}. Si eres ${esc(pr.entrega.a)}, toca Cambiar y entra con tu nombre.</p>`;
   if(ab)return `<div class="ic">🔒</div><h2>La caja la tiene ${esc(ab.cajero)}</h2><p>La recibió a las ${hora(ab.inicio)}. Para usar caja, ${esc(ab.cajero)} primero debe entregártela desde su usuario.</p>`;
   const alCierre=turnosHoy.some(t=>t.entrega&&t.entrega.a==='cierre');
-  return `<div class="ic">💰</div><h2>Hola, ${yo}</h2><p>${alCierre?'La caja se entregó al cierre. Si vas a seguir trabajando, recíbela de nuevo.':'Antes de empezar, cuenta el fondo de caja y recíbela. Hasta entonces no se puede usar nada de caja.'}</p><button type="button" class="btn primary" data-caja-recibir>Recibir caja</button>`}
+  return `<div class="ic">🧾</div><h2>Hola, ${yo}</h2><p>${alCierre?'La caja se entregó al cierre. Si vas a seguir trabajando, recíbela de nuevo.':'Antes de empezar, cuenta el fondo de caja y recíbela. Hasta entonces no se puede usar nada de caja.'}</p><button type="button" class="btn primary" data-caja-recibir>Recibir caja</button>`}
 function aplicarLock(){const L=$('#cajaLock');if(!L)return false;const ab=turnoAbierto();
   const lock=modo==='caja'&&!duena&&!PRAC&&!esMovil&&cajaEstricta()&&!(turnosOk&&ab&&ab.cajero===cajero);
   if(lock){L.innerHTML=lockHtml();L.hidden=false;$('#tabs').hidden=true;$$('.view').forEach(v=>v.hidden=true);$('#cajaBar').hidden=true;cajaLocked=true;return true}
   L.hidden=true;$('#tabs').hidden=false;if(cajaLocked){cajaLocked=false;if(modo==='caja')setTimeout(()=>setTab(duena?'resumen':'caja'),0)}return false}
 function renderCajaBar(){const bar=$('#cajaBar');if(!bar)return;if(aplicarLock())return;if(modo!=='caja'||duena||PRAC){bar.hidden=true;return}subTurnos();bar.hidden=false;const ab=turnoAbierto(),pr=turnoPorRecibir();
-  if(esMovil){bar.innerHTML=`<span>💰 ${ab?`Caja: <b>${esc(ab.cajero)}</b> (en la computadora)`:'Nadie tiene la caja abierta'} · desde el teléfono cobras con tarjeta o Yappy</span>`;return}
-  if(pr){bar.innerHTML=pr.entrega.a===cajero?`<span>💰 <b>${esc(pr.cajero)}</b> te entregó la caja</span><button type="button" class="btn small primary" data-caja-recibir>Recibir caja de ${esc(pr.cajero)}</button>`:`<span>💰 Caja entregada a <b>${esc(pr.entrega.a)}</b> · esperando que la reciba</span>${pr.cajero===cajero?`<button type="button" class="btn small ghost" data-caja-cancelar>Cancelar entrega</button>`:''}`;return}
-  if(ab){bar.innerHTML=`<span>💰 Caja: <b>${esc(ab.cajero)}</b> · desde ${hora(ab.inicio)}</span>${ab.cajero===cajero?`<button type="button" class="btn small" data-caja-entregar>Entregar caja</button>`:`<small class="muted">${esc(ab.cajero)} tiene la caja.</small>`}`;return}
-  bar.innerHTML=`<span>💰 Nadie tiene la caja${turnosHoy.some(t=>t.entrega&&t.entrega.a==='cierre')?' (se entregó al cierre)':' hoy'}</span><button type="button" class="btn small primary" data-caja-recibir>Recibir caja</button>`}
+  if(esMovil){bar.innerHTML=`<span>🧾 ${ab?`Caja: <b>${esc(ab.cajero)}</b> (en la computadora)`:'Nadie tiene la caja abierta'} · desde el teléfono cobras con tarjeta o Yappy</span>`;return}
+  if(pr){bar.innerHTML=pr.entrega.a===cajero?`<span>🧾 <b>${esc(pr.cajero)}</b> te entregó la caja</span><button type="button" class="btn small primary" data-caja-recibir>Recibir caja de ${esc(pr.cajero)}</button>`:`<span>🧾 Caja entregada a <b>${esc(pr.entrega.a)}</b> · esperando que la reciba</span>${pr.cajero===cajero?`<button type="button" class="btn small ghost" data-caja-cancelar>Cancelar entrega</button>`:''}`;return}
+  if(ab){bar.innerHTML=`<span>🧾 Caja: <b>${esc(ab.cajero)}</b> · desde ${hora(ab.inicio)}</span>${ab.cajero===cajero?`<button type="button" class="btn small" data-caja-entregar>Entregar caja</button>`:`<small class="muted">${esc(ab.cajero)} tiene la caja.</small>`}`;return}
+  bar.innerHTML=`<span>🧾 Nadie tiene la caja${turnosHoy.some(t=>t.entrega&&t.entrega.a==='cierre')?' (se entregó al cierre)':' hoy'}</span><button type="button" class="btn small primary" data-caja-recibir>Recibir caja</button>`}
 /* recibir */
 function cajaRecibir(){const pr=turnoPorRecibir();
   if(pr){if(pr.entrega.a!==cajero){toast(`La caja se le entregó a ${pr.entrega.a}.`);return}turnoFlow={tipo:'recibirDe',t:pr,intento:1};
@@ -2164,7 +2167,7 @@ function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas
   if(tab==='mias'&&per==='dia'&&perOff===0)renderMias();
   if(tab==='caja'){
     {const esp=lineas.filter(l=>l.especial&&l.especial.estado==='pendiente').length,pc=modo==='caja'?pcHoy().length:0,fp=modo==='caja'?formPend.length:0,ir=usaInsumos()?insumos.filter(x=>x.estado==='aprobado').length:0,pp=pedPend.length;
-     const it=[esp&&`<button class="btn small" data-cp="esp">💲 ${esp} precio${esp>1?'s':''} especial${esp>1?'es':''} por autorizar</button>`,pp&&`<button class="btn small" data-cp="ped">🧴 ${pp} producto${pp>1?'s':''} pedido${pp>1?'s':''} por el equipo</button>`,ir&&`<button class="btn small" data-cp="ins">📦 ${ir} insumo${ir>1?'s':''} por recibir</button>`].filter(Boolean);
+     const it=[esp&&`<button class="btn small" data-cp="esp">💲 ${esp} precio${esp>1?'s':''} especial${esp>1?'es':''} por autorizar</button>`,pp&&`<button class="btn small" data-cp="ped">📦 ${pp} producto${pp>1?'s':''} pedido${pp>1?'s':''} por el equipo</button>`,ir&&`<button class="btn small" data-cp="ins">📦 ${ir} insumo${ir>1?'s':''} por recibir</button>`].filter(Boolean);
      $('#cajaPendBox').innerHTML=it.length?`<div class="adel-pend"><h3>Por atender</h3><div class="row" style="gap:8px;flex-wrap:wrap">${it.join('')}</div></div>`:'';}
     renderPedPend();
     $('#cajaAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'caja')).join(''):`<div class="empty">No hay cuentas abiertas. Las clientas aparecen aquí en cuanto un estilista agrega un servicio.</div>`;
@@ -2233,7 +2236,7 @@ async function renderMias(){
   else if(esQActual)card=adelCard(calcAdelanto(L,T,Ar,soy),Ar);
   else if(perOff===0&&db){try{const qd=await qDatosEst(),Aq=misAdel.filter(x=>x.fecha>=qa&&x.fecha<=qb);card=adelCard(calcAdelanto(qd.L,qd.T,Aq,soy),Aq)}catch(e){}}
   const salP=!salarioMes(soy)?0:per==='dia'?((!ingresoDe(soy)||a>=ingresoDe(soy))&&!vacDiasEn(soy,a,a)?r2(salarioMes(soy)/30):0):per==='quincena'?salQ(soy,a,b):r2(salQ(soy,a,a.slice(0,8)+'15')+salQ(soy,a.slice(0,8)+'16',b));
-  if(!L.length&&!props&&!entregados&&!cuotasEn(misPed,a,b,soy).length&&!salP){$('#miasOut').innerHTML=`<div class="empty">${salarioMes(soy)&&ingresoDe(soy)>b?`Empiezas el ${fechaCorta(ingresoDe(soy))}. Desde ese día verás aquí tu fijo.`:'No tienes servicios en este periodo.'}</div>${perOff===0?alqCard()+extCard()+(salarioMes(soy)?vacCard():''):''}${accRow([{k:'adel',ic:'💵',lbl:'Pedir adelanto',html:card,est:misAdel.some(x=>x.estado==='pendiente')?'Esperando aprobación':''},{k:'ped',ic:'🧴',lbl:'Pedir producto',html:perOff===0?pedCard():'',est:misPed.some(p=>p.estado==='pendiente')?'Pedido en espera':''}])}`;return}
+  if(!L.length&&!props&&!entregados&&!cuotasEn(misPed,a,b,soy).length&&!salP){$('#miasOut').innerHTML=`<div class="empty">${salarioMes(soy)&&ingresoDe(soy)>b?`Empiezas el ${fechaCorta(ingresoDe(soy))}. Desde ese día verás aquí tu fijo.`:'No tienes servicios en este periodo.'}</div>${perOff===0?alqCard()+extCard()+(salarioMes(soy)?vacCard():''):''}${accRow([{k:'adel',ic:'💵',lbl:'Pedir adelanto',html:card,est:misAdel.some(x=>x.estado==='pendiente')?'Esperando aprobación':''},{k:'ped',ic:'📦',lbl:'Pedir producto',html:perOff===0?pedCard():'',est:misPed.some(p=>p.estado==='pendiente')?'Pedido en espera':''}])}`;return}
   const Pc=cuotasEn(misPed,a,b,soy),prodD=r2(Pc.reduce((s,c)=>s+c.monto,0));
   const extP=r2(misExt.filter(x=>x.fecha>=a&&x.fecha<=b&&(!x.estado||x.estado==='aprobado')).reduce((s,x)=>s+(+x.monto||0),0)+extraFijaEn(soy,a,b).monto);
   const descP=per==='dia'?0:r2(misDesc.filter(x=>x.fecha>=a&&x.fecha<=b).reduce((s,x)=>s+(+x.monto||0),0));
@@ -2243,7 +2246,7 @@ async function renderMias(){
   $('#miasOut').innerHTML=`
   <div class="hero"><span>${esInq(soy)?'Ganado (se descuenta de tu alquiler)':'Te toca'}</span><b>${money(total)}</b><small>${[salP?`${money(salP)} ${per==='dia'?'fijo del día':'fijo'}`:'',extP?`${money(extP)} de horas extras`:'',(L.length||!salP)?`${money(pagoS)} por servicios`:'',pagoV?`${money(pagoV)} por ventas`:'',(props||!salP)?`${money(props)} en propinas`:''].filter(Boolean).join(' + ')}${entregados?` − ${money(entregados)} de adelanto`:''}${prodD?` − ${money(prodD)} de productos`:''}${cafeP?` − ${money(cafeP)} de cafetería`:''}${descP?` − ${money(descP)} de otros descuentos (${esc(misDesc.filter(x=>x.fecha>=a&&x.fecha<=b).map(x=>x.detalle).join(', '))})`:''}</small></div>
   ${pend.length?`<div class="notice warn"><span>${pend.length} servicio${pend.length===1?'':'s'} aún sin cobrar en caja (≈ ${money(pendPago)} para ti). Se suman cuando cobren.</span></div>`:''}
-  ${perOff===0?alqCard()+extCard():''}${accRow([{k:'adel',ic:'💵',lbl:'Pedir adelanto',html:card,est:misAdel.some(x=>x.estado==='pendiente')?'Esperando aprobación':''},{k:'ped',ic:'🧴',lbl:'Pedir producto',html:perOff===0?pedCard():'',est:misPed.some(p=>p.estado==='pendiente')?'Pedido en espera':''}])}
+  ${perOff===0?alqCard()+extCard():''}${accRow([{k:'adel',ic:'💵',lbl:'Pedir adelanto',html:card,est:misAdel.some(x=>x.estado==='pendiente')?'Esperando aprobación':''},{k:'ped',ic:'📦',lbl:'Pedir producto',html:perOff===0?pedCard():'',est:misPed.some(p=>p.estado==='pendiente')?'Pedido en espera':''}])}
   ${metaHtml(bruto)}${perOff===0?decCard()+vacCard():''}
   <details class="kv-det" ${store.get('verDet')==='1'?'open':''}><summary>Ver detalle de lo ganado</summary>
   <dl class="kv">
