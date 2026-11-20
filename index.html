@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="f60f70cbebd0"</script>
-<script src="web.js?v=f60f70cbebd0"></script>
+<script>window.BUILD="c72bd66d96d0"</script>
+<script src="web.js?v=c72bd66d96d0"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1961,7 +1961,7 @@ function subTareas(){if(thUn.length||!db||modo!=='caja')return;const h=hoy(),m=x
   on(db.collection('tareasHechas').where('fecha','==',h),L=>{TH.hechas=L.sort((a,b)=>(b.hora||'').localeCompare(a.hora||''))});
   thUn.push(db.collection('citasTel').where('fecha','>=',h).where('fecha','<=',addDias(h,2)).onSnapshot(x=>{x.docs.forEach(d=>TH.telT[d.id]=d.data().tel||'');renderTareas()},()=>{}));
   on(db.collection('mant').where('toca','<=',h).limit(500),L=>{TH.mant=L});
-  on(db.collection('citas').where('fecha','>=',h).limit(1000),L=>{TH.fut=new Set(L.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)))});
+  on(db.collection('citas').where('fecha','>=',h).limit(1000),L=>{TH.fut=new Set(L.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)));TH.hoyN=new Set(L.filter(c=>c.fecha===hoy()&&activa(c)).map(c=>c.clienteKey||ckey(c.cliente))).size;agBadgeSet()});
   on(db.collection('contacto').where('ultimo','>=',addDias(h,-6)).limit(1000),L=>{TH.cont={};L.forEach(c=>TH.cont[c.id]=c)});
   on(db.collection('clientes').where('ultimaVisita','>=',addDias(h,-365)).where('ultimaVisita','<=',addDias(h,-45)).limit(500),L=>{TH.react=L});
   on(db.collection('avisosVence').where('vence','>=',h).limit(500),L=>{TH.av={};L.forEach(x=>TH.av[x.id]=x)});
@@ -1991,6 +1991,7 @@ function tareasDatos(){const h=hoy(),y=new Date().getFullYear(),tel=c=>telMap[c.
   const promo=Object.values(P);
   return {conf,rec,rep,form:formPend,mant:promo.filter(x=>x.t==='mant'),react:promo.filter(x=>x.t==='react'),otros:promo.filter(x=>x.t==='cum'||x.t==='ven')}}
 var thOpen={};try{thOpen=JSON.parse(localStorage.getItem('thOpen')||'{}')}catch(e){}
+function agBadgeSet(){const b=$('#agBadge');if(!b)return;const n=modo==='caja'?((TH&&TH.hoyN)||0):0;b.hidden=!n;b.textContent=n;b.title=n?`${n} clienta${n>1?'s':''} con cita hoy`:''}
 function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!bxs.length)return;if(modo!=='caja'){bxs.forEach(b=>b.innerHTML='');return}
   const a=document.activeElement;if(a&&a.closest&&a.closest('.tareas-hoy')&&a.tagName==='SELECT')return;
   const D=tareasDatos(),h=hoy(),wa=(tel,msg,attrs,lbl,cls)=>{const l=tel?waLink(tel,msg):'';return l?`<a class="btn small ${cls||'wa'}" href="${l}" target="_blank" rel="noopener" ${attrs}>${lbl}</a>`:''};
@@ -2203,7 +2204,7 @@ function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas
   }
   if(tab==='cierre')renderCierre();
   if(tab==='quincena'&&$('#adEst').options.length!==cfg.estilistas.length+1)$('#adEst').innerHTML='<option value="">— Profesional —</option>'+optsProf();
-  if(modo==='caja'){const n=pcHoy().length;$('#agBadge').hidden=!n;$('#agBadge').textContent=n}
+  if(modo==='caja')agBadgeSet();
   if(tab==='agenda'||(modo==='est'&&tab==='clientas'))renderAgenda();
   if(tab==='venta')renderVenta();
   if(!$('#cobroSheet').hidden)refreshCobro();
