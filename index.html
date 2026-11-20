@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="4a4bf4bc3c3a"</script>
-<script src="web.js?v=4a4bf4bc3c3a"></script>
+<script>window.BUILD="075da235bdaf"</script>
+<script src="web.js?v=075da235bdaf"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -117,7 +117,7 @@ label.f > input, label.f > select, label.f > textarea{color:var(--ink)}
 .ticket::before{content:"";position:absolute;left:0;right:0;top:0;height:6px;border-radius:var(--r) var(--r) 0 0;background:radial-gradient(circle at 6px -2px,var(--bg) 4px,transparent 4.5px) 0 0/12px 6px repeat-x}
 .ticket .head{display:flex;justify-content:space-between;align-items:baseline;gap:8px}
 .ticket .cliente{font-family:var(--display);font-size:1.3rem;overflow-wrap:anywhere}
-.at-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.85rem;margin:2px 0 4px}.at-l{display:flex;align-items:center;gap:6px;color:var(--muted)}.at-sel{width:auto!important;min-height:0;padding:4px 26px 4px 10px;font-size:13px;border-radius:999px}.ticket .hora{font-size:.8rem;color:var(--muted);white-space:nowrap}
+.tk-edb{padding:2px 8px;font-size:.8rem;margin-left:4px}.tk-ed{display:grid;gap:8px;padding:10px;margin:4px 0 8px;border:1px dashed var(--accent);border-radius:10px}.tk-ed .f{display:grid;gap:4px;font-size:.85rem;color:var(--muted)}.at-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:.85rem;margin:2px 0 4px}.at-l{display:flex;align-items:center;gap:6px;color:var(--muted)}.at-sel{width:auto!important;min-height:0;padding:4px 26px 4px 10px;font-size:13px;border-radius:999px}.ticket .hora{font-size:.8rem;color:var(--muted);white-space:nowrap}
 .lines{display:grid;gap:6px;margin:0;padding:0;list-style:none}
 .lines li{display:grid;grid-template-columns:1fr auto;gap:2px 10px;padding-bottom:6px;border-bottom:1px dashed var(--line)}
 .lines .svc{font-weight:600}
@@ -1268,6 +1268,7 @@ document.addEventListener('click',async e=>{
     toast(ok?'Precio especial autorizado':'Rechazado: se cobra el precio normal');
   }catch(err){toast('No se pudo guardar.')}
 });
+var tkEdit=null;
 function ticketCard(t,mode){
   const ls=lineasDe(t.id), sub=subtotalDe(t.id);
   const items=ls.length?ls.map(l=>{const mine=mode==='est'&&l.estilista===soy;const canDel=mode==='caja'||mine;
@@ -1280,8 +1281,10 @@ function ticketCard(t,mode){
   const tot=mode==='est'?`<small>${ls.length} servicio${ls.length===1?'':'s'}</small>`:`<span class="tot">${money(sub)}<small style="font-weight:400"> + ITBMS</small></span>`;
   const puedeAt=mode==='caja'||(mode==='est'&&abreCuentas(soy));
   const atHtml=`<div class="at-row">${puedeAt?`<label class="at-l">👤 Atiende <select class="at-sel" data-atiende="${t.id}" aria-label="Quién la atiende">${atOpts(t.atiende||'','').replace('¿Quién la atiende? (opcional)','— sin elegir —')}${t.atiende&&!atienden().some(e=>e.nombre===t.atiende)?`<option selected>${esc(t.atiende)}</option>`:''}</select></label>`:t.atiende?`<span>👤 Atiende: <b>${esc(t.atiende)}</b></span>`:''}${t.atiende&&t.creadoPor&&t.creadoPor!==t.atiende?`<small class="muted">abrió ${esc(t.creadoPor)}</small>`:''}</div>`;
-  return `<article class="ticket"><div class="head"><span class="cliente">${esc(t.cliente)}</span><span class="hora">llegó ${hora(t.creado)}</span></div>
-  ${atHtml}
+  const ed=puedeAt&&tkEdit===t.id;
+  const edHtml=ed?`<div class="tk-ed" data-tked="${t.id}"><label class="f">Nombre de la clienta<input data-tked-nom value="${esc(t.cliente)}" autocomplete="off"></label><div class="row" style="gap:6px"><button type="button" class="btn small primary" data-tked-ok="${t.id}">Guardar</button><button type="button" class="btn small ghost" data-tked-no>Cancelar</button></div><small class="muted">Solo se puede corregir mientras la cuenta no esté cobrada.</small></div>`:'';
+  return `<article class="ticket${ed?' editando':''}"><div class="head"><span class="cliente">${esc(t.cliente)}</span><span class="hora">llegó ${hora(t.creado)}</span></div>
+  ${ed?edHtml:puedeAt?atHtml.replace(/<\/div>$/,`<button type="button" class="btn small ghost tk-edb" data-tked-ir="${t.id}" title="Corregir el nombre de la clienta">✏️ Corregir nombre</button></div>`):atHtml}
   <ul class="lines">${items}</ul>
   ${mode!=='est'&&t.descSol?(()=>{const d=t.descSol,con=r2(sub-(d.base!=null?+d.base:sub)*(+d.pct||0)/100);return d.estado==='aprobada'?`<div class="notice ok" style="margin:6px 0"><span>✓ Descuento de <b>${d.pct}%</b>${d.detalle?' en '+esc(d.detalle):''} autorizado por ${esc(d.resp||'gerencia')} · con descuento: <b>${money(con)}</b> + ITBMS. Se aplica al tocar «Cerrar cuenta».</span></div>`:d.estado==='pendiente'?`<div class="notice warn" style="margin:6px 0"><span>⏳ Descuento de ${d.pct}% esperando autorización de gerencia.</span></div>`:`<div class="notice warn" style="margin:6px 0"><span>✗ Gerencia no autorizó el descuento de ${d.pct}%.</span></div>`})():''}
   <div class="foot">${tot}<span class="row" style="gap:6px">${btns}</span></div></article>`;
@@ -2198,7 +2201,7 @@ function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas
   }
   if(tab==='clientas'){
     $('#abiertasN').textContent=abiertas.length?abiertas.length+' clienta'+(abiertas.length===1?'':'s'):'';
-    if(!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#estAbiertas [data-atiende]')))$('#estAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'est')).join(''):`<div class="empty">No tienes clientas en el salón ahora. Cuando llegue tu clienta con cita, toca <b>Llegó</b> en tu agenda; si llega sin cita, caja le abre la cuenta.</div>`;
+    if(!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#estAbiertas [data-atiende],#estAbiertas [data-tked] input,#estAbiertas [data-tked] select')))$('#estAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'est')).join(''):`<div class="empty">No tienes clientas en el salón ahora. Cuando llegue tu clienta con cita, toca <b>Llegó</b> en tu agenda; si llega sin cita, caja le abre la cuenta.</div>`;
   }
   if(tab==='mias'&&per==='dia'&&perOff===0)renderMias();
   if(tab==='caja'){
@@ -2206,7 +2209,7 @@ function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subTareas
      const it=[esp&&`<button class="btn small" data-cp="esp">💲 ${esp} precio${esp>1?'s':''} especial${esp>1?'es':''} por autorizar</button>`,pp&&`<button class="btn small" data-cp="ped">📦 ${pp} producto${pp>1?'s':''} pedido${pp>1?'s':''} por el equipo</button>`,ir&&`<button class="btn small" data-cp="ins">📦 ${ir} insumo${ir>1?'s':''} por recibir</button>`].filter(Boolean);
      $('#cajaPendBox').innerHTML=it.length?`<div class="adel-pend"><h3>Por atender</h3><div class="row" style="gap:8px;flex-wrap:wrap">${it.join('')}</div></div>`:'';}
     renderPedPend();
-    if(!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#cajaAbiertas [data-atiende]')))$('#cajaAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'caja')).join(''):`<div class="empty">No hay cuentas abiertas. Las clientas aparecen aquí en cuanto un estilista agrega un servicio.</div>`;
+    if(!(document.activeElement&&document.activeElement.matches&&document.activeElement.matches('#cajaAbiertas [data-atiende],#cajaAbiertas [data-tked] input,#cajaAbiertas [data-tked] select')))$('#cajaAbiertas').innerHTML=abiertas.length?abiertas.map(t=>ticketCard(t,'caja')).join(''):`<div class="empty">No hay cuentas abiertas. Las clientas aparecen aquí en cuanto un estilista agrega un servicio.</div>`;
     $('#cajaCobradas').innerHTML=cobradas.length?`<div class="tw"><table><thead><tr><th>Hora</th><th>Clienta</th><th>Estilistas</th><th class="n">Total</th><th>Pago</th><th class="n">Propina</th><th>Cobró</th><th></th></tr></thead><tbody>${cobradas.map(t=>{const p=t.pagos||{};const met=METODOS.filter(m=>+p[m]>0).map(m=>MET_LBL[m]).join(' + ');const pr=(t.propinas||[]).reduce((s,x)=>s+(+x.monto||0),0);const ests=[...new Set(lineasDe(t.id).map(l=>l.estilista))].join(', ');return `<tr><td>${hora(t.cobrado)}</td><td>${esc(t.cliente)}</td><td>${esc(ests)}</td><td class="n">${money(t.total)}</td><td>${met}</td><td class="n">${pr?money(pr):''}</td><td>${esc(t.cobradoPor&&t.cobradoPor!=='Caja'?t.cobradoPor:'')}</td><td><button class="btn ghost small" data-act="reabrir" data-id="${t.id}">Reabrir</button></td></tr>`}).join('')}</tbody></table></div>`:`<div class="empty">Todavía no hay cuentas cerradas este día.</div>`;
   }
   if(tab==='cierre')renderCierre();
@@ -2853,6 +2856,16 @@ $('#nuevaForm').addEventListener('submit',e=>{e.preventDefault();crearClienta($(
 $('#nuevaBtnCaja').onclick=()=>{atFill();$('#nuevaFormCaja').hidden=false;$('#nuevaNombreCaja').focus()};
 $('[data-cancel-nueva]').onclick=()=>{$('#nuevaFormCaja').reset();$('#nuevaFormCaja').hidden=true};
 $('#nuevaFormCaja').addEventListener('submit',e=>{e.preventDefault();crearClienta($('#nuevaNombreCaja').value,e.target,$('#nuevaTelCaja').value,$('#nuevaAtiendeCaja').value)});
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-tked-ir],[data-tked-ok],[data-tked-no]');if(!b)return;
+  if(b.dataset.tkedIr){tkEdit=b.dataset.tkedIr;renderDyn();setTimeout(()=>{const i=document.querySelector(`[data-tked="${tkEdit}"] [data-tked-nom]`);if(i)i.focus()},50);return}
+  if(b.hasAttribute('data-tked-no')){tkEdit=null;renderDyn();return}
+  const id=b.dataset.tkedOk,box=b.closest('[data-tked]'),t=tickets.find(x=>x.id===id);if(!t||!db)return;
+  if(t.estado!=='abierta'){toast('Esta cuenta ya fue cobrada: para corregirla hay que reabrirla.');tkEdit=null;renderDyn();return}
+  const nom=box.querySelector('[data-tked-nom]').value.trim().replace(/\s+/g,' ');if(!nom){toast('Escribe el nombre de la clienta.');return}
+  if(nom===t.cliente){tkEdit=null;renderDyn();return}
+  b.disabled=true;try{const up={cliente:nom,clienteKey:ckey(nom),nombreAntes:t.cliente,nombrePor:soy||enCaja()};await db.doc('tickets/'+id).update(up);
+    if(up.cliente)for(const l of lineasDe(id))await db.doc('lineas/'+l.id).update({cliente:nom,clienteKey:ckey(nom)}).catch(()=>{});
+    tkEdit=null;toast('Listo, nombre corregido.');renderDyn()}catch(err){b.disabled=false;toast('No se pudo guardar.')}});
 document.addEventListener('change',async e=>{const s=e.target.closest&&e.target.closest('[data-atiende]');if(!s||!db)return;const v=s.value;try{await db.doc('tickets/'+s.dataset.atiende).update({atiende:v||null,atiendePor:soy||enCaja()});toast(v?`Listo: la atiende ${v}.`:'Listo, se quitó quién la atiende.')}catch(err){toast('No se pudo guardar.')}});
 
 /* ---------- acciones ---------- */
