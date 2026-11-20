@@ -40,7 +40,7 @@ button,input,select,textarea{font:inherit;color:inherit}
 .tabs::-webkit-scrollbar{display:none}
 .tabs button{border:0;background:none;padding:10px 12px;border-bottom:2px solid transparent;color:var(--muted);font-weight:600;white-space:nowrap;cursor:pointer}
 .tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
-.badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:.75rem;line-height:20px;text-align:center}
+.badge{display:inline-block;min-width:20px;padding:0 6px;margin-left:4px;border-radius:99px;background:var(--accent);color:var(--accent-ink);font-size:.75rem;line-height:20px;text-align:center}.badge.bad{background:var(--bad,#e57373);color:#fff}
 
 /* bottom nav (estilista) */
 .bnav{position:fixed;left:0;right:0;bottom:0;z-index:6;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
@@ -463,6 +463,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     <button role="tab" data-tab="resumen" class="only-duena">📊 Resumen <span class="badge" id="resBadge" hidden></span></button>
     <button role="tab" data-tab="caja">🧾 Cuentas <span class="badge" id="cajaBadge" hidden></span></button>
     <button role="tab" data-tab="agenda">📅 Agenda <span class="badge" id="agBadge" hidden></span></button>
+    <button role="tab" data-tab="tareas">✅ Tareas <span class="badge" id="tarBadge" hidden></span></button>
     <button role="tab" data-tab="cierre">📋 Cierre del día</button>
     <button role="tab" data-tab="quincena" class="only-duena">💰 Quincena</button>
     <button role="tab" data-tab="reportes" class="only-duena">📈 Reportes</button>
@@ -565,7 +566,6 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     </div>
     <div id="agPaneles" class="only-caja" style="display:grid;gap:12px"></div>
     <div id="agOut" style="display:grid;gap:12px"></div>
-    <div class="tareas-hoy only-caja" style="margin-top:14px"></div>
   </section>
 
   <!-- RESUMEN (gerencia) -->
@@ -595,7 +595,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
   </section>
 
   <!-- CAJA -->
-  <section class="view" id="v-tareas" hidden><h2>Tareas</h2><div class="tareas-hoy only-caja"></div></section>
+  <section class="view" id="v-tareas" hidden><div class="tareas-hoy only-caja"></div></section>
   <section class="view" id="v-formulas" hidden><h2>Fórmulas por llenar</h2><div id="formTel"></div></section>
   <section class="view" id="v-caja" hidden>
     <div class="tel-pills tel-only" id="telPills"></div>
@@ -613,11 +613,10 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     </form>
     <div id="viejasAb"></div>
     <div class="tickets" id="cajaAbiertas"></div>
-    <div class="tareas-hoy only-caja" style="margin-top:14px"></div>
-    <div class="row between" style="margin-top:14px"><h2>Ventas a alquilados</h2><button type="button" class="btn" id="vaBtn">+ Venta a alquilado</button></div>
-    <div id="vaList"></div>
     <h2>Cuentas cerradas</h2>
     <div id="cajaCobradas"></div>
+    <div class="row between" style="margin-top:14px"><h2>Ventas a alquilados</h2><button type="button" class="btn" id="vaBtn">+ Venta a alquilado</button></div>
+    <div id="vaList"></div>
   </section>
 
   <!-- CIERRE -->
@@ -2009,6 +2008,7 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',D.otros.length,otros)+
     (D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día'));
   const hechHtml=sec('hech','✓','Hechas hoy',hh.length,'',hh.length?`<div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b><br><small>${esc(x.txt)} · ${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div>`:vacio('Todavía nada'));
+  {const tb=$('#tarBadge'),nt=nA+nH;if(tb){tb.hidden=!nt;tb.textContent=nt;tb.classList.toggle('bad',nA>0)}}
   const res=[`${nH} de hoy`,hh.length?`${hh.length} hecha${hh.length>1?'s':''}`:'',nA?`<b class="neg">${nA} atrasada${nA>1?'s':''}</b>`:''].filter(Boolean).join(' · ');
   const html=`<div class="adel th-box"><div class="row between"><h3 style="margin:0">Tareas</h3><small class="muted">${res}</small></div>
     <div class="th-cols">${hoyHtml}${hechHtml}${atrHtml}</div>
