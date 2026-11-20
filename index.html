@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="c2ea34068a3d"</script>
-<script src="web.js?v=c2ea34068a3d"></script>
+<script>window.BUILD="e12f728cc95e"</script>
+<script src="web.js?v=e12f728cc95e"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -3530,15 +3530,15 @@ function dibujarComandas(doc){
   const ests=[...new Set(L.map(l=>l.estilista||'—'))].sort((a,b)=>{const i=orden.indexOf(a),j=orden.indexOf(b);return (i<0?999:i)-(j<0?999:j)});
   const c=calcCierre(tickets,lineas,gastos);
   const boxes=ests.map(n=>{const ls=L.filter(l=>(l.estilista||'—')===n).sort((a,b)=>(a.creado||'').localeCompare(b.creado||''));const e=cfg.estilistas.find(x=>x.nombre===n)||{};
-    const rows=ls.map(l=>{const t=tk[l.ticketId],tags=[];if(l.sinCom)tags.push(['sin comisión',0]);if(cortT(t))tags.push(['cortesía',1]);if(l.canje)tags.push(['canje',1]);if(+l.canjeDesc>0)tags.push(['canje -'+M$(l.canjeDesc),1]);if(l.paqueteSes)tags.push(['paquete '+l.paqueteSes+' sesiones',1]);if(l.paqueteId)tags.push(['ya pagada · vale '+M$(l.paqueteVal),1]);if(t&&t.estado!=='cobrada')tags.push(['sin cobrar',0]);
+    const rows=ls.map(l=>{const t=tk[l.ticketId],tags=[];if(l.sinCom)tags.push(['sin comisión',0]);if(cortT(t))tags.push(['cortesía',1]);if(l.canje)tags.push(['canje',1]);if(+l.canjeDesc>0)tags.push(['canje -'+M$(l.canjeDesc),1]);if(l.descCli)tags.push([`descuento ${l.descCli.pct}% (era ${M$(l.descCli.precioNormal)})`,1]);else if(l.descuentoCliente&&+l.descuentoCliente.pct>0)tags.push([`descuento ${l.descuentoCliente.pct}%`,1]);if(l.paqueteSes)tags.push(['paquete '+l.paqueteSes+' sesiones',1]);if(l.paqueteId)tags.push(['ya pagada · vale '+M$(l.paqueteVal),1]);if(t&&t.estado!=='cobrada')tags.push(['sin cobrar',0]);
       const sub=[];if(l.formula&&l.formula.tinte)sub.push('Fórmula: '+l.formula.tinte+(l.formula.peroxido?' · Peróxido '+l.formula.peroxido:''));if(+l.insumosTotal>0)sub.push('material -'+M$(l.insumosTotal));
       return {h:hcorta(l.creado),cl:corto(l.cliente),sv:(l.venta&&!l.sinCom&&!/^Venta/.test(l.servicio)?'Venta: ':'')+l.servicio.replace(/^Producto: /,''),p:+l.precio||0,tags,sub:sub.join(' · '),red:cortT(t)}});
-    const tot=r2(ls.reduce((s,l)=>s+(+l.precio||0),0)),sc=r2(ls.filter(l=>l.sinCom).reduce((s,l)=>s+(+l.precio||0),0));
+    const tot=r2(ls.reduce((s,l)=>s+(+l.precio||0),0)),mat=r2(ls.reduce((s,l)=>s+(+l.insumosTotal||0),0)),cj=r2(ls.reduce((s,l)=>s+(+l.canjeDesc||0),0)),neto=r2(tot-mat-cj),sc=r2(ls.filter(l=>l.sinCom).reduce((s,l)=>s+(+l.precio||0),0));
     const cortL=ls.filter(l=>cortT(tk[l.ticketId])),cort=r2(cortL.reduce((s,l)=>s+(+l.precio||0),0)),motivos=[...new Set(cortL.map(l=>tk[l.ticketId].cortesia.motivo))].join(', ');
     const pe=c.propEst[n]||{},pr=['tarjeta','yappy','efectivo'].filter(k=>pe[k]).map(k=>`${MET_LBL[k].toLowerCase()} ${M$(pe[k])}`);
     const info=[];if(sc)info.push(`Incluye ${M$(sc)} sin comisión`);if(cort)info.push(`Incluye ${M$(cort)} en cortesía de gerencia (${motivos})`);if(pr.length)info.push('Propinas: '+pr.join(' · '));
     const area=String(e.area||'').split(',')[0].trim();
-    return {n,head:[area,esInq(n)?'alquilado':'',`${ls.length} ${ls.length===1?'registro':'registros'}`].filter(Boolean).join(' · '),rows,tot,info}});
+    return {n,head:[area,esInq(n)?'alquilado':'',`${ls.length} ${ls.length===1?'registro':'registros'}`].filter(Boolean).join(' · '),rows,tot,mat,cj,neto,info}});
   const FS=8.5,LH=11.5,X=(x)=>x;
   function box(b,x,y,draw){let yy=y+8;const w=CW;
     if(draw){doc.setFont('helvetica','bold');doc.setFontSize(11);doc.setTextColor(17);doc.text(sp(b.n),x+8,yy+9);doc.setFont('helvetica','normal');doc.setFontSize(8);doc.setTextColor(...GR);doc.text(sp(b.head),x+w-8,yy+9,{align:'right'});doc.setDrawColor(...NAVY);doc.setLineWidth(.8);doc.line(x+8,yy+14,x+w-8,yy+14)}
@@ -3548,8 +3548,9 @@ function dibujarComandas(doc){
         let tx=tagLine?x+120:x+120+doc.getTextWidth(svL[svL.length-1])+4;const ty=yy+(tagLine?svL.length*LH:(svL.length-1)*LH);r.tags.forEach(([t,red])=>{doc.setFontSize(7);const tw=doc.getTextWidth(t)+6;doc.setDrawColor(...(red?RED:[136,136,136]));doc.setLineWidth(.5);doc.roundedRect(tx,ty+1.5,tw,9,2,2,'S');doc.setTextColor(...(red?RED:[60,60,60]));doc.text(t,tx+3,ty+8);tx+=tw+3;doc.setFontSize(FS)})}
       yy+=svL.length*LH+(tagLine?LH:0);
       if(r.sub){const sl=doc.splitTextToSize(sp(r.sub),w-120-8);if(draw){doc.setFontSize(7.5);doc.setTextColor(...GR);doc.text(sl,x+120,yy+6);doc.setFontSize(FS)}yy+=sl.length*9.5+1}});
-    yy+=3;if(draw){doc.setDrawColor(120);doc.setLineDashPattern([2,2],0);doc.line(x+8,yy,x+w-8,yy);doc.setLineDashPattern([],0);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(17);doc.text('Total comanda',x+8,yy+12);doc.text(M$(b.tot),x+w-8,yy+12,{align:'right'});doc.setFont('helvetica','normal')}
-    yy+=17;doc.setFontSize(8);b.info.forEach(t=>{const tl=doc.splitTextToSize(sp(t),w-16);if(draw){doc.setTextColor(40);doc.text(tl,x+8,yy+7)}yy+=tl.length*10.5});
+    yy+=3;if(draw){doc.setDrawColor(120);doc.setLineDashPattern([2,2],0);doc.line(x+8,yy,x+w-8,yy);doc.setLineDashPattern([],0);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.setTextColor(17);doc.text(b.mat||b.cj?'Total servicios':'Total comanda',x+8,yy+12);doc.text(M$(b.tot),x+w-8,yy+12,{align:'right'});doc.setFont('helvetica','normal')}
+    yy+=17;if(b.mat||b.cj){const ln=(t,v,bold)=>{if(draw){doc.setFont('helvetica',bold?'bold':'normal');doc.setFontSize(bold?9.5:8.5);doc.setTextColor(bold?17:68);doc.text(t,x+8,yy+8);doc.text(v,x+w-8,yy+8,{align:'right'})}yy+=bold?14:11.5};
+      if(b.mat)ln('Menos material',('-'+M$(b.mat)));if(b.cj)ln('Menos canje de puntos','-'+M$(b.cj));ln('Total comanda (neto)',M$(b.neto),true);if(draw)doc.setFont('helvetica','normal')}doc.setFontSize(8);b.info.forEach(t=>{const tl=doc.splitTextToSize(sp(t),w-16);if(draw){doc.setTextColor(40);doc.text(tl,x+8,yy+7)}yy+=tl.length*10.5});
     yy+=6;if(draw){doc.setDrawColor(...NAVY);doc.setLineWidth(1.1);doc.roundedRect(x,y,w,yy-y,4,4,'S')}return yy-y}
   const TOP=M+40,BOT=H-M-70;let page=1,cy=[TOP,TOP];
   const header=()=>{doc.setFont('times','bold');doc.setFontSize(16);doc.setTextColor(17);doc.text('Nobleza · Comandas por profesional',M,M+16);doc.setFont('helvetica','bold');doc.setFontSize(9.5);doc.text(sp((f=>f.charAt(0).toUpperCase()+f.slice(1))(fechaLarga(dia))+' de '+dia.slice(0,4)),W-M,M+8,{align:'right'});doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text(`${ests.length} profesionales · ${L.length} registros`,W-M,M+20,{align:'right'});doc.setDrawColor(...NAVY);doc.setLineWidth(1.6);doc.line(M,M+28,W-M,M+28)};
@@ -3558,7 +3559,7 @@ function dibujarComandas(doc){
   let fy=Math.max(cy[0],cy[1])+4;if(fy+60>H-M){doc.addPage();page++;header();fy=TOP}
   const sinC=r2(L.filter(l=>tk[l.ticketId]&&tk[l.ticketId].estado!=='cobrada').reduce((s,l)=>s+(+l.precio||0),0));
   doc.setDrawColor(...NAVY);doc.setLineWidth(1.6);doc.line(M,fy,W-M,fy);doc.setFontSize(10);doc.setTextColor(17);doc.setFont('helvetica','normal');doc.text('Total comandas del día: ',M,fy+15);doc.setFont('helvetica','bold');doc.text(M$(c.totalComandas),M+doc.getTextWidth('Total comandas del día: ')+2,fy+15);doc.setFont('helvetica','normal');
-  doc.text(`Sin cobrar: ${M$(sinC)} · Cortesías: ${M$(c.cort)}`,W-M,fy+15,{align:'right'});
+  doc.text(`Sin cobrar: ${M$(sinC)} · Cortesías: ${M$(c.cort)}`,W-M,fy+15,{align:'right'});{const mt=r2(boxes.reduce((a,b)=>a+b.mat+b.cj,0));if(mt){doc.setFontSize(9);doc.text(`Material y canjes descontados: -${M$(mt)} · Neto de comandas: ${M$(r2(c.totalComandas-mt))}`,M,fy+28)}}
   doc.setLineWidth(.7);doc.setDrawColor(17);const fw=(W-2*M-40)/2;doc.line(M,fy+50,M+fw,fy+50);doc.line(W-M-fw,fy+50,W-M,fy+50);doc.setFontSize(9);doc.text('Revisó caja',M+fw/2,fy+61,{align:'center'});doc.text('Revisó gerencia',W-M-fw/2,fy+61,{align:'center'});
   return true}
 
