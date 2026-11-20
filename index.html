@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="f9793ba279e9"</script>
-<script src="web.js?v=f9793ba279e9"></script>
+<script>window.BUILD="c931b267815d"</script>
+<script src="web.js?v=c931b267815d"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -351,9 +351,9 @@ a.btn{text-decoration:none;color:inherit}
 .agseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .ag-dia-r{display:grid;gap:8px;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--ink);font:inherit;cursor:pointer}
 .ag-li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:15px}.ag-li>span:first-child{font-weight:700;color:var(--accent);white-space:nowrap}
-.ec{--h:300;background:hsl(var(--h) 60% 90%);color:hsl(var(--h) 55% 24%)}
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ec{background:hsl(var(--h) 35% 26%);color:hsl(var(--h) 70% 88%)}}
-:root[data-theme="dark"] .ec{background:hsl(var(--h) 35% 26%);color:hsl(var(--h) 70% 88%)}
+.ec{--h:300;--s:60%;--l1:88%;--l2:30%;background:hsl(var(--h) var(--s) var(--l1));color:hsl(var(--h) var(--s) 18%)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ec{background:hsl(var(--h) calc(var(--s) * .75) var(--l2));color:hsl(var(--h) var(--s) 92%)}}
+:root[data-theme="dark"] .ec{background:hsl(var(--h) calc(var(--s) * .75) var(--l2));color:hsl(var(--h) var(--s) 92%)}
 .cita.conest{border-left-color:hsl(var(--h) 55% 50%)}
 .cita.conest.por_confirmar{border-left-style:dashed}
 .mes{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));border:1px solid var(--line);border-radius:var(--r);overflow:hidden;background:var(--line);gap:1px}
@@ -439,7 +439,7 @@ body:not(.es-web) .only-web{display:none!important}
 .tl{position:relative;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
 .tl-h{position:absolute;left:0;right:0;border-top:1px solid var(--line);height:0}.tl-h span{position:absolute;left:6px;top:-8px;font-size:.7rem;color:var(--muted);background:var(--surface);padding:0 3px}
 .tl-hh{position:absolute;left:52px;right:0;border-top:1px dashed var(--line);opacity:.5;height:0}
-.tl-ev{position:absolute;border:0;border-radius:8px;padding:4px 7px;text-align:left;font:inherit;font-size:.78rem;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.25);border-left:4px solid hsl(var(--h) 60% 50%)}
+.tl-ev{position:absolute;border:0;border-radius:8px;padding:4px 7px;text-align:left;font:inherit;font-size:.78rem;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.25);border-left:5px solid hsl(var(--h) var(--s) 45%)}
 .tl-ev b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-ev small{display:block;opacity:.85;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tl-ev.pc{outline:1.5px dashed currentColor;outline-offset:-2px}.tl-ev.llego{opacity:.75}
 .tl-bl{position:absolute;left:56px;right:4px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--line) 0 6px,transparent 6px 12px);color:var(--muted);font-size:.75rem;padding:4px 8px}
@@ -791,7 +791,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
       <div class="panel">
         <h3>Personal</h3>
         <small>En <b>Área</b> puedes poner varias separadas por coma, en el orden en que la persona las ve (ej.: <i>Barbería, Peluquería</i>). Marca <b>Pestañas</b> para que vea cada área en su propia pestaña. <b>Planta</b>: entra a la app y tiene agenda. <b>Externo</b>: no entra a la app; con alquiler es <b>alquilado</b>, sin alquiler es <b>eventual</b>. En Cuentas se elige con <b>Alquilado o eventual…</b> y sale en Quincena. Un alquilado nuevo que no esté aquí se puede escribir a mano y cobra la comisión base.</small>
-        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th>Abre cuentas</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th>Color en la agenda</th><th>Abre cuentas</th><th></th></tr></thead><tbody></tbody></table></div>
         <button class="btn small" data-addrow="ajEst" style="justify-self:start">+ Estilista</button>
       </div>
       <div class="panel">
@@ -3792,7 +3792,7 @@ function xlVis(){$$('.xl-btn').forEach(b=>b.disabled=!dl);$$('.xl-off').forEach(
 
 /* ---------- ajustes ---------- */
 const AJ={
-  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin'],['abreCuentas','check']],src:()=>cfg.estilistas},
+  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin'],['color','color'],['abreCuentas','check']],src:()=>cfg.estilistas},
   ajVAlq:{cols:[['nombre','text'],['precio','number']],src:()=>vaProds()},
   ajPrem:{cols:[['nombre','text'],['tipo','ptipo'],['puntos','number'],['monto','number'],['temporada','text'],['desde','date'],['hasta','date']],src:()=>cfg.premios||[]},
   ajSvc:{cols:[['nombre','text'],['area','text'],['pestana','text'],['categoria','text'],['precio','number'],['descuento','number'],['descuentoPct','number'],['libre','check'],['minimo','number'],['detalle','check'],['especial','check'],['formula','check'],['variantes','list'],['precios','list'],['descuentosPct','list'],['extra','check'],['productos','list'],['sesiones','number']],src:()=>cfg.servicios},
@@ -3801,11 +3801,12 @@ let ajSeq=0;
 function ajCell(id,k,ty,v){const fid=`${id}-${ajSeq++}`;
   if(ty==='ptipo')return `<td><select id="${fid}" aria-label="Tipo de premio" data-k="${k}">${Object.entries(PTS_TIPO).map(([a,b])=>`<option value="${a}" ${v===a?'selected':''}>${b}</option>`).join('')}</select></td>`;
   if(ty==='tipo')return `<td><select id="${fid}" aria-label="Tipo de personal" data-k="${k}" style="min-width:170px"><option value="planta">Planta</option><option value="externo" ${v==='externo'?'selected':''}>Externo</option></select></td>`;
+  if(ty==='color'){const cur=v||'';return `<td><select id="${fid}" aria-label="Color en la agenda" data-k="${k}" style="min-width:130px">${Object.keys(COLORES).map(c=>`<option value="${c}" ${c===cur?'selected':''}>${c[0].toUpperCase()+c.slice(1)}</option>`).join('')}</select></td>`}
   if(ty==='pin')return `<td><input id="${fid}" aria-label="PIN del profesional" data-k="${k}" type="text" inputmode="numeric" autocomplete="off" maxlength="8" placeholder="4 números" style="width:90px" value="${esc(v??'')}"></td>`;
   if(ty==='check')return `<td><input id="${fid}" aria-label="${k}" data-k="${k}" type="checkbox" ${v?'checked':''}></td>`;
   if(ty==='list')return `<td><input id="${fid}" aria-label="${k==='precios'?'Precios a elegir':k==='variantes'?'Opciones a elegir':k==='descuentosPct'?'Descuentos a la clienta':k==='sinComision'?'Servicios sin comisión':'Productos que descuenta'}" data-k="${k}" data-t="list" value="${esc(Array.isArray(v)?v.join(', '):'')}" placeholder="${k==='precios'?'Ej.: 60, 90':k==='descuentosPct'?'Ej.: 10, 20':k==='sinComision'?'Ej.: Lavado regular Fanola':k==='variantes'?'Ej.: Nutritive, Smoothing':v==null?'(todos los del área)':'ninguno'}" style="min-width:${k==='precios'?110:170}px"></td>`;
   return `<td${ty==='number'?' class="n"':''}><input id="${fid}" aria-label="${k}" data-k="${k}" type="${ty}" ${ty==='number'?'step="0.01" style="text-align:right;width:90px"':''} ${k==='area'?'list="areasList" style="min-width:130px"':k==='categoria'?'list="catsList" style="min-width:120px" placeholder="Ej.: Pedicura"':''} value="${esc(v??'')}"></td>`}
-function ajRow(id,o){return `<tr>${AJ[id].cols.map(([k,ty])=>ajCell(id,k,ty,o[k])).join('')}<td style="white-space:nowrap">${id==='ajSvc'?'<button class="btn ghost small" data-mv="-1" aria-label="Subir">↑</button><button class="btn ghost small" data-mv="1" aria-label="Bajar">↓</button>':''}<button class="btn ghost small danger" data-delrow aria-label="Quitar">✕</button></td></tr>`}
+function ajRow(id,o){return `<tr>${AJ[id].cols.map(([k,ty])=>ajCell(id,k,ty,ty==='color'?(o[k]||(o.nombre?colorDe(o.nombre):'')):o[k])).join('')}<td style="white-space:nowrap">${id==='ajSvc'?'<button class="btn ghost small" data-mv="-1" aria-label="Subir">↑</button><button class="btn ghost small" data-mv="1" aria-label="Bajar">↓</button>':''}<button class="btn ghost small danger" data-delrow aria-label="Quitar">✕</button></td></tr>`}
 function opRow(o){return `<tr><td><input id="op-${ajSeq++}" aria-label="Porción" data-k="nombre" value="${esc(o.nombre??'')}" placeholder="Ej.: Medio"></td><td class="n"><input id="op-${ajSeq++}" aria-label="Costo" data-k="costo" type="number" step="0.01" style="text-align:right;width:90px" value="${esc(o.costo??'')}" placeholder="$"></td><td><button class="btn ghost small danger" data-delrow aria-label="Quitar porción">✕</button></td></tr>`}
 function insCard(p){return `<div class="ins-card"><div class="row" style="flex-wrap:nowrap"><input id="ip-${ajSeq++}" aria-label="Producto" data-k="pnombre" value="${esc(p.nombre??'')}" placeholder="Producto (ej.: Tinte)" style="font-weight:600;flex:2"><input id="ia-${ajSeq++}" aria-label="Área del producto" data-k="parea" list="areasList" value="${esc(p.area??'')}" placeholder="Área" style="flex:1"><button class="btn ghost small danger" data-delins aria-label="Quitar producto">✕</button></div>
   <table><thead><tr><th>Porción</th><th class="n">Se descuenta</th><th></th></tr></thead><tbody>${(p.opciones||[]).map(opRow).join('')}</tbody></table>
@@ -3947,7 +3948,11 @@ function subMes(){
 function setVista(v){agVista=v;store.set('agVista',v);subMes();renderAgenda()}
 $('#agVista').addEventListener('click',e=>{const x=e.target.closest('[data-v]');if(!x)return;const v=x.dataset.v;if(v==='mes'){setVista('mes');return}agVista='dia';store.set('agVista','dia');subMes();const f=v==='man'?manana():hoy();if(f!==agDia)setAgDia(f);else renderAgenda()});
 const movMes=n=>{const [y,m]=agDia.split('-').map(Number);return ymd(new Date(y,m-1+n,1))};
-function estHue(n){const i=cfg.estilistas.findIndex(e=>e.nombre===n);return Math.round(((i<0?cfg.estilistas.length+String(n).length:i)*137.5)%360)}
+/* Colores de cada profesional en la agenda (los mismos que usaban en Google Calendar). Se cambian en Ajustes → Personal. */
+const COLORES={verde:[130,50,82,30],'gris oscuro':[0,0,62,24],'gris claro':[0,0,88,44],'salmón':[14,80,84,50],amarillo:[50,90,78,34],morado:[280,45,82,32],lavanda:[255,60,90,52],azul:[215,65,85,32],rojo:[0,75,84,32],naranja:[28,90,82,34],turquesa:[175,55,80,28],rosado:[330,70,88,36],'marrón':[25,35,78,28],oliva:[70,40,78,28],celeste:[195,75,86,34],fucsia:[305,70,86,34]};
+const COLOR_DEF={Jesus:'verde',Humberto:'gris claro',Nicoll:'salmón',Nini:'amarillo',Pedro:'morado',Lisset:'lavanda',Mari:'azul',Eli:'rojo'};
+function colorDe(n){const e=cfg.estilistas.find(x=>x.nombre===n);let c=e&&e.color||COLOR_DEF[n];if(!COLORES[c]){const usados=new Set([...Object.values(COLOR_DEF),...cfg.estilistas.map(x=>x.color||COLOR_DEF[x.nombre]).filter(Boolean)]),libres=Object.keys(COLORES).filter(k=>!usados.has(k)),otros=cfg.estilistas.filter(x=>!COLORES[x.color||COLOR_DEF[x.nombre]]).map(x=>x.nombre),i=Math.max(0,otros.indexOf(n));c=libres.length?libres[i%libres.length]:Object.keys(COLORES)[i%16]}return c}
+function estHue(n){const [h,sat,l1,l2]=COLORES[colorDe(n)];return `${h};--s:${sat}%;--l1:${l1}%;--l2:${l2}%`}
 const citasManana=()=>agDia===manana()?citas:citasMan;
 /* cuándo toca confirmar una cita: antes del mediodía → el día anterior; después del mediodía → ese mismo día;
    las del lunes en la mañana → desde el sábado (el domingo no cuenta) */
