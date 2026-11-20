@@ -1521,7 +1521,7 @@ document.addEventListener('click',async e=>{
 
 /* ---------- inventario ---------- */
 const normTxt=v=>String(v||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase();
-var invs=[],invById={},invUn=null,invSub='inv',invUbSel='Todas',invMovs=null,invLabels='';
+var invListo=false,invs=[],invById={},invUn=null,invSub='inv',invUbSel='Todas',invMovs=null,invLabels='';
 const INV_UB=['Lavacabezas','Color y Química','Tintes Alfaparf','Tintes Yellow','Tintes Igora','Tintes otras marcas','Manicura','Venta','Regalos de Fidelidad','Cafetería y Bar','Limpieza','Mantenimiento','Oficina y Papelería','Otros'];
 const invLabel=p=>[p.marca,p.nombre,p.pres].filter(Boolean).join(' · ');
 const invFind=v=>{v=String(v||'').trim();return v?invs.find(p=>invLabel(p)===v)||null:null};
@@ -1547,7 +1547,7 @@ var invAl=[],invAlUn=null;
 function subInvAl(){if(invAlUn||!db||modo!=='caja'||!duena)return;invAlUn=db.collection('invAlertas').where('estado','==','pendiente').onSnapshot(s=>{invAl=s.docs.map(d=>({id:d.id,...d.data()}));renderDyn();if(tab==='inv'&&invQuieto())renderInv()},()=>{})}
 function invAlHtml(){if(!duena||!invAl.length)return '';return `<div class="notice warn" style="display:grid;gap:6px;margin-bottom:10px"><b>Avisos de tintes (${invAl.length})</b><small>Revisa si falta registrar una compra, abrir un tubo o corregir el conteo.</small>${invAl.sort((a,b)=>(a.creado||'').localeCompare(b.creado||'')).map(a=>`<div class="row" style="gap:8px;justify-content:space-between;flex-wrap:wrap"><span><b>${esc(a.producto)}</b>${a.texto?`<br><small>${esc(a.texto)}</small><br>`:' · '}${esc(a.estilista)} · ${esc(a.cliente)} · ${fechaCorta(a.fecha)}</span><button type="button" class="btn small" data-inval="${a.id}">Revisado</button></div>`).join('')}</div>`}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-inval]');if(!b)return;try{await db.doc('invAlertas/'+b.dataset.inval).update({estado:'revisado',revisado:{fecha:hoy(),por:porGer()}})}catch(err){toast('No se pudo guardar.')}});
-function subInv(){if(invUn||!db)return;invUn=db.collection('inventario').limit(1000).onSnapshot(s=>{invs=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{const ua=INV_UB.indexOf(a.ubic),ub=INV_UB.indexOf(b.ubic);return (ua<0?99:ua)-(ub<0?99:ub)||(+a.orden||0)-(+b.orden||0)});invById={};invs.forEach(p=>invById[p.id]=p);invListas();renderDyn();if(modo==='caja'&&tab==='inv'&&invQuieto())renderInv()},err=>{invUn=null;const o=$('#invOut');if(o&&tab==='inv')o.innerHTML='<div class="empty">No se pudo cargar el inventario. Cierra y vuelve a abrir la app.</div>'})}
+function subInv(){if(invUn||!db)return;invUn=db.collection('inventario').limit(1000).onSnapshot(s=>{invListo=true;invs=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>{const ua=INV_UB.indexOf(a.ubic),ub=INV_UB.indexOf(b.ubic);return (ua<0?99:ua)-(ub<0?99:ub)||(+a.orden||0)-(+b.orden||0)});invById={};invs.forEach(p=>invById[p.id]=p);invListas();try{invCargaFotos()}catch(e){}renderDyn();if(modo==='caja'&&tab==='inv'&&invQuieto())renderInv()},err=>{invUn=null;const o=$('#invOut');if(o&&tab==='inv')o.innerHTML='<div class="empty">No se pudo cargar el inventario. Cierra y vuelve a abrir la app.</div>'})}
 function invTintesDisp(){const el=$('#invTinteDisp');if(!el)return;const h=invs.filter(p=>p.tinte&&((+p.cerr||0)+(+p.abie||0))>0).map(p=>`<option value="${esc(invLabel(p))}" label="hay ${+p.cerr||0} cerrados${+p.abie?' · '+p.abie+' abierto'+(p.abie>1?'s':''):''}">`).join('');if(el.innerHTML!==h)el.innerHTML=h}
 const tinteDisp=p=>p&&p.tinte&&((+p.cerr||0)+(+p.abie||0))>0;
 function tuboCap(p){const m=String(p&&p.pres||'').match(/(\d+(?:[.,]\d+)?)\s*(ml|g)\b/i);if(m)return +m[1].replace(',','.');return /yellow/i.test(p&&p.marca||'')?100:60}
@@ -1592,19 +1592,20 @@ var invB={},invBL={};
 function invBundle(u){if(invBL[u])return;invBL[u]=1;fetch(u).then(r=>r.json()).then(j=>{Object.assign(invB,j);if(modo==='caja'&&tab==='inv'&&$('#invSheet').hidden)renderInv()}).catch(()=>{invBL[u]=0})}
 const invFoto=p=>{if(!p)return '';if(p.foto)return `<img src="${esc(p.foto)}" alt="" loading="lazy">`;if(p.fotoB){if(invB[p.id])return `<img src="${invB[p.id]}" alt="" loading="lazy">`;invBundle(p.fotoB)}return ''};
 const INV_CARGA=[
- {ubic:'Cafetería y Bar',marca:'Coca-Cola',nombre:'Coca-Cola Sabor Original',pres:'botella 250 ml',cerr:3,abie:1},
- {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Flor de Jamaica',pres:'caja de 20 sobres',cerr:3,abie:0},
- {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Canela',pres:'caja de 20 sobres',cerr:2,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Coca-Cola',nombre:'Coca-Cola Sabor Original',foto:'fotos/cb01.jpg',pres:'botella 250 ml',cerr:3,abie:1},
+ {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Flor de Jamaica',foto:'fotos/cb02.jpg',pres:'caja de 20 sobres',cerr:3,abie:0},
+ {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Canela',foto:'fotos/cb03.jpg',pres:'caja de 20 sobres',cerr:2,abie:1},
  {ubic:'Cafetería y Bar',marca:'Corona',nombre:'Coronita (cerveza pequeña)',pres:'botella',cerr:1,abie:1},
- {ubic:'Cafetería y Bar',marca:'Sello Rojo',nombre:'Café molido',pres:'bolsa 1000 g',cerr:1,abie:1},
- {ubic:'Cafetería y Bar',marca:'Beringer',nombre:'Vino Main & Vine White Zinfandel',pres:'botella 750 ml',cerr:4,abie:0},
- {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Mini Bum surtido',pres:'bolsa de 100 caramelos',cerr:1,abie:1},
- {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Coffee Delight original',pres:'bolsa de 100 caramelos (380 g)',cerr:2,abie:1}];
+ {ubic:'Cafetería y Bar',marca:'Sello Rojo',nombre:'Café molido',foto:'fotos/cb05.jpg',pres:'bolsa 1000 g',cerr:1,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Beringer',nombre:'Vino Main & Vine White Zinfandel',foto:'fotos/cb06.jpg',pres:'botella 750 ml',cerr:4,abie:0},
+ {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Mini Bum surtido',foto:'fotos/cb07.jpg',pres:'bolsa de 100 caramelos',cerr:1,abie:1},
+ {ubic:'Cafetería y Bar',marca:'Colombina',nombre:'Coffee Delight original',foto:'fotos/cb08.jpg',pres:'bolsa de 100 caramelos (380 g)',cerr:2,abie:1}];
 const invKey=x=>norm((x.marca||'')+' '+(x.nombre||'')).toLowerCase();
+function invCargaFotos(){if(!duena||!db)return;const F={};INV_CARGA.forEach(x=>{if(x.foto)F[invKey(x)]=x.foto});invs.forEach(p=>{const f=F[invKey(p)];if(f&&!p.foto&&!p._fx){p._fx=1;db.doc('inventario/'+p.id).update({foto:f}).catch(()=>{p._fx=0})}})}
 const invCargaPend=()=>{const ya=new Set(invs.map(invKey));return INV_CARGA.filter(x=>!ya.has(invKey(x)))};
 function invCargaHtml(){if(!duena||!invUn||!invs.length)return '';const L=invCargaPend();if(!L.length)return '';return `<div class="notice warn" style="display:grid;gap:8px;margin:6px 0"><b>📦 ${L.length} producto${L.length>1?'s':''} nuevo${L.length>1?'s':''} listo${L.length>1?'s':''} para agregar</b><small>${L.map(x=>esc(x.nombre)).join(' · ')}</small><button type="button" class="btn small primary" data-inv-carga style="justify-self:start">Revisar y agregar</button></div>`}
 async function invAlta(x,tipo){const k=invKey(x);if(invs.some(p=>invKey(p)===k))return null;const cerr=Math.max(0,Math.round(+x.cerr||0)),abie=Math.max(0,Math.round(+x.abie||0));
-  const doc={ubic:x.ubic||'Otros',marca:norm(x.marca||''),nombre:norm(x.nombre),pres:norm(x.pres||''),cerr,abie,min:Math.max(0,Math.round(+x.min||0)),precio:+x.precio>0?r2(+x.precio):null,tinte:false,foto:'',orden:9999,creado:new Date().toISOString(),creadoPor:invQuien()};
+  const doc={ubic:x.ubic||'Otros',marca:norm(x.marca||''),nombre:norm(x.nombre),pres:norm(x.pres||''),foto:x.foto||'',cerr,abie,min:Math.max(0,Math.round(+x.min||0)),precio:+x.precio>0?r2(+x.precio):null,tinte:false,foto:'',orden:9999,creado:new Date().toISOString(),creadoPor:invQuien()};
   const r=await db.collection('inventario').add(doc);await db.collection('invMov').add({fecha:new Date().toISOString(),dia:hoy(),pid:r.id,marca:doc.marca,producto:doc.nombre,pres:doc.pres,dc:cerr,da:abie,cerr,abie,tipo:tipo||'Producto nuevo',nota:'',por:invQuien()});invMovs=null;return r.id}
 function invNuevoForm(){const ub=INV_UB.map(u=>`<option>${esc(u)}</option>`).join('');
   $('#invBody').innerHTML=`<h3>Producto nuevo</h3><label class="f" for="inNUb">Área<select id="inNUb">${ub}</select></label><label class="f" for="inNMk">Marca<input id="inNMk" autocomplete="off" placeholder="Ej.: Biokera"></label><label class="f" for="inNNm">Nombre del producto<input id="inNNm" autocomplete="off" placeholder="Ej.: Vial reconstructor (R)"></label><label class="f" for="inNPr">Presentación<input id="inNPr" autocomplete="off" placeholder="Ej.: ampolla 13 ml, frasco 1000 ml"></label>
@@ -1621,7 +1622,7 @@ document.addEventListener('click',async e=>{
     if(!norm(x.nombre)){toast('Escribe el nombre del producto.');$('#inNNm').focus();return}if(invs.some(p=>invKey(p)===invKey(x))){toast('Ese producto ya está en el inventario.');return}
     ok.disabled=true;try{await invAlta(x);toast(`Listo: ${norm(x.nombre)} quedó en el inventario.`);$('#invSheet').hidden=true}catch(err){ok.disabled=false;toast('No se pudo agregar.')}return}
   const ck=e.target.closest('[data-inv-carga-ok]');if(ck){const L=invCargaPend(),sel=[...document.querySelectorAll('#invBody [data-cg]')].map(r=>({r,x:L[+r.dataset.cg]})).filter(o=>o.x&&o.r.querySelector('[data-cg-on]').checked);
-    if(!sel.length){toast('No marcaste ningún producto.');return}ck.disabled=true;let n=0;try{for(const {r,x} of sel){if(await invAlta({...x,cerr:r.querySelector('[data-cg-c]').value,abie:r.querySelector('[data-cg-a]').value}))n++}toast(`Listo: ${n} producto${n!==1?'s':''} agregado${n!==1?'s':''} al inventario.`);$('#invSheet').hidden=true}catch(err){ck.disabled=false;toast('No se pudo agregar todo. Revisa y vuelve a intentar.')}return}
+    if(!sel.length){toast('No marcaste ningún producto.');return}ck.disabled=true;let n=0,k=0;try{for(const {r,x} of sel){k++;ck.textContent=`Agregando ${k} de ${sel.length}…`;if(await invAlta({...x,cerr:r.querySelector('[data-cg-c]').value,abie:r.querySelector('[data-cg-a]').value}))n++}toast(`Listo: ${n} producto${n!==1?'s':''} agregado${n!==1?'s':''} al inventario.`);$('#invSheet').hidden=true}catch(err){ck.disabled=false;ck.textContent='Intentar de nuevo';toast(`Se agregaron ${n}. No se pudo agregar el resto (${(err&&(err.code||err.message))||'error'}). Los que ya entraron no se duplican.`)}return}
 });
 const INV_SIN_CONTROL=['Cafetería y Bar','Limpieza','Mantenimiento','Oficina y Papelería'];
 document.addEventListener('change',async e=>{const i=e.target.closest('[data-inv-min]');if(!i)return;const v=+i.value;if(!(v>0))return;try{await invMover(i.dataset.invMin,{min:v,tipo:'Mínimo'});toast('Mínimo guardado')}catch(err){toast('No se pudo guardar.')}});
@@ -1632,7 +1633,7 @@ function renderInv(){const out=$('#invOut');if(!out||modo!=='caja')return;subInv
   $$('#invSub [data-inv-sub]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.invSub===invSub));subInsumos();const C=invComprar(),PC=porComprar(),PL=porLlegar();$('#invCompN').textContent=PC.length?`(${PC.length})`:'';$('#invCmpN').textContent=PL.length?`(${PL.length})`:'';
   $('#invResumen').textContent=invs.length?`${invs.length} productos · ${invs.reduce((s,p)=>s+(+p.cerr||0),0)} cerrados · ${invs.reduce((s,p)=>s+(+p.abie||0),0)} abiertos`:'';
   $('#invTools').hidden=invSub==='mov';{const al=$('#invAl');if(al)al.innerHTML=invAlHtml()}{const cg=$('#invCarga');if(cg){const h=invCargaHtml();if(cg.innerHTML!==h)cg.innerHTML=h}}
-  if(!invs.length){out.innerHTML=`<div class="empty">${invUn?'Todavía no hay productos en el inventario.':'Cargando inventario…'}</div>`;return}
+  if(!invs.length){out.innerHTML=`<div class="empty">${invListo?'Todavía no hay productos en el inventario.':'Cargando inventario… Si tarda mucho, revisa el internet y recarga la página.'}</div>`;return}
   const SMIN=p=>!(+p.min>0)&&!INV_SIN_CONTROL.includes(p.ubic),nsm=invs.filter(SMIN).length;
   const ubs=['Todas',...(duena&&nsm?['Sin mínimo']:[]),...INV_UB.filter(u=>invs.some(p=>p.ubic===u)),...[...new Set(invs.map(p=>p.ubic))].filter(u=>!INV_UB.includes(u))];
   $('#invUb').innerHTML=ubs.map(u=>`<button type="button" data-inv-ub="${esc(u)}" aria-pressed="${u===invUbSel}">${esc(u)}${u==='Sin mínimo'?` (${nsm})`:''}</button>`).join('');
