@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="f3f52550bbed"</script>
-<script src="web.js?v=f3f52550bbed"></script>
+<script>window.BUILD="d7a947700906"</script>
+<script src="web.js?v=d7a947700906"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1121,7 +1121,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('#swRol'))return;
   if(modo==='caja'&&esProf(cajero)){const n=cajero;entrarEst(n,false)}});
 const enCaja=()=>cajero?'Caja ('+cajero+')':'Caja';
 const esCaja=x=>String(x||'').startsWith('Caja');
-var TOUR_AUTO=true; /* recorrido automático apagado mientras se ajusta la app; el botón ? sigue funcionando */
+var TOUR_AUTO=false; /* recorrido guiado automático apagado (pedido de gerencia); el botón ? sigue funcionando si alguien lo quiere ver */
 function setModo(m,nombre,d){
   if(typeof avReset==='function')avReset();
   modo=m;soy=nombre||'';duena=m==='caja'&&!!d;store.set('duena',duena||null);document.body.classList.toggle('m-duena',duena);store.set('modo',m||null);store.set('soy',soy||null);

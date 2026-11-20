@@ -1100,7 +1100,7 @@ document.addEventListener('click',e=>{if(!e.target.closest('#swRol'))return;
   if(modo==='caja'&&esProf(cajero)){const n=cajero;entrarEst(n,false)}});
 const enCaja=()=>cajero?'Caja ('+cajero+')':'Caja';
 const esCaja=x=>String(x||'').startsWith('Caja');
-var TOUR_AUTO=true; /* recorrido automático apagado mientras se ajusta la app; el botón ? sigue funcionando */
+var TOUR_AUTO=false; /* recorrido guiado automático apagado (pedido de gerencia); el botón ? sigue funcionando si alguien lo quiere ver */
 function setModo(m,nombre,d){
   if(typeof avReset==='function')avReset();
   modo=m;soy=nombre||'';duena=m==='caja'&&!!d;store.set('duena',duena||null);document.body.classList.toggle('m-duena',duena);store.set('modo',m||null);store.set('soy',soy||null);
