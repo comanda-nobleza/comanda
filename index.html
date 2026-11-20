@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="60539534bc98"</script>
-<script src="web.js?v=60539534bc98"></script>
+<script>window.BUILD="05bc77db5b04"</script>
+<script src="web.js?v=05bc77db5b04"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -351,7 +351,7 @@ a.btn{text-decoration:none;color:inherit}
 .agseg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 .ag-dia-r{display:grid;gap:8px;text-align:left;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--ink);font:inherit;cursor:pointer}
 .ag-li{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;font-size:15px}.ag-li>span:first-child{font-weight:700;color:var(--accent);white-space:nowrap}
-.ec{--h:300;--s:60%;--l1:88%;--l2:30%;background:hsl(var(--h) var(--s) var(--l1));color:hsl(var(--h) var(--s) 18%)}
+.ec{--h:300;--s:60%;--l1:88%;--l2:30%;background:hsl(var(--h) var(--s) var(--l1));color:hsl(var(--h) var(--s) var(--t1,18%))}
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]) .ec{background:hsl(var(--h) calc(var(--s) * .75) var(--l2));color:hsl(var(--h) var(--s) 92%)}}
 :root[data-theme="dark"] .ec{background:hsl(var(--h) calc(var(--s) * .75) var(--l2));color:hsl(var(--h) var(--s) 92%)}
 .cita.conest{border-left-color:hsl(var(--h) 55% 50%)}
@@ -466,6 +466,7 @@ body.tel #v-resumen.solo-pend > h2:not(:first-of-type),body.tel #v-resumen.solo-
 body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 .mas-l{display:grid;gap:8px}.mas-l button{display:flex;gap:12px;align-items:center;text-align:left;border:1px solid var(--line);background:var(--surface);color:var(--ink);border-radius:14px;padding:14px;font:inherit;font-weight:600;cursor:pointer}.mas-l .ic{font-size:1.3rem}
 #bnav .ic{font-size:1.45rem;line-height:1.2}#bnav button{gap:0}
+.tl-ev.baja{opacity:.45;filter:grayscale(.5)}.tl-ev.baja b{text-decoration:line-through}
 </style>
 
 <div id="pracBar" class="prac-bar" hidden><span>🎓 <b>Práctica</b> · nada se guarda</span><button type="button" class="btn small" id="pracSalir">Salir</button></div>
@@ -1147,7 +1148,7 @@ const TN_OP=[['caja','Cuentas'],['agenda','Agenda'],['tareas','Tareas'],['formul
 const enGer=()=>duena&&$('#gSwitch [data-g="ger"]')&&$('#gSwitch [data-g="ger"]').getAttribute('aria-pressed')==='true';
 telAplicar&&setTimeout(telAplicar,0);
 function renderTnav(){const n=$('#tnavIn');if(!n)return;const L=enGer()?TN_GER:TN_OP;
-  const badge=k=>{if(k==='tareas'){try{const D=tareasDatos(),x=D.conf.length+D.rec.length+D.form.length+D.mant.length+D.react.length+D.otros.length;return x?` <span class="badge">${x}</span>`:''}catch(e){return ''}}if(k==='formulas')return formPend.length?` <span class="badge">${formPend.length}</span>`:'';if(k==='autorizar'){const x=(descSolPend||[]).length+(cortPend||[]).length+(cierreSols||[]).length;return x?` <span class="badge">${x}</span>`:''}return ''};
+  const badge=k=>{if(k==='tareas'){try{const D=tareasDatos(),x=D.conf.length+D.rec.length+D.rep.length+D.form.length+D.mant.length+D.react.length+D.otros.length;return x?` <span class="badge">${x}</span>`:''}catch(e){return ''}}if(k==='formulas')return formPend.length?` <span class="badge">${formPend.length}</span>`:'';if(k==='autorizar'){const x=(descSolPend||[]).length+(cortPend||[]).length+(cierreSols||[]).length;return x?` <span class="badge">${x}</span>`:''}return ''};
   const h=L.map(([k,ic,t])=>`<button type="button" role="tab" data-tn="${k}" aria-selected="${k===tab}"><span class="ic">${ic}</span>${t}${badge(k)}</button>`).join('');if(n.innerHTML!==h)n.innerHTML=h}
 function abrirMas(){const ger=enGer(),it=ger?[['quincena',IC.quincena,'Quincena'],['mant',IC.mant,'Mantenimiento'],['ajustes',IC.ajustes,'Ajustes'],['op',IC.caja,'Ir a Operación (caja)']]:[['cierre',IC.cierre,'Cierre del día'],['fichas',IC.fichas,'Fichas de clientas'],['mant',IC.mant,'Mantenimiento'],['inv',IC.inv,'Inventario'],...(duena?[['ger',IC.autorizar,'Ir a Gerencia']]:[])];
   $('#masL').innerHTML=it.map(([k,ic,t])=>`<button type="button" data-mas="${k}"><span class="ic">${ic}</span>${t}</button>`).join('')+`<button type="button" data-mas="cambiar"><span class="ic">${IC.cambiar}</span>Cambiar de usuario</button>`;$('#masSheet').hidden=false}
@@ -1971,6 +1972,7 @@ function msgVence(x){return `¡Hola ${primerNombre(x.cliente)}! ⭐\n\nTienes *$
 function tareasDatos(){const h=hoy(),y=new Date().getFullYear(),tel=c=>telMap[c.id]||TH.telT[c.id]||'';
   const fut=new Set([...TH.fut,...porConf.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)),...citas.filter(c=>activa(c)&&c.fecha>=h).map(c=>c.clienteKey||ckey(c.cliente))]);
   const conf=pcHoy().map(c=>({c,tel:tel(c)}));
+  const rep=citas.filter(c=>c.estado==='no_vino'&&!c.reprogEnv&&c.fecha>=addDias(h,-7)&&!fut.has(c.clienteKey||ckey(c.cliente))).map(c=>({c,tel:tel(c)}));
   const rec=unaPorGrupo(citasManana().filter(c=>c.estado==='confirmada'&&!c.recordatorio&&!c.confEnv&&!(c.confirmada&&ymd(new Date(c.confirmada))>=addDias(h,-1)))).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio)).map(c=>({c,tel:tel(c)}));
   const P={},cap=k=>{const c=TH.cont[k];return c&&c.ultimo>addDias(h,-7)},put=(k,o)=>{if(!P[k])P[k]=o};
   (typeof cumplePendientes==='function'?cumplePendientes():[]).forEach(c=>{const nm=nomCli(c);put(sk(ckey(nm)),{t:'cum',cliente:nm,tel:c.tel,id:c.id,f:c.f,txt:`🎂 Cumpleaños ${c.f===h?'¡hoy!':fechaCorta(c.f)} · ya se le sumaron ${ptsCumple()} puntos`})});
@@ -1981,7 +1983,7 @@ function tareasDatos(){const h=hoy(),y=new Date().getFullYear(),tel=c=>telMap[c.
     const d=Math.round((new Date(h)-new Date(c.ultimaVisita))/864e5);put(k,{t:'react',cliente:nm,tel:c.tel,id:c.id,doc:c,txt:`Última visita: ${fechaCorta(c.ultimaVisita)} (${d} días)${n?` · ${n+1}.º recordatorio`:''}`})});
   TH.vence.forEach(x=>{const k=x.id,a=TH.av[k+'_'+x.vence];if(a&&(a.env||a.no||(a.prox||'')>h)||cap(k))return;put(k,{t:'ven',cliente:x.cliente,saldo:x.saldo,vence:x.vence,key:k,tel:x.tel||'',txt:`⭐ ${x.saldo} puntos vencen el ${fechaCorta(x.vence)}`})});
   const promo=Object.values(P);
-  return {conf,rec,form:formPend,mant:promo.filter(x=>x.t==='mant'),react:promo.filter(x=>x.t==='react'),otros:promo.filter(x=>x.t==='cum'||x.t==='ven')}}
+  return {conf,rec,rep,form:formPend,mant:promo.filter(x=>x.t==='mant'),react:promo.filter(x=>x.t==='react'),otros:promo.filter(x=>x.t==='cum'||x.t==='ven')}}
 var thOpen={};try{thOpen=JSON.parse(localStorage.getItem('thOpen')||'{}')}catch(e){}
 function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!bxs.length)return;if(modo!=='caja'){bxs.forEach(b=>b.innerHTML='');return}
   const a=document.activeElement;if(a&&a.closest&&a.closest('.tareas-hoy')&&a.tagName==='SELECT')return;
@@ -1998,13 +2000,15 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
       c.confEnv?`<button class="btn small primary" data-ag="conf-sin" data-id="${c.id}">✓ Confirmó</button><button class="btn small" data-ag="editar" data-id="${c.id}">Cambiar hora</button><button class="btn small ghost danger" data-ag="cancelar" data-id="${c.id}">Canceló</button>${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Reenviar','ghost')}`
       :`${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Confirmar por WhatsApp')}<button class="btn small" data-ag="conf-sin" data-id="${c.id}">Ya está confirmada</button>`)}).join('');
   const rec=D.rec.map(({c,tel})=>row(`<b>${esc(c.cliente)}</b> · mañana ${h12(c.inicio)}<br><small>${esc(atiendeTxt(c))} · confirmada${tel?'':' · '+sinTel}</small>`,wa(tel,msgRecordar(c),`data-ag="recordar" data-id="${c.id}"`,'Enviar recordatorio')||`<button class="btn small" data-ag="recordar" data-id="${c.id}">Ya se lo recordé</button>`)).join('');
+  const rep=D.rep.map(({c,tel})=>row(`<b>${esc(c.cliente)}</b> · no vino a las ${h12(c.inicio)}<br><small>${esc(atiendeTxt(c))}${tel?'':' · '+sinTel}</small>`,`${wa(tel,msgReprog(c),`data-ag="reprog" data-id="${c.id}"`,'Enviar mensaje para reprogramar')}<button class="btn small" data-ag="restaurar" data-id="${c.id}">Sí vino</button>`)).join('');
   const form=D.form.map(l=>row(`<b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}<br><small>${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</small>`,`<button class="btn small primary" data-fx="${l.id}">Llenar fórmula</button>`)).join('');
   const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),otros=D.otros.map(x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x))).join('');
-  const n=D.conf.length+D.rec.length+D.form.length+D.mant.length+D.react.length+D.otros.length,hh=TH.hechas;
+  const n=D.conf.length+D.rec.length+D.rep.length+D.form.length+D.mant.length+D.react.length+D.otros.length,hh=TH.hechas;
   const hech=hh.length?`<details class="th-g" data-thg="hechas" ${thOpen.hechas?'open':''}><summary><b>✓ Hechas hoy (${hh.length})</b> <small class="muted">· toca Deshacer si fue un error</small></summary><div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b> · ${esc(x.txt)}<br><small>${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div></details>`:'';
   const html=`<div class="adel th-box"><div class="row between"><h3 style="margin:0">Tareas de hoy</h3><small class="muted">${n?n+' pendiente'+(n>1?'s':''):'✓ Todo al día'}${hh.length?' · '+hh.length+' hecha'+(hh.length>1?'s':''):''}</small></div>
     ${grp('conf','📅 Confirmar citas','las de mañana antes del mediodía y las de hoy en la tarde',D.conf.length,conf)}
     ${grp('rec','💬 Recordar citas de mañana','',D.rec.length,rec)}
+    ${grp('rep','🔁 Reprogramar (no vinieron)','escríbeles para buscar otra fecha',D.rep.length,rep)}
     ${grp('form','🎨 Fórmulas de tinte por llenar','',D.form.length,form)}
     ${grp('mant','🔁 Toca mantenimiento','ya les toca volver según su último servicio',D.mant.length,mant)}
     ${grp('react','💌 Te extrañamos','más de 45 días sin venir',D.react.length,react)}
@@ -3909,6 +3913,7 @@ const eqDe=c=>Array.isArray(c.equipo)&&c.equipo.length>1?c.equipo:null;
 const svcTodos=c=>{const q=eqDe(c);return q?q.flatMap(x=>x.servicios||[]).join(' + '):(c.servicio||'')};
 const atiendeTxt=c=>{const q=eqDe(c);if(!q)return c.estilista;const p=q.map(x=>`${x.estilista} (${(x.servicios||[]).join(', ')})`);return p.slice(0,-1).join(', ')+' y '+p[p.length-1]};
 const unaPorGrupo=l=>{const v=new Set();return l.filter(c=>{const k=c.grupo&&eqDe(c)?'g'+c.grupo:c.id;if(v.has(k))return false;v.add(k);return true})};
+function msgReprog(c){return `Hola ${primerNombre(c.cliente)}, te extrañamos hoy en ${SALON} 💛\n\nTenías cita ${c.fecha===hoy()?'hoy':'el '+diaCita(c.fecha)} a las *${h12(c.inicio)}*${svcTodos(c)?' para *'+svcTodos(c)+'*':''}. ¿Te buscamos *otro día y hora* que te quede bien? Responde este mensaje y te reprogramamos. ✨`}
 function msgConfirmar(c){return `Hola ${primerNombre(c.cliente)}, te *confirmamos tu cita* en ${SALON}:\n\n• *Servicio: ${svcTodos(c)||'por definir'}*\n• *Día: ${diaCita(c.fecha)}*\n• *Hora: ${h12(c.inicio)}*\n• Te atiende${eqDe(c)?'n':''}: ${atiendeTxt(c)}\n\nEstamos en Paitilla. Si necesitas cambiar la cita, respóndenos por aquí. ¡Te esperamos!`}
 function msgRecordar(c){return `Hola ${primerNombre(c.cliente)}, *te recordamos tu cita ${c.fecha===manana()?'de mañana':'del '+diaCita(c.fecha)}* a las *${h12(c.inicio)}* con *${atiendeTxt(c)}*${svcTodos(c)?' para *'+svcTodos(c)+'*':''} en ${SALON}.\n\nPor favor *confírmanos tu asistencia* respondiendo este mensaje. ¡Te esperamos!`}
 
@@ -3949,10 +3954,10 @@ function setVista(v){agVista=v;store.set('agVista',v);subMes();renderAgenda()}
 $('#agVista').addEventListener('click',e=>{const x=e.target.closest('[data-v]');if(!x)return;const v=x.dataset.v;if(v==='mes'){setVista('mes');return}agVista='dia';store.set('agVista','dia');subMes();const f=v==='man'?manana():hoy();if(f!==agDia)setAgDia(f);else renderAgenda()});
 const movMes=n=>{const [y,m]=agDia.split('-').map(Number);return ymd(new Date(y,m-1+n,1))};
 /* Colores de cada profesional en la agenda (los mismos que usaban en Google Calendar). Se cambian en Ajustes → Personal. */
-const COLORES={verde:[130,50,82,30],grafito:[0,0,62,24],'gris claro':[0,0,88,44],'salmón':[14,80,84,50],amarillo:[50,90,78,34],morado:[280,45,82,32],lavanda:[255,60,90,52],azul:[215,65,85,32],rojo:[0,75,84,32],naranja:[28,90,82,34],turquesa:[175,55,80,28],rosado:[330,70,88,36],'marrón':[25,35,78,28],oliva:[70,40,78,28],celeste:[195,75,86,34],fucsia:[305,70,86,34]};
+const COLORES={verde:[130,50,82,30],grafito:[0,0,34,16,94],'gris claro':[30,22,82,50],'salmón':[14,80,84,50],amarillo:[50,90,78,34],morado:[280,45,82,32],lavanda:[255,60,90,52],azul:[215,65,85,32],rojo:[0,75,84,32],naranja:[28,90,82,34],turquesa:[175,55,80,28],rosado:[330,70,88,36],'marrón':[25,35,78,28],oliva:[70,40,78,28],celeste:[195,75,86,34],fucsia:[305,70,86,34]};
 const COLOR_DEF={Jesus:'verde',Jeffrey:'grafito',Humberto:'gris claro',Nicoll:'salmón',Nini:'amarillo',Pedro:'morado',Lisset:'lavanda',Mari:'azul'};
 function colorDe(n){if(esInq(n))return 'rojo';/* rojo = todos los profesionales en modalidad alquilado */const e=cfg.estilistas.find(x=>x.nombre===n);let c=e&&e.color==='gris oscuro'?'grafito':e&&e.color||COLOR_DEF[n];if(!COLORES[c]){const usados=new Set(['rojo',...Object.values(COLOR_DEF),...cfg.estilistas.map(x=>x.color||COLOR_DEF[x.nombre]).filter(Boolean)]),libres=Object.keys(COLORES).filter(k=>!usados.has(k)),otros=cfg.estilistas.filter(x=>!COLORES[x.color||COLOR_DEF[x.nombre]]).map(x=>x.nombre),i=Math.max(0,otros.indexOf(n));c=libres.length?libres[i%libres.length]:Object.keys(COLORES)[i%16]}return c}
-function estHue(n){const [h,sat,l1,l2]=COLORES[colorDe(n)];return `${h};--s:${sat}%;--l1:${l1}%;--l2:${l2}%`}
+function estHue(n){const [h,sat,l1,l2,t1]=COLORES[colorDe(n)];return `${h};--s:${sat}%;--l1:${l1}%;--l2:${l2}%${t1?`;--t1:${t1}%`:''}`}
 const citasManana=()=>agDia===manana()?citas:citasMan;
 /* cuándo toca confirmar una cita: antes del mediodía → el día anterior; después del mediodía → ese mismo día;
    las del lunes en la mañana → desde el sábado (el domingo no cuenta) */
@@ -4012,7 +4017,8 @@ function citaHtml(c,mode,conEst){
     b.push(`<button class="btn small ghost danger" data-ag="cancelar" data-id="${c.id}">Cancelar cita</button>`)}
   }
   if(c.estado==='llego'&&c.fecha===hoy()&&(mode==='caja'||mine)){const tc=ticketDeCita(c);if(tc&&tc.estado==='cobrada')b.push(`<span class="chip ok">✓ Cuenta cobrada</span>`);else b.push(`<button class="btn small primary" data-ag="agregar" data-id="${c.id}">+ Agregar servicio</button>`)}
-  if(!act&&mode==='caja')b.push(`<button class="btn small ghost" data-ag="restaurar" data-id="${c.id}">Volver a activar</button>`);
+  if(c.estado==='no_vino'&&mode==='caja'){const l=waLink(tel,msgReprog(c));b.push(`<a class="btn small ${c.reprogEnv?'':'wa'}" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="reprog" data-id="${c.id}">${c.reprogEnv?'✓ Mensaje enviado · reenviar':'Enviar mensaje para reprogramar'}</a>`)}
+  if(!act&&mode==='caja')b.push(`<button class="btn small ${c.fecha===hoy()?'primary':'ghost'}" data-ag="restaurar" data-id="${c.id}">${c.fecha===hoy()?'Sí vino / activar de nuevo':'Volver a activar'}</button>`);
   if(mode==='caja'&&(c.estado==='llego'||!act))b.push(`<button class="btn small" data-ag="editar" data-id="${c.id}">Editar</button>`);
   if(mode==='caja'&&(c.estado!=='llego'||duena))b.push(`<button class="btn small ghost danger" data-ag="borrar" data-id="${c.id}">${c.estado==='llego'?'Borrar cita (gerencia)':'Borrar cita'}</button>`);
   if(mode==='caja'&&c.estado==='llego'&&(c.ediciones||[]).length)b.push(`<small class="muted">Editada ${(c.ediciones||[]).length} vez${c.ediciones.length>1?'es':''} · último motivo: ${esc(c.ediciones[c.ediciones.length-1].motivo)}</small>`);
@@ -4031,7 +4037,7 @@ function bloqHtml(x,mode){
 /* ---------- vista de día tipo calendario (por horas) ---------- */
 const TL_PX=60;
 function tlHtml(cs,bs,mode,conEst){
-  const act=cs.filter(activa),todoDia=bs.filter(b=>b.todoDia),parc=bs.filter(b=>!b.todoDia);
+  const act=cs.filter(c=>activa(c)||c.estado==='no_vino'||c.estado==='cancelada'),todoDia=bs.filter(b=>b.todoDia),parc=bs.filter(b=>!b.todoDia);
   let h0=8*60,h1=20*60;act.forEach(c=>{h0=Math.min(h0,Math.floor(aMin(c.inicio)/60)*60);h1=Math.max(h1,Math.ceil(finDe(c)/60)*60)});parc.forEach(b=>{h0=Math.min(h0,Math.floor(aMin(b.desde)/60)*60);h1=Math.max(h1,Math.ceil(aMin(b.hasta)/60)*60)});
   const y=m=>(m-h0)*TL_PX/60+12,H=y(h1)+12;let g='';
   for(let m=h0;m<=h1;m+=60){g+=`<div class="tl-h" style="top:${y(m)}px"><span>${h12(deMin(m)).replace(':00','')}</span></div>`;if(m<h1)g+=`<div class="tl-hh" style="top:${y(m+30)}px"></div>`}
@@ -4040,10 +4046,10 @@ function tlHtml(cs,bs,mode,conEst){
   let grp=[],fin=-1;const grupos=[];ev.forEach(e=>{if(e.a>=fin&&grp.length){grupos.push(grp);grp=[]}grp.push(e);fin=Math.max(fin,e.z)});if(grp.length)grupos.push(grp);
   grupos.forEach(G=>{const cols=[];G.forEach(e=>{let k=cols.findIndex(z=>z<=e.a);if(k<0){k=cols.length;cols.push(0)}cols[k]=e.z;e.k=k});const n=cols.length;
     G.forEach(e=>{const c=e.c,hgt=Math.max(26,y(e.z)-y(e.a)-2);
-      g+=`<button type="button" class="tl-ev ec ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''}" data-tl="${c.id}" style="--h:${estHue(c.estilista)};top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
-        <b>${h12(c.inicio).replace(' a. m.','a').replace(' p. m.','p')} ${esc(c.cliente)}</b>${hgt>34?`<small>${esc(svcTodos(c)||'')}${conEst?' · '+esc(c.estilista):''}</small>`:''}${hgt>52?`<small>${c.estado==='por_confirmar'?'Por confirmar':c.estado==='llego'?'✓ Llegó':'Confirmada'}</small>`:''}</button>`})});
+      g+=`<button type="button" class="tl-ev ec ${c.estado==='por_confirmar'?'pc':''} ${c.estado==='llego'?'llego':''} ${!activa(c)?'baja':''}" data-tl="${c.id}" style="--h:${estHue(c.estilista)};top:${y(e.a)+1}px;height:${hgt}px;left:calc(56px + (100% - 60px)*${e.k}/${n});width:calc((100% - 60px)/${n} - 3px)">
+        <b>${h12(c.inicio).replace(' a. m.','a').replace(' p. m.','p')} ${esc(c.cliente)}</b>${hgt>34?`<small>${esc(svcTodos(c)||'')}${conEst?' · '+esc(c.estilista):''}</small>`:''}${hgt>52||!activa(c)?`<small>${c.estado==='por_confirmar'?'Por confirmar':c.estado==='llego'?'✓ Llegó':c.estado==='no_vino'?'✗ No vino':c.estado==='cancelada'?'✗ Cancelada':'Confirmada'}</small>`:''}</button>`})});
   if(agDia===hoy()){const n=new Date(),m=n.getHours()*60+n.getMinutes();if(m>=h0&&m<=h1)g+=`<div class="tl-now" style="top:${y(m)}px"></div>`}
-  const inact=cs.filter(c=>!activa(c));
+  const inact=cs.filter(c=>!activa(c)&&c.estado!=='no_vino'&&c.estado!=='cancelada');
   return `${todoDia.length?`<div class="tl-dia">${todoDia.map(b=>`<div class="tl-bl" style="position:static">${conEst?esc(b.estilista)+' · ':''}Día libre / agenda cerrada${b.motivo?' · '+esc(b.motivo):''}${mode==='caja'?` <button class="btn small ghost" data-ag="quitar-bloq" data-id="${b.id}">Abrir agenda</button>`:''}</div>`).join('')}</div>`:''}
     <div class="tl" style="height:${H}px">${g}</div>
     ${inact.length?`<details><summary><small class="muted">Canceladas / no vinieron (${inact.length})</small></summary><div style="display:grid;gap:8px;margin-top:8px">${inact.map(c=>citaHtml(c,mode,conEst)).join('')}</div></details>`:''}
@@ -4136,7 +4142,8 @@ document.addEventListener('click',async e=>{
   if(a==='recordar'){if(!c.recordatorio){await upd({recordatorio:new Date().toISOString()});thHecha('rec',c.cliente,'Recordatorio de la cita de mañana',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{recordatorio:null}})))}return}
   if(a==='novino'){if(!armed(b))return;await upd({estado:'no_vino'},'Marcada como no vino');return}
   if(a==='cancelar'){if(!armed(b))return;const pe=c.estado;await upd({estado:'cancelada',cancelada:new Date().toISOString(),canceladaPor:soy||enCaja()},'Cita cancelada');if(b.closest('.tareas-hoy'))thHecha('cancel',c.cliente,'Canceló la cita',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{estado:pe,cancelada:null}})));return}
-  if(a==='restaurar'){await upd({estado:'por_confirmar'},'Cita activa de nuevo (por confirmar)');return}
+  if(a==='restaurar'){await upd({estado:'confirmada',confirmada:new Date().toISOString(),cancelada:null},c.fecha===hoy()?'Cita activa de nuevo. Toca «Llegó» cuando entre.':'Cita activa de nuevo');return}
+  if(a==='reprog'){await upd({reprogEnv:new Date().toISOString()});thHecha('reprog',c.cliente,'Mensaje para reprogramar',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{reprogEnv:null}})));return}
   if(a==='editar'){openCita(c);return}
   if(a==='borrar'){if(c.estado==='llego'&&!duena){toast('Esta clienta ya fue atendida: la cita no se puede borrar. Puedes editarla con el motivo.');return}if(!armed(b))return;try{const g=await grupoDe();for(const x of g){await db.doc('citas/'+x.id).delete();await db.doc('citasTel/'+x.id).delete().catch(()=>{})}toast(g.length>1?'Cita borrada para todos los profesionales':'Cita borrada')}catch(err){toast('No se pudo borrar ('+(err.code||'error')+').')}return}
   if(a==='agregar'){
