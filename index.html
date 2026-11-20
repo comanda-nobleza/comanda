@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="79a59864880d"</script>
-<script src="web.js?v=79a59864880d"></script>
+<script>window.BUILD="c075212fb67d"</script>
+<script src="web.js?v=c075212fb67d"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -435,6 +435,7 @@ body:not(.es-web) .only-web{display:none!important}
 #webLogin .wl-box{width:100%;max-width:380px;display:grid;gap:12px;text-align:center}
 #webLogin h1{font-family:var(--display);color:var(--accent);font-size:2.4rem;margin:0}#webLogin p{margin:0;letter-spacing:.2em;text-transform:uppercase;font-size:.8rem;color:var(--muted)}
 #webLogin form{display:grid;gap:12px;text-align:left;margin-top:12px}
+.th-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}.th-cols .th-sec{align-content:start}.th-cols .th-r{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px}.th-cols .th-r>div:first-child{flex:none}.th-cols .th-b{justify-content:flex-start}.th-cols .th-g>summary{font-size:14px}.th-cols .chip,.th-cols .neg{white-space:nowrap}.th-vacio{padding:14px 4px;color:var(--muted,#999);font-size:14px}.th-sec.atr.cero{background:none;border-color:var(--line)}.th-sec.atr.cero .th-sh b,.th-sec.atr.cero .th-n{color:inherit}body.tel .th-cols{grid-template-columns:1fr}@media(max-width:900px){.th-cols{grid-template-columns:1fr}}
 .th-sec{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px}.th-sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}.th-n{min-width:22px;padding:1px 8px;border-radius:999px;background:var(--line);font-size:12px;font-weight:700;text-align:center}.th-sec.atr{border-color:color-mix(in srgb,var(--bad,#e57373) 55%,transparent);background:color-mix(in srgb,var(--bad,#e57373) 8%,transparent)}.th-sec.atr .th-sh b,.th-sec.atr .th-n{color:var(--bad,#e57373)}.th-sec.atr .th-n{background:color-mix(in srgb,var(--bad,#e57373) 18%,transparent)}.th-sec.hech{border-color:color-mix(in srgb,var(--ok,#6bbf8a) 45%,transparent)}.th-sec.hech .th-sh b,.th-sec.hech .th-ic{color:var(--ok,#6bbf8a)}
 .th-box{gap:10px}.th-g>summary{cursor:pointer;padding:4px 0}.th-l{display:grid;gap:6px;margin-top:6px}.th-r{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.th-r>div:first-child{flex:1 1 320px;min-width:0}.th-b{gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}.th-sel{width:auto!important;flex:0 0 auto;min-height:0;padding:6px 28px 6px 10px;font-size:13px;border-radius:999px}.th-sel.danger{color:var(--bad,#e57373)}
 .tl{position:relative;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
@@ -567,7 +568,6 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 
   <!-- AGENDA (caja y estilista) -->
   <section class="view" id="v-agenda" hidden>
-    <div class="tareas-hoy only-caja"></div>
     <h2 class="only-est" style="margin-top:8px">Mi agenda</h2>
     <div class="ag-nav">
       <button class="btn small" id="agPrev" aria-label="Día anterior">‹</button>
@@ -585,6 +585,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     </div>
     <div id="agPaneles" class="only-caja" style="display:grid;gap:12px"></div>
     <div id="agOut" style="display:grid;gap:12px"></div>
+    <div class="tareas-hoy only-caja" style="margin-top:14px"></div>
   </section>
 
   <!-- RESUMEN (gerencia) -->
@@ -617,7 +618,6 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
   <section class="view" id="v-tareas" hidden><h2>Tareas</h2><div class="tareas-hoy only-caja"></div></section>
   <section class="view" id="v-formulas" hidden><h2>Fórmulas por llenar</h2><div id="formTel"></div></section>
   <section class="view" id="v-caja" hidden>
-    <div class="tareas-hoy only-caja"></div>
     <div class="tel-pills tel-only" id="telPills"></div>
     <div id="formPendBox" hidden></div>
     <div id="cajaPendBox"></div>
@@ -632,6 +632,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     </form>
     <div id="viejasAb"></div>
     <div class="tickets" id="cajaAbiertas"></div>
+    <div class="tareas-hoy only-caja" style="margin-top:14px"></div>
     <div class="row between" style="margin-top:14px"><h2>Ventas a alquilados</h2><button type="button" class="btn" id="vaBtn">+ Venta a alquilado</button></div>
     <div id="vaList"></div>
     <h2>Cuentas cerradas</h2>
@@ -1989,31 +1990,32 @@ var thOpen={};try{thOpen=JSON.parse(localStorage.getItem('thOpen')||'{}')}catch(
 function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!bxs.length)return;if(modo!=='caja'){bxs.forEach(b=>b.innerHTML='');return}
   const a=document.activeElement;if(a&&a.closest&&a.closest('.tareas-hoy')&&a.tagName==='SELECT')return;
   const D=tareasDatos(),h=hoy(),wa=(tel,msg,attrs,lbl,cls)=>{const l=tel?waLink(tel,msg):'';return l?`<a class="btn small ${cls||'wa'}" href="${l}" target="_blank" rel="noopener" ${attrs}>${lbl}</a>`:''};
-  const sinTel='<span class="neg">⚠️ sin teléfono: pídeselo cuando venga</span>';
-  const grp=(k,tit,sub,n,body)=>n?`<details class="th-g" data-thg="${k}" ${thOpen[k]===false?'':'open'}><summary><b>${tit} (${n})</b>${sub?` <small class="muted">· ${sub}</small>`:''}</summary><div class="th-l">${body}</div></details>`:'';
+  const sinTel='<span class="neg" title="Pídeselo cuando venga">⚠️ sin teléfono</span>';
+  const grp=(k,tit,sub,n,body)=>n?`<details class="th-g" data-thg="${k}" ${thOpen[k]===false?'':'open'}><summary${sub?` title="${esc(sub)}"`:''}><b>${tit} (${n})</b></summary><div class="th-l">${body}</div></details>`:'';
   const row=(izq,der)=>`<div class="adel-row th-r"><div>${izq}</div><div class="row th-b">${der}</div></div>`;
   const later=x=>`<select class="th-sel" data-thlater="${x.t}" data-k="${esc(x.t==='mant'?x.ids.join(','):x.t==='react'?x.id:x.key+'|'+x.vence)}" aria-label="Recordar más tarde"><option value="">Más tarde…</option><option value="7">En 7 días</option><option value="15">En 15 días</option><option value="30">En 30 días</option></select>`;
   const nunca=x=>`<select class="th-sel danger" data-thno="${x.t}" data-k="${esc(x.t==='mant'?x.ids.join(','):x.t==='react'?x.id:x.key+'|'+x.vence)}" aria-label="No volver a recordar"><option value="">No recordar…</option><option>Ya no viene al salón</option><option>Pidió no recibir mensajes</option><option>Se mudó / no está en Panamá</option><option>Otro motivo</option></select>`;
-  const pr=(x,msg)=>row(`<b>${esc(x.cliente)}</b>${x.servs?' · '+esc(x.servs.join(' + ')):''}<br><small>${x.txt}${x.tel?'':' · '+sinTel}</small>`,
+  const pr=(x,msg)=>row(`<b>${esc(x.cliente)}</b><br><small>${x.servs?esc(x.servs.join(' + '))+' · ':''}${x.txt}${x.tel?'':' · '+sinTel}</small>`,
     `${wa(x.tel,msg,`data-thenv="${x.t}" data-k="${esc(x.t==='mant'?x.ids.join(','):x.t==='react'?x.id:x.t==='cum'?x.id:x.key+'|'+x.vence)}"`,x.t==='cum'?'Felicitar por WhatsApp':'WhatsApp')}${x.t==='cum'?`<button class="btn small ghost" data-cumple-ok="${esc(x.id)}" data-solo="1">Ya la felicité</button>`:`<button class="btn small" data-thag="${esc(x.cliente)}" data-tel="${esc(x.tel||'')}" data-svc="${esc((x.docs||[]).map(z=>z.servicio).join('|'))}" data-est="${esc(x.est||'')}">Agendar</button>${later(x)}${nunca(x)}`}`);
   const ahM=aMin(new Date().toTimeString().slice(0,5)),confAtr=c=>confDesde(c)<h||(c.fecha===h&&(ahM>=12*60||aMin(c.inicio)<=ahM));
   const confR=({c,tel})=>{const cuando=c.fecha===h?'Hoy':c.fecha===manana()?'Mañana':fechaCorta(c.fecha);
-    return row(`<b>${esc(c.cliente)}</b> · ${esc(svcTodos(c)||'servicio por definir')} <span class="chip warn">${cuando} ${h12(c.inicio)}</span><br><small>${esc(atiendeTxt(c))}${c.confEnv?` · <b>📨 Mensaje enviado a las ${hora(c.confEnv)} · esperando respuesta</b>`:''}${tel?'':' · '+sinTel}</small>`,
+    return row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${cuando} ${h12(c.inicio)}</span><br><small>${esc(svcTodos(c)||'servicio por definir')} · ${esc(atiendeTxt(c))}${c.confEnv?` · <b>📨 enviado ${hora(c.confEnv)} · esperando</b>`:''}${tel?'':' · '+sinTel}</small>`,
       c.confEnv?`<button class="btn small primary" data-ag="conf-sin" data-id="${c.id}">✓ Confirmó</button><button class="btn small" data-ag="editar" data-id="${c.id}">Cambiar hora</button><button class="btn small ghost danger" data-ag="cancelar" data-id="${c.id}">Canceló</button>${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Reenviar','ghost')}`
       :`${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Confirmar por WhatsApp')}<button class="btn small" data-ag="conf-sin" data-id="${c.id}">Ya está confirmada</button>`)};
-  const recR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> · mañana ${h12(c.inicio)}<br><small>${esc(atiendeTxt(c))} · confirmada${tel?'':' · '+sinTel}</small>`,wa(tel,msgRecordar(c),`data-ag="recordar" data-id="${c.id}"`,'Enviar recordatorio')||`<button class="btn small" data-ag="recordar" data-id="${c.id}">Ya se lo recordé</button>`);
-  const repR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> · no vino ${c.fecha===h?'hoy':'el '+fechaCorta(c.fecha)} a las ${h12(c.inicio)}<br><small>${esc(atiendeTxt(c))}${tel?'':' · '+sinTel}</small>`,`${wa(tel,msgReprog(c),`data-ag="reprog" data-id="${c.id}"`,'Enviar mensaje para reprogramar')}<button class="btn small" data-ag="restaurar" data-id="${c.id}">Sí vino</button>`);
-  const formR=l=>row(`<b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}<br><small>${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</small>`,`<button class="btn small primary" data-fx="${l.id}">Llenar fórmula</button>`);
+  const recR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">Mañana ${h12(c.inicio)}</span><br><small>${esc(atiendeTxt(c))} · confirmada${tel?'':' · '+sinTel}</small>`,wa(tel,msgRecordar(c),`data-ag="recordar" data-id="${c.id}"`,'Enviar recordatorio')||`<button class="btn small" data-ag="recordar" data-id="${c.id}">Ya se lo recordé</button>`);
+  const repR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${c.fecha===h?'Hoy':fechaCorta(c.fecha)} ${h12(c.inicio)}</span><br><small>no vino · ${esc(atiendeTxt(c))}${tel?'':' · '+sinTel}</small>`,`${wa(tel,msgReprog(c),`data-ag="reprog" data-id="${c.id}"`,'Enviar mensaje para reprogramar')}<button class="btn small" data-ag="restaurar" data-id="${c.id}">Sí vino</button>`);
+  const formR=l=>row(`<b>${esc(l.cliente)}</b> <span class="chip warn">${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</span><br><small>${esc(l.servicio)} · ${esc(l.estilista)}</small>`,`<button class="btn small primary" data-fx="${l.id}">Llenar fórmula</button>`);
   const A={conf:D.conf.filter(x=>confAtr(x.c)),rep:D.rep.filter(x=>x.c.fecha<h),form:D.form.filter(l=>(l.fecha||h)<h)};
   const H={conf:D.conf.filter(x=>!confAtr(x.c)),rep:D.rep.filter(x=>!(x.c.fecha<h)),form:D.form.filter(l=>!((l.fecha||h)<h))};
   const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),otros=D.otros.map(x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x))).join('');
   const nA=A.conf.length+A.rep.length+A.form.length,nH=H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+D.otros.length,hh=TH.hechas;
   const sec=(cls,ic,tit,n,sub,body)=>`<section class="th-sec ${cls}"><div class="th-sh"><span class="th-ic">${ic}</span><b>${tit}</b><span class="th-n">${n}</span>${sub?`<small class="muted">${sub}</small>`:''}</div>${body}</section>`;
-  const atrHtml=nA?sec('atr','⚠️','Tareas atrasadas',nA,'se debieron hacer antes · hazlas primero',
+  const vacio=t=>`<div class="th-vacio">${t}</div>`;
+  const atrHtml=sec('atr'+(nA?'':' cero'),'⚠️','Atrasadas',nA,'',nA?
     grp('a-conf','📅 Citas sin confirmar','ya debían estar confirmadas',A.conf.length,A.conf.map(confR).join(''))+
     grp('a-rep','🔁 Reprogramar (no vinieron)','de días anteriores',A.rep.length,A.rep.map(repR).join(''))+
-    grp('a-form','🎨 Fórmulas sin llenar','de días anteriores',A.form.length,A.form.map(formR).join(''))):'';
-  const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,nH?'':'✓ todo al día',
+    grp('a-form','🎨 Fórmulas sin llenar','de días anteriores',A.form.length,A.form.map(formR).join('')):vacio('✓ Nada atrasado'));
+  const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',nH?
     grp('conf','📅 Confirmar citas','las de mañana antes del mediodía y las de hoy en la tarde',H.conf.length,H.conf.map(confR).join(''))+
     grp('rec','💬 Recordar citas de mañana','',D.rec.length,D.rec.map(recR).join(''))+
     grp('rep','🔁 Reprogramar (no vinieron)','escríbeles para buscar otra fecha',H.rep.length,H.rep.map(repR).join(''))+
@@ -2021,12 +2023,11 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('mant','🔁 Toca mantenimiento','ya les toca volver según su último servicio',D.mant.length,mant)+
     grp('react','💌 Te extrañamos','más de 45 días sin venir',D.react.length,react)+
     grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',D.otros.length,otros)+
-    (nH?'':'<small class="muted">No hay nada pendiente para hoy.</small>')+
-    (D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta. Si saca cita, sale sola de la lista.</small>':''));
-  const hechHtml=hh.length?sec('hech','✓','Tareas hechas hoy',hh.length,'',`<details class="th-g" data-thg="hechas" ${thOpen.hechas===false?'':'open'}><summary><small class="muted">Ver la lista · toca Deshacer si fue un error</small></summary><div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b> · ${esc(x.txt)}<br><small>${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div></details>`):'';
+    (D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día'));
+  const hechHtml=sec('hech','✓','Hechas hoy',hh.length,'',hh.length?`<div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b><br><small>${esc(x.txt)} · ${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div>`:vacio('Todavía nada'));
   const res=[nA?`<b class="neg">${nA} atrasada${nA>1?'s':''}</b>`:'',`${nH} de hoy`,hh.length?`${hh.length} hecha${hh.length>1?'s':''}`:''].filter(Boolean).join(' · ');
   const html=`<div class="adel th-box"><div class="row between"><h3 style="margin:0">Tareas</h3><small class="muted">${res}</small></div>
-    ${atrHtml}${hoyHtml}${hechHtml}
+    <div class="th-cols">${atrHtml}${hoyHtml}${hechHtml}</div>
     ${esMovil?'':`<small class="muted">WhatsApp se abre en ${waApp()?'la aplicación de esta computadora':'WhatsApp Web'} · <button type="button" class="btn small ghost" data-wamodo style="padding:2px 8px">cambiar</button></small>`}</div>`;
   bxs.forEach(b=>{if(b.innerHTML!==html)b.innerHTML=html})}
 document.addEventListener('toggle',e=>{const d=e.target;if(!d.matches||!d.matches('.th-g'))return;thOpen[d.dataset.thg]=d.open;try{localStorage.setItem('thOpen',JSON.stringify(thOpen))}catch(err){}},true);
