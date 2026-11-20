@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="a23ef17f6e2c"</script>
-<script src="web.js?v=a23ef17f6e2c"></script>
+<script>window.BUILD="1d40f3e2a578"</script>
+<script src="web.js?v=1d40f3e2a578"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -617,7 +617,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 
   <!-- CAJA -->
   <section class="view" id="v-tareas" hidden><div class="tareas-hoy only-caja"></div></section>
-  <section class="view" id="v-formulas" hidden><h2>Fórmulas por llenar</h2><div id="formTel"></div></section>
+  <section class="view" id="v-formulas" hidden><h2>Fórmulas y productos por anotar</h2><div id="formTel"></div></section>
   <section class="view" id="v-caja" hidden>
     <div class="tel-pills tel-only" id="telPills"></div>
     <div id="formPendBox" hidden></div>
@@ -1161,7 +1161,7 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-tn]');if(b
 function renderTelExtra(){if(!document.body.classList.contains('tel')||modo!=='caja')return;
   try{const D=tareasDatos(),pc=D.conf.length,fp=D.form.length,rc=D.rec.length,ot=D.mant.length+D.react.length+D.otros.length;
     const h=[pc&&`<button type="button" data-tpill="tareas">📅 ${pc} por confirmar</button>`,fp&&`<button type="button" data-tpill="formulas">🎨 ${fp} fórmula${fp>1?'s':''}</button>`,rc&&`<button type="button" data-tpill="tareas">💬 ${rc} recordar</button>`,ot&&`<button type="button" data-tpill="tareas">🔁 ${ot} más</button>`].filter(Boolean).join('');const tpl=$('#telPills');if(tpl&&tpl.innerHTML!==h)tpl.innerHTML=h}catch(e){}
-  const f=$('#formTel');if(f){const h=formPend.length?formPend.map(l=>`<div class="adel-row th-r"><div><b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}<br><small>${l.fecha===hoy()?'Hoy':fechaCorta(l.fecha)}</small></div><button class="btn small primary" data-fx="${l.id}">Llenar fórmula</button></div>`).join(''):'<div class="empty">✓ No hay fórmulas por llenar.</div>';if(f.innerHTML!==h)f.innerHTML=h}
+  const f=$('#formTel');if(f){const h=formPend.length?formPend.map(l=>`<div class="adel-row th-r"><div><b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}<br><small>${l.fecha===hoy()?'Hoy':fechaCorta(l.fecha)} · ${fpTxt(l).replace(/^\S+ /,'')}</small></div><button class="btn small primary" data-fx="${l.id}">Anotar</button></div>`).join(''):'<div class="empty">✓ No hay fórmulas ni productos por anotar.</div>';if(f.innerHTML!==h)f.innerHTML=h}
   renderTnav()}
 /* cobro por pasos en el teléfono */
 function cobroPaso(n){const f=$('#cobroForm');f.dataset.paso=n;$$('#cobroPasos [data-cps]').forEach(x=>{const k=+x.dataset.cps;x.className=k<n?'ok':k===n?'cur':''});const sh=$('#cobroSheet .sheet');if(sh)sh.scrollTop=0}
@@ -1272,7 +1272,7 @@ var tkEdit=null;
 function ticketCard(t,mode){
   const ls=lineasDe(t.id), sub=subtotalDe(t.id);
   const items=ls.length?ls.map(l=>{const mine=mode==='est'&&l.estilista===soy;const canDel=mode==='caja'||mine;
-    return `<li class="${mine?'mine':''}"><span class="svc">${esc(l.servicio)}</span><span class="p">${money(l.precio)}</span><span class="who">${mine?'Tú':esc(l.estilista)} · ${hora(l.creado)}</span>${canDel?`<button class="btn ghost small danger del" data-act="del-line" data-id="${l.id}">Quitar</button>`:''}${l.especial?espHtml(l,mode,mine):''}${l.canje?`<span class="ins pos">Canjeado con puntos (${l.canje.puntos} pts · normal ${money(l.canje.precioNormal)}) · sin comisión</span>`:''}${mode==='caja'&&l.formulaPend?`<span class="ins">🎨 Falta la fórmula <button type="button" class="btn small" data-fx="${l.id}">Llenar</button></span>`:''}${mode==='caja'&&l.formula&&l.formula.tinte?`<span class="ins pos">Fórmula: ${esc(l.formula.tinte)} · ${esc(l.formula.peroxido)} vol</span>`:''}${l.paqueteSes?`<span class="ins">Paquete de ${l.paqueteSes} sesiones · el profesional gana en cada sesión</span>`:''}${l.paqueteId?`<span class="ins pos">Sesión ya pagada en el paquete · comisión sobre ${money(l.paqueteVal)}</span>`:''}${+l.canjeDesc>0?`<span class="ins">Canje de puntos (${esc(l.canjeDescPremio||'descuento')}): −${money(l.canjeDesc)} de la base de comisión</span>`:''}${l.productoExtra?`<span class="ins">Incluye producto extra: ${money(l.productoExtra)}</span>`:''}${l.descuentoCliente?`<span class="ins">Descuento a la clienta: ${l.descuentoCliente.pct}% (precio normal ${money(l.descuentoCliente.precioNormal)})</span>`:''}${(l.insumos||[]).length&&(mode==='caja'||mine)?`<span class="ins">Insumos: ${l.insumos.map(i=>esc(insTxt(i))).join(', ')} · −${money(l.insumosTotal)}</span>`:''}</li>`}).join(''):'<li><span class="muted">Sin servicios todavía</span></li>';
+    return `<li class="${mine?'mine':''}"><span class="svc">${esc(l.servicio)}</span><span class="p">${money(l.precio)}</span><span class="who">${mine?'Tú':esc(l.estilista)} · ${hora(l.creado)}</span>${canDel?`<button class="btn ghost small danger del" data-act="del-line" data-id="${l.id}">Quitar</button>`:''}${l.especial?espHtml(l,mode,mine):''}${l.canje?`<span class="ins pos">Canjeado con puntos (${l.canje.puntos} pts · normal ${money(l.canje.precioNormal)}) · sin comisión</span>`:''}${mode==='caja'&&l.formulaPend?`<span class="ins">${fpTxt(l)} <button type="button" class="btn small" data-fx="${l.id}">Anotar</button></span>`:''}${mode==='caja'&&l.formula&&l.formula.tinte?`<span class="ins pos">Fórmula: ${esc(l.formula.tinte)} · ${esc(l.formula.peroxido)} vol</span>`:''}${l.paqueteSes?`<span class="ins">Paquete de ${l.paqueteSes} sesiones · el profesional gana en cada sesión</span>`:''}${l.paqueteId?`<span class="ins pos">Sesión ya pagada en el paquete · comisión sobre ${money(l.paqueteVal)}</span>`:''}${+l.canjeDesc>0?`<span class="ins">Canje de puntos (${esc(l.canjeDescPremio||'descuento')}): −${money(l.canjeDesc)} de la base de comisión</span>`:''}${l.productoExtra?`<span class="ins">Incluye producto extra: ${money(l.productoExtra)}</span>`:''}${l.descuentoCliente?`<span class="ins">Descuento a la clienta: ${l.descuentoCliente.pct}% (precio normal ${money(l.descuentoCliente.precioNormal)})</span>`:''}${(l.insumos||[]).length&&(mode==='caja'||mine)?`<span class="ins">Insumos: ${l.insumos.map(i=>esc(insTxt(i))).join(', ')} · −${money(l.insumosTotal)}</span>`:''}</li>`}).join(''):'<li><span class="muted">Sin servicios todavía</span></li>';
   const del=!ls.length?`<button class="btn ghost small danger" data-act="del-ticket" data-id="${t.id}">Eliminar</button>`:'';
   const espPend=ls.some(l=>l.especial&&l.especial.estado==='pendiente');
   const btns=mode==='est'
@@ -2019,7 +2019,7 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
       :`${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Confirmar por WhatsApp')}<button class="btn small" data-ag="conf-sin" data-id="${c.id}">Ya está confirmada</button>`)};
   const recR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">Mañana ${h12(c.inicio)}</span><br><small>${esc(atiendeTxt(c))} · confirmada${tel?'':' · '+sinTel}</small>`,wa(tel,msgRecordar(c),`data-ag="recordar" data-id="${c.id}"`,'Enviar recordatorio')||`<button class="btn small" data-ag="recordar" data-id="${c.id}">Ya se lo recordé</button>`);
   const repR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${c.fecha===h?'Hoy':fechaCorta(c.fecha)} ${h12(c.inicio)}</span><br><small>no vino · ${esc(atiendeTxt(c))}${tel?'':' · '+sinTel}</small>`,`${wa(tel,msgReprog(c),`data-ag="reprog" data-id="${c.id}"`,'Enviar mensaje para reprogramar')}<button class="btn small" data-ag="restaurar" data-id="${c.id}">Sí vino</button>`);
-  const formR=l=>row(`<b>${esc(l.cliente)}</b> <span class="chip warn">${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</span><br><small>${esc(l.servicio)} · ${esc(l.estilista)}</small>`,`<button class="btn small primary" data-fx="${l.id}">Llenar fórmula</button>`);
+  const formR=l=>row(`<b>${esc(l.cliente)}</b> <span class="chip warn">${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</span><br><small>${esc(l.servicio)} · ${esc(l.estilista)} · ${fpTxt(l).replace(/^\S+ /,'')}</small>`,`<button class="btn small primary" data-fx="${l.id}">Anotar</button>`);
   const A={conf:D.conf.filter(x=>confAtr(x.c)),rep:D.rep.filter(x=>x.c.fecha<h),form:D.form.filter(l=>(l.fecha||h)<h)};
   const H={conf:D.conf.filter(x=>!confAtr(x.c)),rep:D.rep.filter(x=>!(x.c.fecha<h)),form:D.form.filter(l=>!((l.fecha||h)<h))};
   const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),otros=D.otros.map(x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x))).join('');
@@ -2029,12 +2029,12 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
   const atrHtml=sec('atr'+(nA?'':' cero'),'⚠️','Atrasadas',nA,'',nA?
     grp('a-conf','📅 Citas sin confirmar','ya debían estar confirmadas',A.conf.length,A.conf.map(confR).join(''))+
     grp('a-rep','🔁 Reprogramar (no vinieron)','de días anteriores',A.rep.length,A.rep.map(repR).join(''))+
-    grp('a-form','🎨 Fórmulas sin llenar','de días anteriores',A.form.length,A.form.map(formR).join('')):vacio('✓ Nada atrasado'));
+    grp('a-form','🧪 Fórmulas y productos sin anotar','de días anteriores',A.form.length,A.form.map(formR).join('')):vacio('✓ Nada atrasado'));
   const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',nH?
     grp('conf','📅 Confirmar citas','las de mañana antes del mediodía y las de hoy en la tarde',H.conf.length,H.conf.map(confR).join(''))+
     grp('rec','💬 Recordar citas de mañana','',D.rec.length,D.rec.map(recR).join(''))+
     grp('rep','🔁 Reprogramar (no vinieron)','escríbeles para buscar otra fecha',H.rep.length,H.rep.map(repR).join(''))+
-    grp('form','🎨 Fórmulas de tinte por llenar','',H.form.length,H.form.map(formR).join(''))+
+    grp('form','🧪 Fórmula y productos por anotar','',H.form.length,H.form.map(formR).join(''))+
     grp('mant','🔁 Toca mantenimiento','ya les toca volver según su último servicio',D.mant.length,mant)+
     grp('react','💌 Te extrañamos','más de 45 días sin venir',D.react.length,react)+
     grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',D.otros.length,otros)+
@@ -2314,19 +2314,26 @@ function subFormPend(){if(formPendUn||!db||modo!=='caja')return;formPendUn=db.co
 /* si la clienta ya tiene su fórmula anotada ese día, los demás avisos de ese día sobran */
 var fpRev={};async function formPendLimpiar(){for(const l of formPend){const k=(l.clienteKey||ckey(l.cliente))+'|'+l.fecha;if(fpRev[k])continue;fpRev[k]=1;
   try{const s=await db.collection('lineas').where('clienteKey','==',l.clienteKey||ckey(l.cliente)).limit(300).get();const hecha=s.docs.find(d=>{const x=d.data();return d.id!==l.id&&x.fecha===l.fecha&&x.formula&&x.formula.tinte});
-    if(hecha)for(const o of formPend.filter(o=>(o.clienteKey||ckey(o.cliente))===(l.clienteKey||ckey(l.cliente))&&o.fecha===l.fecha))await db.doc('lineas/'+o.id).update({formulaPend:false,formulaVer:hecha.id})}catch(e){delete fpRev[k]}}}
-function formPendHtml(){if(modo!=='caja'||!formPend.length)return '';return `<div class="notice warn" style="display:grid;gap:8px;margin-bottom:10px"><b>🎨 Fórmulas por llenar (${formPend.length})</b><small>Pregúntale la fórmula al profesional y anótala en la ficha de la clienta.</small>${formPend.map(l=>`<div class="row" style="gap:8px;justify-content:space-between;flex-wrap:wrap"><span><b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}${l.fecha!==hoy()?` · ${fechaCorta(l.fecha)}`:''}</span><button type="button" class="btn small primary" data-fx="${l.id}">Llenar fórmula</button></div>`).join('')}</div>`}
+    if(hecha)for(const o of formPend.filter(o=>(o.clienteKey||ckey(o.cliente))===(l.clienteKey||ckey(l.cliente))&&o.fecha===l.fecha))await db.doc('lineas/'+o.id).update(o.prodPend?{formulaVer:hecha.id}:{formulaPend:false,formulaVer:hecha.id})}catch(e){delete fpRev[k]}}}
+function formPendHtml(){if(modo!=='caja'||!formPend.length)return '';return `<div class="notice warn" style="display:grid;gap:8px;margin-bottom:10px"><b>🧪 Fórmulas y productos por anotar (${formPend.length})</b><small>Pregúntale al profesional la fórmula y cuánto producto usó, y anótalo aquí.</small>${formPend.map(l=>`<div class="row" style="gap:8px;justify-content:space-between;flex-wrap:wrap"><span><b>${esc(l.cliente)}</b> · ${esc(l.servicio)} · ${esc(l.estilista)}${l.fecha!==hoy()?` · ${fechaCorta(l.fecha)}`:''} · ${fpTxt(l).replace(/^\S+ /,'')}</span><button type="button" class="btn small primary" data-fx="${l.id}">Anotar</button></div>`).join('')}</div>`}
 function fxTono(t){if(!t.pid||!invById[t.pid])return '';const p=invById[t.pid],c=+p.cerr||0,a=+p.abie||0;if(c<1)t.abrir=false;if(!(a>0||t.abrir))t.term=false;
   return `<small class="muted">Hay ${c} cerrado${c===1?'':'s'} · ${a} en uso</small><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-fxchk="abrir" data-j="${t.j}" ${t.abrir?'checked':''} ${c<1?'disabled':''}> Se abrió un tubo nuevo</label><label style="display:flex;gap:8px;align-items:center"><input type="checkbox" data-fxchk="term" data-j="${t.j}" ${t.term?'checked':''} ${a>0||t.abrir?'':'disabled'}> Se terminó un tubo</label>`}
+function fxProdHtml(){if(!fx.needP)return '';const L=(fx.l.prodNom||[]).map(n=>cfg.insumos.findIndex(p=>norm(p.nombre).toLowerCase()===norm(n).toLowerCase())).filter(i=>i>=0),uno=L.length===1,ab=uno?L[0]:fx.insOpen;
+  return `<div class="fx-prod"><span class="muted">${fx.needF?'Productos usados (se le descuentan a '+esc(fx.l.estilista)+')':'¿Cuánto producto usó '+esc(fx.l.estilista)+'?'}</span>
+  ${uno?'':`<div class="pick">${L.map(i=>`<button type="button" data-fxp="${i}" aria-pressed="${ab===i}">${esc(cfg.insumos[i].nombre)}</button>`).join('')}</div>`}
+  ${ab>=0&&cfg.insumos[ab]?`<div class="porciones"><b>¿Cuánto ${esc(cfg.insumos[ab].nombre)}?</b><div class="pick">${(cfg.insumos[ab].opciones||[]).map((o,j)=>`<button type="button" data-fxp="${ab}" data-fxpo="${j}">${esc(o.nombre)}<small>${money(o.costo)}</small></button>`).join('')}</div></div>`:''}
+  ${fx.ins.length?`<ul class="ins-list">${fx.ins.map((x,j)=>`<li><span>✓ ${esc(insTxt(x))} · ${money(x.costo)}</span><button type="button" class="btn ghost small danger" data-fxix="${j}" aria-label="Quitar producto">✕</button></li>`).join('')}</ul><small class="muted">Total de material: <b>${money(fx.ins.reduce((a,x)=>a+x.costo,0))}</b></small>`:''}</div>`}
 function renderFx(){if(!fx)return;const it={key:'fx',tonos:fx.tonos},u=fx.ultima;fx.tonos.forEach((t,j)=>t.j=j);
-  $('#fxBody').innerHTML=`<div><h3>Fórmula · ${esc(fx.l.cliente)}</h3><small class="muted">${esc(fx.l.servicio)} con ${esc(fx.l.estilista)} · ${fechaCorta(fx.l.fecha)}${fx.l.insumos&&fx.l.insumos.length?` · usó: ${esc(fx.l.insumos.map(x=>x.porcion).join(', '))}`:''}</small></div>
+  if(!fx.needF){$('#fxBody').innerHTML=`<div><h3>Productos · ${esc(fx.l.cliente)}</h3><small class="muted">${esc(fx.l.servicio)} con ${esc(fx.l.estilista)} · ${fechaCorta(fx.l.fecha)}</small></div>${fxProdHtml()}<small class="muted">El inventario se maneja aparte con «Abrir uno» / «Se terminó».</small><div class="actions"><button type="button" class="btn ghost" data-fxclose>Cancelar</button><button type="button" class="btn primary" data-fxsave>Guardar productos</button></div>`;return}
+  $('#fxBody').innerHTML=`<div><h3>${fx.needP?'Fórmula y productos':'Fórmula'} · ${esc(fx.l.cliente)}</h3><small class="muted">${esc(fx.l.servicio)} con ${esc(fx.l.estilista)} · ${fechaCorta(fx.l.fecha)}${fx.l.insumos&&fx.l.insumos.length?` · usó: ${esc(fx.l.insumos.map(x=>x.porcion).join(', '))}`:''}</small></div>
   ${u?`<small class="ultima" style="background:var(--ok-soft);color:var(--ok);border-radius:8px;padding:8px 10px">Última fórmula (${fechaCorta(u.fecha)}, ${esc(u.estilista)}): <b>${esc(u.formula.tinte)}</b> con peróxido <b>${esc(u.formula.peroxido)} vol</b></small>${u.formula.tonos?`<button type="button" class="btn" data-fxcopy>Repetir la fórmula anterior</button>`:''}`:fx.ultima===null?'<small class="muted">Primera fórmula de esta clienta.</small>':''}
   <span class="muted">Tintes usados</span>${fx.tonos.map((t,j)=>tonoHtml(it,t,j,fxTono(t))).join('')}
   <button type="button" class="btn small ghost" data-tono-add style="justify-self:start">+ Otro tono</button>
   <span class="muted">Peróxido</span><div class="pick">${[5,10,20,30,40].map(v=>`<button type="button" data-fxpx="${v}" aria-pressed="${String(fx.px)===String(v)}">${v} vol</button>`).join('')}</div>
-  <div class="actions"><button type="button" class="btn ghost" data-fxclose>Cancelar</button><button type="button" class="btn primary" data-fxsave>Guardar fórmula</button></div>`}
+  ${fxProdHtml()}
+  <div class="actions"><button type="button" class="btn ghost" data-fxclose>Cancelar</button><button type="button" class="btn primary" data-fxsave>${fx.needP?'Guardar fórmula y productos':'Guardar fórmula'}</button></div>`}
 async function abrirFx(id){const l=formPend.find(x=>x.id===id)||(await db.doc('lineas/'+id).get().then(d=>d.exists?{id,...d.data()}:null));if(!l)return toast('No encontré ese servicio.');subInv();
-  fx={l,tonos:[{n:'',g:''}],px:'',ultima:undefined};$('#fxSheet').hidden=false;renderFx();
+  fx={l,tonos:[{n:'',g:''}],px:'',ultima:undefined,ins:[],insOpen:-1,needF:!l.soloProd&&!l.formulaVer&&!(l.formula&&l.formula.tinte),needP:!!l.prodPend};$('#fxSheet').hidden=false;renderFx();
   const u=await ultimaFormula(l.cliente);if(fx&&fx.l.id===id){fx.ultima=u||null;if(u&&u.formula&&u.formula.peroxido&&!fx.px)fx.px=String(u.formula.peroxido);renderFx()}}
 document.addEventListener('click',async e=>{const b=e.target.closest('[data-fx]');if(b){abrirFx(b.dataset.fx)}});
 function fxInit(){const sh=$('#fxSheet');if(!sh||sh.dataset.ok)return;sh.dataset.ok=1;
@@ -2339,9 +2346,17 @@ function fxInit(){const sh=$('#fxSheet');if(!sh||sh.dataset.ok)return;sh.dataset
       renderFx();if(tb.dataset.tpid)setTimeout(()=>$(`#fg-fx-${jj}`)?.focus(),30);return}
     const tx=T.closest('[data-tono-x]');if(tx){fx.tonos.splice(+tx.dataset.tonoX,1);renderFx();return}
     if(T.closest('[data-tono-add]')){fx.tonos.push({n:'',g:''});renderFx();return}
+    const fpo=T.closest('[data-fxpo]');if(fpo){const pi=+fpo.dataset.fxp,o=cfg.insumos[pi]&&cfg.insumos[pi].opciones[+fpo.dataset.fxpo];if(o){fx.ins.push({nombre:cfg.insumos[pi].nombre,porcion:o.nombre,costo:r2(o.costo)});fx.insOpen=-1}renderFx();return}
+    const fp=T.closest('[data-fxp]');if(fp){const v=+fp.dataset.fxp;fx.insOpen=fx.insOpen===v?-1:v;renderFx();return}
+    const fix=T.closest('[data-fxix]');if(fix){fx.ins.splice(+fix.dataset.fxix,1);renderFx();return}
     const px=T.closest('[data-fxpx]');if(px){fx.px=px.dataset.fxpx;renderFx();return}
     if(T.closest('[data-fxcopy]')&&fx.ultima){fx.tonos=fx.ultima.formula.tonos.map(t=>{const p=t.invId&&invById[t.invId];return tinteDisp(p)?{n:invLabel(p),g:String(t.gramos),pid:p.id,mk:p.marca||'Otra'}:{n:'',g:String(t.gramos),mk:p?p.marca:''}});if(fx.ultima.formula.peroxido)fx.px=String(fx.ultima.formula.peroxido);renderFx();toast(fx.tonos.every(t=>t.pid)?'Fórmula copiada. Revisa los gramos.':'Copiada. Elige el tono que falta.');return}
-    const sv=T.closest('[data-fxsave]');if(sv){const ts=fx.tonos.filter(t=>t.pid||norm(t.n)||t.g!=='');
+    const sv=T.closest('[data-fxsave]');
+    if(sv&&fx.needP&&!fx.ins.length)return toast(`Marca cuánto producto usó ${fx.l.estilista}.`);
+    const prodUp=()=>{if(!fx.needP)return {};const prev=(fx.l.insumos||[]),all=[...prev,...fx.ins];return {insumos:all,insumosTotal:r2(all.reduce((a,x)=>a+(+x.costo||0),0)),prodPend:false,prodPor:{nombre:invQuien(),fecha:new Date().toISOString()}}};
+    if(sv&&!fx.needF){sv.disabled=true;const l=fx.l;try{const ya=await db.doc('lineas/'+l.id).get();if(ya.exists&&ya.data().prodPend===false){toast(`Estos productos ya los anotó ${(ya.data().prodPor||{}).nombre||'otra persona'}.`);fx=null;sh.hidden=true;return}
+        await db.doc('lineas/'+l.id).update({...prodUp(),formulaPend:false});toast(`Listo: se le descontó ${money(fx.ins.reduce((a,x)=>a+x.costo,0))} de material a ${l.estilista}.`);fx=null;sh.hidden=true}catch(err){toast('No se pudo guardar.');sv.disabled=false}return}
+    if(sv){const ts=fx.tonos.filter(t=>t.pid||norm(t.n)||t.g!=='');
       if(!ts.length)return toast('Elige el tinte.');
       const mal=ts.find(t=>!(t.pid||norm(t.n)));if(mal)return toast('Toca el tono (o quita esa fila).');
       const sg=ts.find(t=>!(+t.g>0));if(sg)return toast('Escribe los gramos de cada tinte.');
@@ -2349,8 +2364,8 @@ function fxInit(){const sh=$('#fxSheet');if(!sh||sh.dataset.ok)return;sh.dataset
       sv.disabled=true;const l=fx.l,quien=invQuien(),nota=`Fórmula · ${l.cliente} · ${l.estilista}`;
       try{const ya=await db.doc('lineas/'+l.id).get();if(ya.exists&&ya.data().formulaPend===false&&ya.data().formula){toast(`Esta fórmula ya la anotó ${(ya.data().formulaPor||{}).nombre||'otra persona'}. No se volvió a descontar del inventario.`);fx=null;sh.hidden=true;return}}catch(err){}
       const tonos=ts.map(t=>({numero:t.pid?invLabel(invById[t.pid]):norm(t.n),gramos:r2(t.g),...(t.pid?{invId:t.pid}:{fueraInv:true}),...(t.pid&&t.abrir?{abrio:true}:{}),...(t.pid&&t.term?{termino:true}:{})}));
-      try{await db.doc('lineas/'+l.id).update({formula:{tonos,tinte:tonos.map(t=>`${t.numero} (${t.gramos} g)`).join(' + '),peroxido:fx.px},formulaPend:false,formulaPor:{nombre:quien,fecha:new Date().toISOString()}});
-        for(const o of formPend.filter(o=>o.id!==l.id&&(o.clienteKey||ckey(o.cliente))===(l.clienteKey||ckey(l.cliente))&&o.fecha===l.fecha)){try{await db.doc('lineas/'+o.id).update({formulaPend:false,formulaVer:l.id})}catch(err){}}
+      try{await db.doc('lineas/'+l.id).update({formula:{tonos,tinte:tonos.map(t=>`${t.numero} (${t.gramos} g)`).join(' + '),peroxido:fx.px},formulaPend:false,formulaPor:{nombre:quien,fecha:new Date().toISOString()},...prodUp()});
+        for(const o of formPend.filter(o=>o.id!==l.id&&(o.clienteKey||ckey(o.cliente))===(l.clienteKey||ckey(l.cliente))&&o.fecha===l.fecha)){try{await db.doc('lineas/'+o.id).update(o.prodPend?{formulaVer:l.id}:{formulaPend:false,formulaVer:l.id})}catch(err){}}
         for(const t of ts){try{if(t.pid&&t.abrir)await invMover(t.pid,{dc:-1,da:1,tipo:'Abierto',nota});if(t.pid&&t.term)await invMover(t.pid,{da:-1,tipo:'Se terminó',nota});if(!t.pid)await db.collection('invAlertas').add({fecha:hoy(),creado:new Date().toISOString(),producto:norm(t.n),cliente:l.cliente,estilista:l.estilista,lineaId:l.id,estado:'pendiente',tipo:'fuera',texto:'Se anotó en una fórmula y no estaba en el inventario.'})}catch(err){}}
         toast('Fórmula guardada en la ficha.');fx=null;sh.hidden=true}catch(err){toast('No se pudo guardar.');sv.disabled=false}}})}
 async function ultimaFormula(cliente){
@@ -2898,6 +2913,8 @@ async function cargarAlq(){
 function areasDe(n){const e=cfg.estilistas.find(x=>x.nombre===n);return String((e&&e.area)||'').split(',').map(norm).filter(Boolean)}
 function areaDe(n){return areasDe(n)[0]||''}
 function areas(){return [...new Set(['Peluquería','Barbería','Manicura','Cuidado capilar',...cfg.servicios.map(s=>norm(s.area)),...cfg.estilistas.flatMap(e=>areasDe(e.nombre))].filter(Boolean))]}
+function fpTxt(l){const f=!l.soloProd&&!l.formulaVer&&!(l.formula&&l.formula.tinte);return l.prodPend?(f?'🧪 Falta la fórmula y los productos':'🧪 Faltan los productos usados'):'🎨 Falta la fórmula'}
+function prodCaja(it,est){return modo==='est'&&Array.isArray(it.productos)&&insDeItem(it).length>0}
 function insTxt(i){return i.porcion?`${i.nombre} · ${i.porcion}`:`${i.nombre}${i.cant?' '+i.cant:''}${i.unidad?' '+i.unidad:''}`}
 function precioOrden(s){return s.libre?(s.minimo?+s.minimo:1e6):(+s.precio||0)}
 const AREA_ORDEN=['Peluquería','Manicura','Cuidado capilar','Barbería','Depilación','Pestañas y cejas'],AREA_FIN=['Faciales','Masajes'];
@@ -3053,7 +3070,7 @@ $('#svcAlq').addEventListener('input',()=>sumSvc());
 
 function itemHtml(it,inline){
     const editable=modo==='caja'||it.libre;
-    const disp=insDeItem(it), uno=disp.length===1, abierto=uno?disp[0].i:it.insOpen;
+    const disp=modo==='est'?[]:insDeItem(it), uno=disp.length===1, abierto=uno?disp[0].i:it.insOpen;
     const porciones=pi=>`<div class="porciones"><b>¿Cuánto ${esc(cfg.insumos[pi].nombre)} usaste?</b><div class="pick">${(cfg.insumos[pi].opciones||[]).map((o,j)=>`<button type="button" data-p="${pi}" data-po="${j}">${esc(o.nombre)}${modo==='caja'?`<small>${money(o.costo)}</small>`:''}</button>`).join('')}</div></div>`;
     const prod=disp.length?`<div class="item-prod">${uno?'':`<span class="muted">${it.productos?'¿Qué producto usaste?':'¿Usaste algún producto?'}</span><div class="pick">${disp.map(d=>`<button type="button" data-ip="${d.i}" aria-pressed="${it.insOpen===d.i}">${esc(d.p.nombre)}</button>`).join('')}</div>`}
       ${abierto>=0&&cfg.insumos[abierto]?porciones(abierto):''}
@@ -3140,13 +3157,13 @@ $('#svcForm').addEventListener('submit',async e=>{
     if(it.espOn){if(!norm(it.motivoIn)){toast(`Escribe el motivo del precio especial en ${it.nombre}.`);$('#cm-'+it.key)?.focus();return}
       if(p>=it.minimo){toast(`${money(p)} no es menor al precio normal de ${it.nombre}. Quita el precio especial.`);return}}
     else if(!it.precios&&it.minimo&&precioBase(it)<it.minimo){toast(`El mínimo de ${it.nombre} es ${money(it.minimo)}.${it.especial?' Si es un precio especial, toca "Pedir precio especial".':''}`);$('#cp-'+it.key)?.focus();return}
-    if(it.productos&&insDeItem(it).length&&!it.insumos.length){toast(`Marca cuánto producto usaste en ${it.nombre}.`);return}
+    if(modo!=='est'&&it.productos&&insDeItem(it).length&&!it.insumos.length){toast(`Marca cuánto producto usaste en ${it.nombre}.`);return}
   }
   const btn=$('#svcGuardar');btn.disabled=true;const base=Date.now();let ok=0;
   try{
     for(const [k,it] of cart.entries()){
       const insumos=[...(it.descuento?[{nombre:it.nombre,porcion:'descuento fijo',costo:it.descuento}]:[]),...(it.descPct?[{nombre:it.nombre,porcion:`material ${it.descPct}%`,costo:matDe(it)}]:[]),...it.insumos.map(x=>({...x}))];
-      const lref=await db.collection('lineas').add({...(it.sesiones>0?{paqueteSes:it.sesiones}:{}),fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),...(it.formula?{formulaPend:true}:{}),estilista:est,...(esAlq()?{alquilado:true}:{}),servicio:it.detalle?`${it.nombre}: ${norm(it.detalleIn)}`:it.varIn?`${it.nombre}: ${it.varIn}`:it.nombre,area:it.area||'',precio:precioDe(it),precioLibre:!!it.libre,...(it.dpIn?{descuentoCliente:{pct:it.dpIn,precioNormal:precioBase(it)}}:{}),...(extraDe(it)?{productoExtra:extraDe(it)}:{}),...(it.espOn?{especial:{estado:'pendiente',minimo:it.minimo,motivo:norm(it.motivoIn),solicitado:new Date().toISOString()}}:{}),insumos,insumosTotal:r2(insumos.reduce((s,x)=>s+x.costo,0)),creado:new Date(base+k).toISOString()});
+      const lref=await db.collection('lineas').add({...(it.sesiones>0?{paqueteSes:it.sesiones}:{}),fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),...(it.formula?{formulaPend:true}:{}),...(prodCaja(it,est)?{formulaPend:true,prodPend:true,prodNom:insDeItem(it).map(d=>d.p.nombre),...(it.formula?{}:{soloProd:true})}:{}),estilista:est,...(esAlq()?{alquilado:true}:{}),servicio:it.detalle?`${it.nombre}: ${norm(it.detalleIn)}`:it.varIn?`${it.nombre}: ${it.varIn}`:it.nombre,area:it.area||'',precio:precioDe(it),precioLibre:!!it.libre,...(it.dpIn?{descuentoCliente:{pct:it.dpIn,precioNormal:precioBase(it)}}:{}),...(extraDe(it)?{productoExtra:extraDe(it)}:{}),...(it.espOn?{especial:{estado:'pendiente',minimo:it.minimo,motivo:norm(it.motivoIn),solicitado:new Date().toISOString()}}:{}),insumos,insumosTotal:r2(insumos.reduce((s,x)=>s+x.costo,0)),creado:new Date(base+k).toISOString()});
       if(it.sesiones>0&&lref&&lref.id){const pr=precioDe(it);await db.collection('paquetes').add({cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),servicio:it.nombre,sesiones:it.sesiones,total:pr,valSesion:r2(pr/it.sesiones),usadas:0,fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,lineaId:lref.id,vendio:svcEstilista(),creado:new Date().toISOString()})}
       ok++;try{const k2='frec_'+(svcEstilista()||''),fq=storeJ.get(k2)||{};if(it.i!=null){fq[it.nombre]=(fq[it.nombre]||0)+1;storeJ.set(k2,fq)}}catch(e){}
     }
