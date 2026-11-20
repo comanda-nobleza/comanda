@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="1d40f3e2a578"</script>
-<script src="web.js?v=1d40f3e2a578"></script>
+<script>window.BUILD="940fdf192211"</script>
+<script src="web.js?v=940fdf192211"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -435,7 +435,7 @@ body:not(.es-web) .only-web{display:none!important}
 #webLogin .wl-box{width:100%;max-width:380px;display:grid;gap:12px;text-align:center}
 #webLogin h1{font-family:var(--display);color:var(--accent);font-size:2.4rem;margin:0}#webLogin p{margin:0;letter-spacing:.2em;text-transform:uppercase;font-size:.8rem;color:var(--muted)}
 #webLogin form{display:grid;gap:12px;text-align:left;margin-top:12px}
-.th-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}.th-cols .th-sec{align-content:start}.th-cols .th-r{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px}.th-cols .th-r>div:first-child{flex:none}.th-cols .th-b{justify-content:flex-start}.th-cols .th-g>summary{font-size:14px}.th-cols .chip,.th-cols .neg{white-space:nowrap}.th-vacio{padding:14px 4px;color:var(--muted,#999);font-size:14px}.th-sec.atr.cero{background:none;border-color:var(--line)}.th-sec.atr.cero .th-sh b,.th-sec.atr.cero .th-n{color:inherit}body.tel .th-cols{grid-template-columns:1fr}@media(max-width:900px){.th-cols{grid-template-columns:1fr}}
+.th-cols{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;align-items:start}.th-cols .th-sec{align-content:start}.th-cols .th-r{flex-direction:column;align-items:stretch;gap:6px;padding:8px 10px}.th-cols .th-r>div:first-child{flex:none}.th-cols .th-b{justify-content:flex-start}.th-cols .th-g>summary{font-size:14px}.th-cols .chip,.th-cols .neg{white-space:nowrap}.th-prox{opacity:.8;border-top:1px dashed var(--line);padding-top:6px}.th-vacio{padding:14px 4px;color:var(--muted,#999);font-size:14px}.th-sec.atr.cero{background:none;border-color:var(--line)}.th-sec.atr.cero .th-sh b,.th-sec.atr.cero .th-n{color:inherit}body.tel .th-cols{grid-template-columns:1fr}@media(max-width:900px){.th-cols{grid-template-columns:1fr}}
 .th-sec{border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;gap:6px}.th-sh{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:15px}.th-n{min-width:22px;padding:1px 8px;border-radius:999px;background:var(--line);font-size:12px;font-weight:700;text-align:center}.th-sec.atr{border-color:color-mix(in srgb,var(--bad,#e57373) 55%,transparent);background:color-mix(in srgb,var(--bad,#e57373) 8%,transparent)}.th-sec.atr .th-sh b,.th-sec.atr .th-n{color:var(--bad,#e57373)}.th-sec.atr .th-n{background:color-mix(in srgb,var(--bad,#e57373) 18%,transparent)}.th-sec.hech{border-color:color-mix(in srgb,var(--ok,#6bbf8a) 45%,transparent)}.th-sec.hech .th-sh b,.th-sec.hech .th-ic{color:var(--ok,#6bbf8a)}
 .th-box{gap:10px}.th-g>summary{cursor:pointer;padding:4px 0}.th-l{display:grid;gap:6px;margin-top:6px}.th-r{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}.th-r>div:first-child{flex:1 1 320px;min-width:0}.th-b{gap:6px;flex-wrap:wrap;justify-content:flex-end;align-items:center}.th-sel{width:auto!important;flex:0 0 auto;min-height:0;padding:6px 28px 6px 10px;font-size:13px;border-radius:999px}.th-sel.danger{color:var(--bad,#e57373)}
 .tl{position:relative;border:1px solid var(--line);border-radius:var(--r);background:var(--surface);overflow:hidden}
@@ -1151,7 +1151,7 @@ const TN_OP=[['caja','Cuentas'],['agenda','Agenda'],['tareas','Tareas'],['formul
 const enGer=()=>duena&&$('#gSwitch [data-g="ger"]')&&$('#gSwitch [data-g="ger"]').getAttribute('aria-pressed')==='true';
 telAplicar&&setTimeout(telAplicar,0);
 function renderTnav(){const n=$('#tnavIn');if(!n)return;const L=enGer()?TN_GER:TN_OP;
-  const badge=k=>{if(k==='tareas'){try{const D=tareasDatos(),x=D.conf.length+D.rec.length+D.rep.length+D.form.length+D.mant.length+D.react.length+D.otros.length;return x?` <span class="badge">${x}</span>`:''}catch(e){return ''}}if(k==='formulas')return formPend.length?` <span class="badge">${formPend.length}</span>`:'';if(k==='autorizar'){const x=(descSolPend||[]).length+(cortPend||[]).length+(cierreSols||[]).length;return x?` <span class="badge">${x}</span>`:''}return ''};
+  const badge=k=>{if(k==='tareas'){try{const D=tareasDatos(),x=D.conf.length+D.rec.length+D.rep.length+D.form.length+D.mant.length+D.react.length+D.otros.filter(o=>!(o.t==='cum'&&o.f>hoy())).length;return x?` <span class="badge">${x}</span>`:''}catch(e){return ''}}if(k==='formulas')return formPend.length?` <span class="badge">${formPend.length}</span>`:'';if(k==='autorizar'){const x=(descSolPend||[]).length+(cortPend||[]).length+(cierreSols||[]).length;return x?` <span class="badge">${x}</span>`:''}return ''};
   const h=L.map(([k,ic,t])=>`<button type="button" role="tab" data-tn="${k}" aria-selected="${k===tab}"><span class="ic">${ic}</span>${t}${badge(k)}</button>`).join('');if(n.innerHTML!==h)n.innerHTML=h}
 function abrirMas(){const ger=enGer(),it=ger?[['quincena',IC.quincena,'Quincena'],['mant',IC.mant,'Mantenimiento'],['ajustes',IC.ajustes,'Ajustes'],['op',IC.caja,'Ir a Operación (caja)']]:[['cierre',IC.cierre,'Cierre del día'],['fichas',IC.fichas,'Fichas de clientas'],['mant',IC.mant,'Mantenimiento'],['inv',IC.inv,'Inventario'],...(duena?[['ger',IC.autorizar,'Ir a Gerencia']]:[])];
   $('#masL').innerHTML=it.map(([k,ic,t])=>`<button type="button" data-mas="${k}"><span class="ic">${ic}</span>${t}</button>`).join('')+`<button type="button" data-mas="cambiar"><span class="ic">${IC.cambiar}</span>Cambiar de usuario</button>`;$('#masSheet').hidden=false}
@@ -2022,14 +2022,16 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
   const formR=l=>row(`<b>${esc(l.cliente)}</b> <span class="chip warn">${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</span><br><small>${esc(l.servicio)} · ${esc(l.estilista)} · ${fpTxt(l).replace(/^\S+ /,'')}</small>`,`<button class="btn small primary" data-fx="${l.id}">Anotar</button>`);
   const A={conf:D.conf.filter(x=>confAtr(x.c)),rep:D.rep.filter(x=>x.c.fecha<h),form:D.form.filter(l=>(l.fecha||h)<h)};
   const H={conf:D.conf.filter(x=>!confAtr(x.c)),rep:D.rep.filter(x=>!(x.c.fecha<h)),form:D.form.filter(l=>!((l.fecha||h)<h))};
-  const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),otros=D.otros.map(x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x))).join('');
-  const nA=A.conf.length+A.rep.length+A.form.length,nH=H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+D.otros.length,hh=TH.hechas;
+  const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),oth=x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x)),cumF=D.otros.filter(x=>x.t==='cum'&&x.f>h),cumA=D.otros.filter(x=>x.t==='cum'&&x.f<h),otrosH=D.otros.filter(x=>!(x.t==='cum'&&x.f!==h)),otros=otrosH.map(oth).join('');
+  const cumFR=x=>row(`<b>${esc(x.cliente)}</b> <span class="chip gris">🎂 Cumple el ${fechaCorta(x.f)}</span><br><small>Felicitar ese día · ya se le sumaron ${ptsCumple()} puntos</small>`,`<button type="button" class="btn small" disabled title="Se activa el día de su cumpleaños">🔒 Se activa el ${fechaCorta(x.f).replace(',','').replace(/ \S+$/,'')}</button>`);
+  const nA=A.conf.length+A.rep.length+A.form.length+cumA.length,nH=H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+otrosH.length,hh=TH.hechas;
   const sec=(cls,ic,tit,n,sub,body)=>`<section class="th-sec ${cls}"><div class="th-sh"><span class="th-ic">${ic}</span><b>${tit}</b><span class="th-n">${n}</span>${sub?`<small class="muted">${sub}</small>`:''}</div>${body}</section>`;
   const vacio=t=>`<div class="th-vacio">${t}</div>`;
   const atrHtml=sec('atr'+(nA?'':' cero'),'⚠️','Atrasadas',nA,'',nA?
     grp('a-conf','📅 Citas sin confirmar','ya debían estar confirmadas',A.conf.length,A.conf.map(confR).join(''))+
     grp('a-rep','🔁 Reprogramar (no vinieron)','de días anteriores',A.rep.length,A.rep.map(repR).join(''))+
-    grp('a-form','🧪 Fórmulas y productos sin anotar','de días anteriores',A.form.length,A.form.map(formR).join('')):vacio('✓ Nada atrasado'));
+    grp('a-form','🧪 Fórmulas y productos sin anotar','de días anteriores',A.form.length,A.form.map(formR).join(''))+
+    grp('a-cum','🎂 Cumpleaños sin felicitar','ya pasó el día',cumA.length,cumA.map(oth).join('')):vacio('✓ Nada atrasado'));
   const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',nH?
     grp('conf','📅 Confirmar citas','las de mañana antes del mediodía y las de hoy en la tarde',H.conf.length,H.conf.map(confR).join(''))+
     grp('rec','💬 Recordar citas de mañana','',D.rec.length,D.rec.map(recR).join(''))+
@@ -2037,8 +2039,8 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('form','🧪 Fórmula y productos por anotar','',H.form.length,H.form.map(formR).join(''))+
     grp('mant','🔁 Toca mantenimiento','ya les toca volver según su último servicio',D.mant.length,mant)+
     grp('react','💌 Te extrañamos','más de 45 días sin venir',D.react.length,react)+
-    grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',D.otros.length,otros)+
-    (D.mant.length+D.react.length+D.otros.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día'));
+    grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',otrosH.length,otros)+
+    (D.mant.length+D.react.length+otrosH.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día')).replace(/<\/section>$/,(cumF.length?`<div class="th-prox">${grp('cumf','🔒 Próximos cumpleaños','se activan ese día',cumF.length,cumF.map(cumFR).join(''))}</div>`:'')+'</section>');
   const hechHtml=sec('hech','✓','Hechas hoy',hh.length,'',hh.length?`<div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b><br><small>${esc(x.txt)} · ${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div>`:vacio('Todavía nada'));
   {const tb=$('#tarBadge'),nt=nA+nH;if(tb){tb.hidden=!nt;tb.textContent=nt;tb.classList.toggle('bad',nA>0)}}
   const res=[`${nH} de hoy`,hh.length?`${hh.length} hecha${hh.length>1?'s':''}`:'',nA?`<b class="neg">${nA} atrasada${nA>1?'s':''}</b>`:''].filter(Boolean).join(' · ');
