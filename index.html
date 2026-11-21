@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="6596799a9c94"</script>
-<script src="web.js?v=6596799a9c94"></script>
+<script>window.BUILD="2f09db813a91"</script>
+<script src="web.js?v=2f09db813a91"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1754,7 +1754,7 @@ function concilia(c,fz){
   const psc=lineas.filter(l=>l.sinCom),pscT=r2(psc.reduce((s,l)=>s+(+l.precio||0),0));
   const pend=met.some(x=>Math.abs(x.sinExp)>=0.005)||Math.abs(sinExpC)>=0.005,faltaZ=met.filter(x=>x.z==null).map(x=>MET_LBL[x.m]);
   return {faltaZ,met,canjeL,canje,abL,ab,esperado,sinExpC,psc,pscT,pend}}
-const DIF_MOT=['Shampoo Fanola','Cortesía no registrada','Servicio autorizado por gerencia','Otro'];
+const DIF_MOT=['Paquete pagado por adelantado','Shampoo Fanola','Cortesía no registrada','Servicio autorizado por gerencia','Otro'];
 function difLista(c,K0){const L=[],lo=cierre.lote||{},sob=(v,a,b)=>v>0?`${a} ${money(v)}`:`${b} ${money(-v)}`;
   K0.met.filter(x=>x.z!=null&&Math.abs(x.sinExp)>=0.005).forEach(x=>L.push({k:'met:'+x.m,lbl:`${MET_LBL[x.m]}: Fiscal Z contra total real`,monto:x.sinExp,txt:sob(x.sinExp,'Sobran en lo real','Faltan en lo real')}));
   if(Math.abs(K0.sinExpC)>=0.005)L.push({k:'comandas',lbl:'Comandas contra lo cobrado (sin ITBMS)',monto:K0.sinExpC,txt:sob(K0.sinExpC,'Se cobró de menos','Se cobró de más')});
@@ -2824,10 +2824,10 @@ function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).fo
 /* los puntos se ganan solo con el pago completo: con descuento a la clienta no suma puntos */
 /* Los puntos se ganan solo por lo que se pagó a precio completo: los servicios con descuento, precio especial o canje no suman */
 function ptsPromo(l){return (descPct()>0&&descSel.has(l.id))||!!l.descCli||(l.descuentoCliente&&+l.descuentoCliente.pct>0)||(l.especial&&l.especial.estado!=='rechazado')||!!l.canje||!!(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'&&cobroPts.canje.lineaId===l.id)}
-function ptsBase(){const ls=cobroTicket?lineasDe(cobroTicket).filter(l=>+l.precio>0||l.descCli):[],t=cobroTotales();let b=ls.filter(l=>!ptsPromo(l)).reduce((a,l)=>a+(+l.precio||0),0);
+function ptsBase(){const ls=cobroTicket?lineasDe(cobroTicket).filter(l=>+l.precio>0||l.descCli):[],t=cobroTotales();let b=ls.filter(l=>!ptsPromo(l)).reduce((a,l)=>a+(+l.precio||0)*(l.paqueteSes?0.5:1),0);
   if(t){if(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo!=='servicio')b-=t.dPts||0;b-=t.cort||0}return Math.max(0,r2(b))}
-function ptsSinMotivo(){const ls=cobroTicket?lineasDe(cobroTicket):[],ex=ls.filter(l=>(+l.precio>0||l.descCli)&&ptsPromo(l));if(!ex.length&&!(typeof cortOn==='function'&&cortOn()))return '';
-  return ex.length?`${ex.map(l=>l.servicio).join(', ')} no suma${ex.length>1?'n':''} (tiene${ex.length>1?'n':''} descuento o promoción)`:'es cortesía'}
+function ptsSinMotivo(){const ls=cobroTicket?lineasDe(cobroTicket):[],ex=ls.filter(l=>(+l.precio>0||l.descCli)&&ptsPromo(l));if(!ex.length&&!(typeof cortOn==='function'&&cortOn())&&!ls.some(l=>l.paqueteSes&&+l.precio>0))return '';
+  const pq=ls.filter(l=>l.paqueteSes&&+l.precio>0&&!ptsPromo(l));return [ex.length?`${ex.map(l=>l.servicio).join(', ')} no suma${ex.length>1?'n':''} (tiene${ex.length>1?'n':''} descuento o promoción)`:(typeof cortOn==='function'&&cortOn()?'es cortesía':''),pq.length?'los paquetes suman la mitad de los puntos':''].filter(Boolean).join(' · ')}
 function ptsGana(){return Math.floor(ptsBase()*ptsDolar())}
 async function aplicarPuntos(t,sub){
   const k=cobroPts.tel;if(!k||!db)return '';
