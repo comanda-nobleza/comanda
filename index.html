@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="c91e2de1775c"</script>
-<script src="web.js?v=c91e2de1775c"></script>
+<script>window.BUILD="6596799a9c94"</script>
+<script src="web.js?v=6596799a9c94"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1628,7 +1628,7 @@ const EV_IDX={};EV_CARTA.forEach((x,i)=>EV_IDX[x[0]]=i);const EV_FAMS=[...new Se
 const esAlfTinte=p=>p.ubic==='Tintes Alfaparf';
 function evTono(p){const t=String(p.nombre||'').toUpperCase().replace(/,/g,'.');const re=/(\d{1,2}(?:\.\d{1,3})?(?:NB|NI)?)/g;let m;while((m=re.exec(t))){if(EV_IDX[m[1]]!=null)return m[1]}return ''}
 const evFoto=t=>'fotos/ev_'+t.replace(/\./g,'-')+'.jpg';
-function invCargaFotos(){if(!duena||!db)return;invs.forEach(p=>{if(!esAlfTinte(p)||p._ev)return;const t=evTono(p);if(!t)return;const f=evFoto(t);if(p.foto===f)return;p._ev=1;db.doc('inventario/'+p.id).update({foto:f,fotoAnt:p.foto||''}).catch(()=>{p._ev=0})});invs.forEach(p=>{if(/^cosmetiquera peluda love/i.test(p.nombre||'')&&p.foto!=='fotos/rf_cosmet1.jpg'&&!p._fc){p._fc=1;db.doc('inventario/'+p.id).update({foto:'fotos/rf_cosmet1.jpg'}).catch(()=>{p._fc=0})}});invs.forEach(p=>{if(p.marca==='Corona'&&['Coronita (cerveza pequeña)','Coronita Extra (cerveza)'].includes(p.nombre)&&!p._rn){p._rn=1;p.nombre='Coronita (cerveza)';p.pres='six pack (6 botellas)';db.doc('inventario/'+p.id).update({nombre:p.nombre,pres:p.pres}).catch(()=>{p._rn=0})}});const F={};INV_CARGA.forEach(x=>{if(x.foto)F[invKey(x)]=x.foto});invs.forEach(p=>{const f=F[invKey(p)];if(f&&!p.foto&&!p._fx){p._fx=1;db.doc('inventario/'+p.id).update({foto:f}).catch(()=>{p._fx=0})}})}
+function invCargaFotos(){if(!duena||!db)return;invs.forEach(p=>{if(p._ev||!/^fotos\/ev_/.test(p.foto||'')||!('fotoAnt' in p))return;p._ev=1;db.doc('inventario/'+p.id).update({foto:p.fotoAnt||''}).catch(()=>{p._ev=0})});invs.forEach(p=>{if(/^cosmetiquera peluda love/i.test(p.nombre||'')&&p.foto!=='fotos/rf_cosmet1.jpg'&&!p._fc){p._fc=1;db.doc('inventario/'+p.id).update({foto:'fotos/rf_cosmet1.jpg'}).catch(()=>{p._fc=0})}});invs.forEach(p=>{if(p.marca==='Corona'&&['Coronita (cerveza pequeña)','Coronita Extra (cerveza)'].includes(p.nombre)&&!p._rn){p._rn=1;p.nombre='Coronita (cerveza)';p.pres='six pack (6 botellas)';db.doc('inventario/'+p.id).update({nombre:p.nombre,pres:p.pres}).catch(()=>{p._rn=0})}});const F={};INV_CARGA.forEach(x=>{if(x.foto)F[invKey(x)]=x.foto});invs.forEach(p=>{const f=F[invKey(p)];if(f&&!p.foto&&!p._fx){p._fx=1;db.doc('inventario/'+p.id).update({foto:f}).catch(()=>{p._fx=0})}})}
 async function invBorrar(p){await db.doc('inventario/'+p.id).delete();await db.collection('invMov').add({fecha:new Date().toISOString(),dia:hoy(),pid:p.id,marca:p.marca||'',producto:p.nombre,pres:p.pres||'',dc:-(+p.cerr||0),da:-(+p.abie||0),cerr:0,abie:0,tipo:'Producto eliminado',nota:'',por:invQuien()});invMovs=null}
 const esCosmet=p=>p.ubic==='Regalos de Fidelidad'&&/cosmetiquer/i.test(p.nombre||'')&&!/love/i.test(p.nombre||'');
 const INV_LIMPIA_KEY='limpiaCosmet1';const invLimpiaHecha=()=>{try{return localStorage.getItem(INV_LIMPIA_KEY)==='1'}catch(e){return false}};
@@ -1674,7 +1674,7 @@ function renderInv(){const out=$('#invOut');if(!out||modo!=='caja')return;subInv
   const q=normTxt($('#invQ').value||''),flt=p=>(invUbSel==='Todas'||p.ubic===invUbSel||(invUbSel==='Sin mínimo'&&SMIN(p)))&&(!q||normTxt(invLabel(p)+' '+p.ubic).includes(q));
   if(invSub==='inv'){const L=invs.filter(flt);if(!L.length){out.innerHTML='<div class="empty">No hay productos con esa búsqueda.</div>';return}
     const by={};L.forEach(p=>(by[p.ubic]=by[p.ubic]||[]).push(p));out.innerHTML=Object.entries(by).map(([u,ps])=>{
-      if(u==='Tintes Alfaparf'){const F={};ps.forEach(p=>{const t=evTono(p),f=t?EV_CARTA[EV_IDX[t]][2]:'Otros tonos';(F[f]=F[f]||[]).push(p)});const ord=[...EV_FAMS,'Otros tonos'].filter(f=>F[f]);
+      if(false&&u==='Tintes Alfaparf'){const F={};ps.forEach(p=>{const t=evTono(p),f=t?EV_CARTA[EV_IDX[t]][2]:'Otros tonos';(F[f]=F[f]||[]).push(p)});const ord=[...EV_FAMS,'Otros tonos'].filter(f=>F[f]);
         return `<h3 style="margin:16px 0 8px">${esc(u)} <small class="muted">· ${ps.length}</small></h3>`+ord.map(f=>`<h4 class="ev-fam">${esc(f)} <small class="muted">· ${F[f].length} tono${F[f].length>1?'s':''}</small></h4><div class="inv-grid">${F[f].sort((a,b)=>(EV_IDX[evTono(a)]??999)-(EV_IDX[evTono(b)]??999)).map(invCard).join('')}</div>`).join('')}
       return `<h3 style="margin:16px 0 8px">${esc(u)} <small class="muted">· ${ps.length}</small></h3><div class="inv-grid">${ps.map(invCard).join('')}</div>`}).join('');return}
   if(invSub==='comp'){subInsumos();const L=porComprar().filter(x=>!x.p||flt(x.p)||!q);
