@@ -1590,7 +1590,8 @@ async function invMover(pid,o){if(!db||!pid)return null;const ref=db.doc('invent
   await db.collection('invMov').add(mv);invMovs=null;return mv}
 var invB={},invBL={};
 function invBundle(u){if(invBL[u])return;invBL[u]=1;fetch(u).then(r=>r.json()).then(j=>{Object.assign(invB,j);if(modo==='caja'&&tab==='inv'&&$('#invSheet').hidden)renderInv()}).catch(()=>{invBL[u]=0})}
-const invFoto=p=>{if(!p)return '';if(p.foto)return `<img src="${esc(p.foto)}" alt="" loading="lazy">`;if(p.fotoB){if(invB[p.id])return `<img src="${invB[p.id]}" alt="" loading="lazy">`;invBundle(p.fotoB)}return ''};
+const FOTOS_V='20261120b',fotoUrl=f=>/^fotos\//.test(f)?f+'?v='+FOTOS_V:f;
+const invFoto=p=>{if(!p)return '';if(p.foto)return `<img src="${esc(fotoUrl(p.foto))}" alt="" loading="lazy">`;if(p.fotoB){if(invB[p.id])return `<img src="${invB[p.id]}" alt="" loading="lazy">`;invBundle(p.fotoB)}return ''};
 const INV_CARGA=[
  {ubic:'Cafetería y Bar',marca:'Coca-Cola',nombre:'Coca-Cola Sabor Original',foto:'fotos/cb01.jpg',pres:'botella 250 ml',cerr:3,abie:1},
  {ubic:'Cafetería y Bar',marca:"Rika's Classic",nombre:'Té Flor de Jamaica',foto:'fotos/cb02.jpg',pres:'caja de 20 sobres',cerr:3,abie:0},
