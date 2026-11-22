@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="6df28f8f63f3"</script>
-<script src="web.js?v=6df28f8f63f3"></script>
+<script>window.BUILD="9f2da7b777d6"</script>
+<script src="web.js?v=9f2da7b777d6"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -798,7 +798,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
       <div class="panel">
         <h3>Personal</h3>
         <small>En <b>Área</b> puedes poner varias separadas por coma, en el orden en que la persona las ve (ej.: <i>Barbería, Peluquería</i>). Marca <b>Pestañas</b> para que vea cada área en su propia pestaña. <b>Planta</b>: entra a la app y tiene agenda. <b>Externo</b>: no entra a la app; con alquiler es <b>alquilado</b>, sin alquiler es <b>eventual</b>. En Cuentas se elige con <b>Alquilado o eventual…</b> y sale en Quincena. Un alquilado nuevo que no esté aquí se puede escribir a mano y cobra la comisión base.</small>
-        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th>Color en la agenda</th><th>Abre cuentas</th><th></th></tr></thead><tbody></tbody></table></div>
+        <div class="tw"><table id="ajEst"><thead><tr><th>Nombre</th><th>WhatsApp</th><th>Área</th><th>Pestañas</th><th>Insumos</th><th class="n">Comisión %</th><th class="n">Salario fijo al mes</th><th class="n">Bono fijo al mes</th><th class="n">Salario anterior al mes</th><th>Salario nuevo desde</th><th class="n">Valor hora extra $</th><th class="n">Alquiler mensual $</th><th class="n">Cafetería por quincena $</th><th class="n">Meta de ventas al mes $</th><th>Cobra décimo</th><th>Fecha de ingreso</th><th>Servicios sin comisión</th><th>Tipo</th><th>PIN</th><th>Color en la agenda</th><th>Abre cuentas</th><th></th></tr></thead><tbody></tbody></table></div>
         <button class="btn small" data-addrow="ajEst" style="justify-self:start">+ Estilista</button>
       </div>
       <div class="panel">
@@ -1117,10 +1117,12 @@ function comLinea(l){if(l.paqueteSes)return 0;if(l.paqueteId)return l.sinCom?0:r
 const sumCom=ls=>r2(ls.reduce((s,l)=>s+comLinea(l),0));
 const horasOK=n=>{const e=cfg.estilistas.find(x=>x.nombre===n)||{};return !!(salarioMes(n)&&e.horasExtra!==false)};
 const extVis=n=>horasOK(n)||((qData&&qData.E)||[]).some(x=>x.estilista===n&&(!x.estado||x.estado==='aprobado'))||extraFijaEn(n,qData?qData.a:'',qData?qData.b:'').horas>0;
-function salarioSolo(n){const e=cfg.estilistas.find(x=>x.nombre===n);return e&&+e.salario>0?+e.salario:0}
+/* salario del mes; con fecha usa el salario anterior si el nuevo todavía no empezaba (salAnt / salDesde) */
+function salarioSolo(n,f){const e=cfg.estilistas.find(x=>x.nombre===n);if(!e)return 0;if(f&&e.salDesde&&f<e.salDesde&&+e.salAnt>0)return +e.salAnt;return +e.salario>0?+e.salario:0}
+function salSoloProm(n,a,b){if(a>b)return salarioSolo(n,a);let s=0,k=0;for(let d=new Date(a+'T12:00:00');ymd(d)<=b;d.setDate(d.getDate()+1)){s+=salarioSolo(n,ymd(d));k++}return k?s/k:0}
 function fijaMes(n){const e=cfg.estilistas.find(x=>x.nombre===n);return e&&+e.comisionFija>0?+e.comisionFija:0}
 const cafeQ=n=>{const e=cfg.estilistas.find(x=>x.nombre===n);return e&&+e.cafeteria>0?+e.cafeteria:0};
-function salarioMes(n){return salarioSolo(n)+fijaMes(n)}
+function salarioMes(n,f){return salarioSolo(n,f)+fijaMes(n)}
 function extraFijaEn(n,a,b){const e=cfg.estilistas.find(x=>x.nombre===n)||{},m=e.extraFija||{};let h=0,dias=0;
   if(!Object.keys(m).length||!a||!b||b<a)return {horas:0,monto:0,dias:0};
   for(let d=new Date(a+'T12:00:00');ymd(d)<=b;d.setDate(d.getDate()+1)){const x=+m[d.getDay()]||0;if(x){h+=x;dias++}}
@@ -1430,7 +1432,7 @@ const decPagoTxt=b=>`15 de ${MESES[+b.slice(5,7)-1]} de ${b.slice(0,4)}`;
 const dd2=(x,y)=>Math.round((new Date(y+'T12:00:00')-new Date(x+'T12:00:00'))/864e5)+1;
 async function calcDecimo(n,per){per=per||decPer(hoy());const {a,b}=per,h=hoy()<b?hoy():b,tot=dd2(a,b),ing=ingresoDe(n),ini=ing&&ing>a?ing:a,
     dias=ini>b?0:dd2(ini,b),van=ini>h?0:Math.min(dias,dd2(ini,h));
-  const base=salarioSolo(n),full=r2(base*4/12*dias/tot),dec=dias?r2(full*van/dias):0,parcial=dias<tot;let pagado=null;
+  const base=salSoloProm(n,ini>a?ini:a,b),full=r2(base*4/12*dias/tot),dec=dias?r2(full*van/dias):0,parcial=dias<tot;let pagado=null;
   try{const dc=await db.doc('decimos/'+b+'_'+perfId(n)).get();if(dc.exists)pagado=dc.data().pagado||null}catch(e){}
   return {n,a,b,base,full,dec,pagado,completo:h===b,ini,parcial,dias,tot}}
 let decC=null;
@@ -2023,8 +2025,8 @@ const vacUsados=n=>VAC.filter(x=>x.estilista===n).reduce((s,x)=>s+(+x.dias||0),0
 const vacDisp=n=>r1(vacGan(n)-vacUsados(n));
 function vacDiasEn(n,a,b){let t=0;VAC.filter(x=>x.estilista===n&&x.tipo==='vac').forEach(x=>{const xh=x.hasta||x.desde,i=x.desde>a?x.desde:a,h=xh<b?xh:b;if(i<=h)t+=dd2(i,h)});return t}
 /* fijo de un día: el fijo de la quincena repartido entre sus días sin domingo; el domingo no genera fijo (se paga aparte como domingo trabajado) */
-function salDiaFijo(n,f){const d=new Date(f+'T12:00:00');if(d.getDay()===0)return 0;const y=d.getFullYear(),m=d.getMonth(),ult=new Date(y,m+1,0).getDate(),[i0,i1]=d.getDate()<=15?[1,15]:[16,ult];let k=0;for(let i=i0;i<=i1;i++)if(new Date(y,m,i).getDay()!==0)k++;return k?r2(salarioMes(n)/2/k):0}
-function salQ(n,a,b,hasta){const sm=salarioMes(n);if(!sm)return 0;const tot=dd2(a,b),fin=hasta&&hasta<b?hasta:b,ing=ingresoDe(n),ini=ing&&ing>a?ing:a;if(ini>fin)return 0;
+function salDiaFijo(n,f){const d=new Date(f+'T12:00:00');if(d.getDay()===0)return 0;const y=d.getFullYear(),m=d.getMonth(),ult=new Date(y,m+1,0).getDate(),[i0,i1]=d.getDate()<=15?[1,15]:[16,ult];let k=0;for(let i=i0;i<=i1;i++)if(new Date(y,m,i).getDay()!==0)k++;return k?r2(salarioMes(n,f)/2/k):0}
+function salQ(n,a,b,hasta){const sm=salarioMes(n,a);if(!sm)return 0;const tot=dd2(a,b),fin=hasta&&hasta<b?hasta:b,ing=ingresoDe(n),ini=ing&&ing>a?ing:a;if(ini>fin)return 0;
   const van=dd2(ini,fin),vd=vacDiasEn(n,ini,fin);return Math.max(0,r2(sm/2*van/tot-valorDiaVac(n)*vd))}
 const fmtD=v=>{const r=r1(v);return (r%1?r.toFixed(1):String(r))+' día'+(r===1?'':'s')};
 const vacTxt=x=>x.tipo==='vac'?`${fechaCorta(x.desde)}${x.dias>1?' al '+fechaCorta(x.hasta):''} · Vacaciones · ${money(x.monto)}`:`${fechaCorta(x.desde)} · Falta cubierta con vacaciones`;
@@ -2295,14 +2297,15 @@ function pintarResQ(d){
   const k=(l,v,sub)=>`<div class="kpi"><span>${l}</span><b>${v}</b>${sub?`<small>${sub}</small>`:''}</div>`;
   const cob=d.T.filter(t=>t.estado==='cobrada'),ids=new Set(cob.map(t=>t.id)),Lc=d.L.filter(l=>ids.has(l.ticketId));
   const vend=r2(cob.reduce((s,t)=>s+(+t.subtotal||0),0)),com=r2(Lc.reduce((s,l)=>s+comLinea(l),0));
-  const fijos=r2(cfg.estilistas.reduce((s,e)=>s+salarioMes(e.nombre)/2,0));
+  const fijos=r2(cfg.estilistas.reduce((s,e)=>s+salarioMes(e.nombre,d.a)/2,0));
   const ext=r2(d.E.reduce((s,x)=>s+(+x.monto||0),0)+cfg.estilistas.reduce((s,e)=>s+extraFijaEn(e.nombre,d.a,d.b).monto,0));
   const adel=r2(d.A.reduce((s,x)=>s+(+x.monto||0),0));
   $('#resQ').innerHTML=k('Vendido',money(vend),`Del ${+d.a.slice(8)} al ${+d.b.slice(8)} · ${cob.length} cuentas`)+k('Comisiones',money(com),'Servicios y ventas')+k('Fijos',money(fijos),'Salarios y bonos de la quincena')+k('Extras',money(ext),'Horas extras y domingos')+k('Adelantos entregados',money(adel),'Se descuentan al pagar');
 }
 
 /* ---------- render ---------- */
-function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{lineasSinDescFix()}catch(e){}try{subSaldos();const sr=$('#saldosRes');if(sr){const h=saldosResHtml();if(sr.innerHTML!==h)sr.innerHTML=h}}catch(e){}try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
+function salFix1(){if(!duena||!db||!cfgLoaded||cfg.salFix1||!cfg.estilistas.length)return;const P={pedro:[500,600],rita:[650,700]};let ch=false;const arr=cfg.estilistas.map(e=>{const k=Object.keys(P).find(k=>new RegExp('^'+k+'(\\s|$)','i').test(e.nombre||''));if(!k||e.salDesde)return e;const [ant,nue]=P[k],bono=+e.comisionFija||0;ch=true;const o={...e,salAnt:r2(ant-bono),salDesde:'2026-12-01'};if(r2((+e.salario||0)+bono)!==nue)o.salario=r2(nue-bono);return o});cfg.salFix1=true;db.doc('config/main').update({...(ch?{estilistas:arr}:{}),salFix1:true}).catch(()=>{cfg.salFix1=false})}
+function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{salFix1()}catch(e){}try{lineasSinDescFix()}catch(e){}try{subSaldos();const sr=$('#saldosRes');if(sr){const h=saldosResHtml();if(sr.innerHTML!==h)sr.innerHTML=h}}catch(e){}try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
   try{renderViejas()}catch(e){}
   try{revisarAvisos()}catch(e){}
   if(modo!=='caja'&&cajaLocked)aplicarLock();
@@ -2580,7 +2583,7 @@ function adelCard(info,Ar){
     <form class="inline-form" id="adelForm"><input id="adelMonto" type="number" step="0.01" min="${info.min}" max="${info.disponible}" inputmode="decimal" placeholder="Monto" required aria-label="Monto del adelanto"><button class="btn primary">Pedir adelanto</button></form>`;
   else{const falta=info.pct?r2((info.min+info.usados)*100/info.pct):0;body=`<p>Todavía no alcanzas para un adelanto. El mínimo es ${money(info.min)} y puedes pedir hasta el ${info.pct}% de lo ganado${info.usados?' (menos lo que ya pediste)':''}. Llevas ${money(info.ganado)} ganado${falta>info.ganado?`; necesitas llegar a ${money(falta)}`:''}.</p>`}
   const hist=Ar.filter(x=>x!==pend).sort((x,y)=>(y.creado||'').localeCompare(x.creado||''));
-  const [qa,qb]=qActual();return `<div class="adel"><h3>Adelanto de quincena</h3><small>Quincena del ${+qa.slice(8)} al ${+qb.slice(8)}: llevas ${money(info.ganado)} ganado hasta hoy.${info.sal?` Tu fijo de ${money(salarioMes(soy)/2)} se va sumando día a día: hoy van ${money(info.sal)} y se completa al cierre de la quincena.`:''}</small>${body}${hist.length?`<div class="dia-g">${hist.map(x=>`<div class="svc-row"><span class="s">${money(x.monto)}</span><span class="v"><span class="chip ${x.estado==='aprobado'?'':'warn'}">${AD_EST[x.estado]||x.estado}</span></span><span class="c">${fechaCorta(x.fecha)}${x.metodo?' · '+MET_LBL[x.metodo]:''}</span></div>`).join('')}</div>`:''}</div>`;
+  const [qa,qb]=qActual();return `<div class="adel"><h3>Adelanto de quincena</h3><small>Quincena del ${+qa.slice(8)} al ${+qb.slice(8)}: llevas ${money(info.ganado)} ganado hasta hoy.${info.sal?` Tu fijo de ${money(salarioMes(soy,qa)/2)} se va sumando día a día: hoy van ${money(info.sal)} y se completa al cierre de la quincena.`:''}</small>${body}${hist.length?`<div class="dia-g">${hist.map(x=>`<div class="svc-row"><span class="s">${money(x.monto)}</span><span class="v"><span class="chip ${x.estado==='aprobado'?'':'warn'}">${AD_EST[x.estado]||x.estado}</span></span><span class="c">${fechaCorta(x.fecha)}${x.metodo?' · '+MET_LBL[x.metodo]:''}</span></div>`).join('')}</div>`:''}</div>`;
 }
 $('#miasOut').addEventListener('submit',async e=>{
   if(e.target.id!=='adelForm')return;e.preventDefault();if(!needDb())return;if(esExt(cfg.estilistas.find(x=>x.nombre===soy))){toast('Tu perfil no tiene adelantos.');return}
@@ -4031,7 +4034,7 @@ function xlVis(){$$('.xl-btn').forEach(b=>b.disabled=!dl);$$('.xl-off').forEach(
 
 /* ---------- ajustes ---------- */
 const AJ={
-  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin'],['color','color'],['abreCuentas','check']],src:()=>cfg.estilistas},
+  ajEst:{cols:[['nombre','text'],['whatsapp','text'],['area','text'],['pestanas','check'],['insumos','check'],['comision','number'],['salario','number'],['comisionFija','number'],['salAnt','number'],['salDesde','date'],['valorHora','number'],['alquiler','number'],['cafeteria','number'],['meta','number'],['decimo','check'],['ingreso','date'],['sinComision','list'],['tipo','tipo'],['pin','pin'],['color','color'],['abreCuentas','check']],src:()=>cfg.estilistas},
   ajVAlq:{cols:[['nombre','text'],['precio','number']],src:()=>vaProds()},
   ajPrem:{cols:[['nombre','text'],['tipo','ptipo'],['puntos','number'],['monto','number'],['temporada','text'],['desde','date'],['hasta','date']],src:()=>cfg.premios||[]},
   ajSvc:{cols:[['nombre','text'],['area','text'],['pestana','text'],['categoria','text'],['precio','number'],['descuento','number'],['descuentoPct','number'],['libre','check'],['minimo','number'],['detalle','check'],['especial','check'],['formula','check'],['variantes','list'],['precios','list'],['descuentosPct','list'],['extra','check'],['productos','list'],['sesiones','number']],src:()=>cfg.servicios},
