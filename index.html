@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="83d44e7c1de3"</script>
-<script src="web.js?v=83d44e7c1de3"></script>
+<script>window.BUILD="848345fad560"</script>
+<script src="web.js?v=848345fad560"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -405,7 +405,7 @@ body:not(.m-est) .only-est{display:none!important}
 #top .top-who b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}
 #top .top-who .btn{flex:none}
 #ayudaBtn{flex:none;width:30px;height:30px;padding:0;border-radius:50%;border:1.5px solid var(--accent);background:transparent;color:var(--accent);font:700 15px/1 inherit;display:grid;place-items:center;cursor:pointer}
-#avisos{position:fixed;top:10px;left:12px;right:12px;z-index:60;display:grid;gap:8px;max-width:520px;margin:0 auto;pointer-events:none}
+#avisos{position:fixed;top:10px;left:12px;right:12px;z-index:60;display:grid;gap:6px;max-width:520px;margin:0 auto;pointer-events:none}#avisos>*,.av-lista>*{min-width:0;max-width:100%;box-sizing:border-box}.aviso,.av-it{overflow:hidden}.aviso>button,.av-it>button{flex:none}.aviso .av-t,.av-it .av-t{flex:1;min-width:0;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;line-height:1.3}.aviso{padding:8px 8px 8px 14px!important;font-size:14px}.aviso.urg,.av-it.urg{border-color:var(--bad,#e57373)!important}.av-n{flex:none;border:1px solid var(--line);background:none;color:var(--ink);border-radius:999px;padding:4px 10px;font-weight:700;cursor:pointer}.av-lista{pointer-events:auto;display:grid;gap:6px;background:#17150F;border:1px solid var(--line);border-radius:14px;padding:8px;box-shadow:0 10px 30px rgba(0,0,0,.5);max-height:50vh;overflow:auto}.av-it{display:flex;gap:8px;align-items:center;padding:6px 8px;border:1px solid var(--line);border-radius:10px;font-size:14px}
 .aviso{pointer-events:auto;display:flex;gap:10px;align-items:center;background:#17150F;color:var(--ink);border:1.5px solid var(--accent);border-radius:14px;padding:12px 12px 12px 16px;box-shadow:0 10px 30px rgba(0,0,0,.5);animation:avIn .25s ease-out}
 .aviso>span{flex:1;line-height:1.35}.aviso .av-x{border:0;background:none;color:var(--muted);font-size:22px;line-height:1;cursor:pointer;padding:2px 6px}
 @keyframes avIn{from{transform:translateY(-12px);opacity:0}to{transform:none;opacity:1}}
@@ -1448,12 +1448,17 @@ document.addEventListener('click',async e=>{const pg=e.target.closest('[data-dec
 const AV={t0:Date.now(),prev:{},q:[]};
 function avReset(){AV.t0=Date.now();AV.prev={}}
 function avBeep(){try{const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=avBeep.c||(avBeep.c=new C()),o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=880;g.gain.setValueAtTime(.0001,c.currentTime);g.gain.exponentialRampToValueAtTime(.18,c.currentTime+.02);g.gain.exponentialRampToValueAtTime(.0001,c.currentTime+.35);o.connect(g);g.connect(c.destination);o.start();o.stop(c.currentTime+.4)}catch(e){}}
-function avisar(txt,tabDest){const box=$('#avisos');if(!box)return;const d=document.createElement('div');d.className='aviso';d.setAttribute('role','status');
-  d.innerHTML=`<span>${txt}</span>${tabDest?`<button type="button" class="btn small" data-av-ir="${tabDest}">Ver</button>`:''}<button type="button" class="av-x" aria-label="Cerrar">×</button>`;
-  box.prepend(d);while(box.children.length>3)box.lastChild.remove();setTimeout(()=>d.remove(),12000);
+let AVQ=[],avAbierto=false,avTim=null;
+function avisar(txt,tabDest,o){o=o||{};if(o.k)AVQ=AVQ.filter(x=>x.k!==o.k);AVQ.unshift({txt,tab:tabDest,urg:!!o.urg,k:o.k||'',sub:o.sub||'',id:Date.now()+Math.random()});AVQ=AVQ.slice(0,12);avRender();
+  clearTimeout(avTim);avTim=setTimeout(()=>{if(!avAbierto){AVQ=[];avRender()}},15000);
   try{navigator.vibrate&&navigator.vibrate([120,60,120])}catch(e){}avBeep()}
-document.addEventListener('click',e=>{const ir=e.target.closest('[data-av-ir]');if(ir){const t=ir.dataset.avIr;ir.closest('.aviso').remove();setTab(t);return}
-  const x=e.target.closest('.av-x');if(x)x.closest('.aviso').remove()});
+function avRender(){const box=$('#avisos');if(!box)return;if(!AVQ.length){box.innerHTML='';return}const a=AVQ[0],n=AVQ.length,urg=AVQ.some(x=>x.urg);
+  const row=(x,i)=>`<div class="av-it${x.urg?' urg':''}"><span class="av-t">${x.txt}</span>${x.tab?`<button type="button" class="btn small" data-av-ir="${i}">Ver</button>`:''}</div>`;
+  box.innerHTML=`<div class="aviso${urg?' urg':''}" role="status"><span class="av-t">${a.txt}</span>${n>1?`<button type="button" class="av-n" data-av-mas aria-label="Ver los ${n} avisos">${avAbierto?'▲':'+'+(n-1)}</button>`:''}${a.tab&&n===1?`<button type="button" class="btn small" data-av-ir="0">Ver</button>`:''}<button type="button" class="av-x" aria-label="Cerrar avisos">×</button></div>${avAbierto&&n>1?`<div class="av-lista">${AVQ.map(row).join('')}</div>`:''}`}
+document.addEventListener('click',e=>{const ir=e.target.closest('[data-av-ir]');if(ir){const x=AVQ[+ir.dataset.avIr];AVQ.splice(+ir.dataset.avIr,1);if(!AVQ.length)avAbierto=false;avRender();if(x){setTab(x.tab);if(x.sub&&typeof invSub!=='undefined'){invSub=x.sub;try{renderInv()}catch(er){}}}return}
+  if(e.target.closest('[data-av-mas]')){avAbierto=!avAbierto;avRender();return}
+  if(e.target.closest('.av-x')){AVQ=[];avAbierto=false;avRender()}});
+function avDiffNuevos(k,items){const cur={};items.forEach(x=>cur[x.id]=x.estado||'');const prev=AV.prev[k];AV.prev[k]=cur;if(!prev||Date.now()-AV.t0<6000)return [];return items.filter(x=>prev[x.id]===undefined||prev[x.id]!==(x.estado||''))}
 function avDiff(k,items,msg,tabDest){const cur={};items.forEach(x=>cur[x.id]=x.estado||'');const prev=AV.prev[k];AV.prev[k]=cur;
   if(!prev||Date.now()-AV.t0<6000)return;
   items.forEach(x=>{const p=prev[x.id];if(p===undefined||p!==(x.estado||'')){const m=msg(x,p);if(m)avisar(m,tabDest)}})}
@@ -1468,7 +1473,7 @@ function revisarAvisos(){if(!modo)return;
     avDiff('ext',extPend,x=>`⏰ <b>${esc(x.estilista)}</b> pide ${x.tipo==='domingo'?'pago de domingo':`${x.horas||1} hora${(x.horas||1)>1?'s':''} extra`}`,'resumen');
     try{avDiff('alq',alqPorRevisar(),x=>`🏠 <b>${esc(x.estilista)}</b> envió su pago de alquiler (${money(x.monto)})`,'resumen')}catch(e){}
     avDiff('inva',invAl,x=>`🎨 ${x.tipo==='exceso'?'Gramos de más':x.tipo==='sinAbrir'?'Tubo usado sin abrir en caja':x.tipo==='sinStock'?'Tinte sin existencia':'Tinte fuera del inventario'}: <b>${esc(x.producto)}</b> · ${esc(x.estilista)}`,'inv');
-    avDiff('ins',insumos.filter(x=>x.estado==='pedido'),x=>`📦 Se está acabando: <b>${esc(x.producto)}</b>${x.urgente?' · urgente':''}`,'inv');
+    {const P=insumos.filter(x=>x.estado==='pedido');if(avDiffNuevos('ins',P).length){const u=P.filter(x=>x.urgente).length;avisar(`📦 <b>${P.length} producto${P.length>1?'s':''}</b> se ${P.length>1?'están':'está'} acabando${u?` · <b class="neg">${u} urgente${u>1?'s':''}</b>`:''}`,'inv',{k:'ins',urg:u>0,sub:'comp'})}}
   }
   if(modo==='caja'){subInv();avDiff('tubo',invs.filter(p=>p.tinte&&tuboResta(p)!=null&&tuboResta(p)<=tuboCap(p)*0.2).map(p=>({id:p.id,estado:'bajo',p})),x=>`🎨 Al tubo abierto de <b>${esc(x.p.marca||'')} ${esc(x.p.nombre)}</b> le quedan ~${tuboResta(x.p)} g. Ten listo uno nuevo${+x.p.cerr?'':' (no quedan cerrados)'}.`,'inv')}
   if(modo==='caja')avDiff('form',formPend.map(l=>({...l,estado:'p'})),x=>`🎨 ${esc(x.estilista)} hizo <b>${esc(x.servicio)}</b> a ${esc(x.cliente)} · falta anotar la fórmula`,'caja');
