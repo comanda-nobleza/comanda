@@ -917,6 +917,14 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
         <small>Lo que queda debiendo se guarda en su ficha y sale en su próxima cuenta para cobrarlo. Los profesionales cobran su comisión normal.</small>
       </div>
     </fieldset>
+    <fieldset data-p="3" id="cqBox">
+      <legend>Cargo a quincena (consumo del personal)</legend>
+      <label for="cqOn" style="display:flex;flex-wrap:nowrap;gap:10px;align-items:center;font-weight:600"><input type="checkbox" id="cqOn" style="width:22px;height:22px;flex:none"> No paga en caja: se descuenta de la quincena de un profesional</label>
+      <div id="cqCampos" hidden style="display:grid;gap:8px">
+        <div class="row" style="gap:8px"><label class="f" for="cqEst" style="flex:2">¿A quién se le descuenta?<select id="cqEst"></select></label><label class="f" for="cqPartes" style="flex:1">¿En cuántas quincenas?<select id="cqPartes"><option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option></select></label></div>
+        <div id="cqInfo"></div>
+      </div>
+    </fieldset>
     <fieldset data-p="3" id="pagoBox">
       <legend>3 · Lo que pagó la clienta</legend>
       <div class="notice warn tel-movil-ef" hidden style="margin:0">Desde el teléfono se cobra <b>solo con tarjeta o Yappy</b>. El efectivo lo recibe quien tiene la caja, en la computadora.</div>
@@ -1749,10 +1757,11 @@ function concilia(c,fz){
   const canjeL=c.cob.filter(t=>t.canjePuntos&&+t.canjePuntos.monto>0),canje=r2(canjeL.reduce((s,t)=>s+(+t.canjePuntos.monto||0),0));
   const abL=c.abiertas.map(t=>({t,monto:r2(lineas.filter(l=>l.ticketId===t.id).reduce((s,l)=>s+(+l.precio||0),0))})),ab=r2(abL.reduce((s,x)=>s+x.monto,0));
   const debL=c.cob.filter(t=>t.abono&&+t.abono.debe>0),deb=r2(debL.reduce((s,t)=>s+(+t.abono.debe||0),0));
-  const esperado=r2(c.totalComandas-c.cort-canje-ab-deb),sinExpC=r2(esperado-c.sub);
+  const cqL=c.cob.filter(t=>t.cargoQ&&+t.cargoQ.monto>0),cq=r2(cqL.reduce((s,t)=>s+(+t.cargoQ.monto||0),0));
+  const esperado=r2(c.totalComandas-c.cort-canje-ab-deb-cq),sinExpC=r2(esperado-c.sub);
   const psc=lineas.filter(l=>l.sinCom),pscT=r2(psc.reduce((s,l)=>s+(+l.precio||0),0));
   const pend=met.some(x=>Math.abs(x.sinExp)>=0.005)||Math.abs(sinExpC)>=0.005,faltaZ=met.filter(x=>x.z==null).map(x=>MET_LBL[x.m]);
-  return {faltaZ,met,canjeL,canje,abL,ab,debL,deb,esperado,sinExpC,psc,pscT,pend}}
+  return {faltaZ,met,canjeL,canje,abL,ab,debL,deb,cqL,cq,esperado,sinExpC,psc,pscT,pend}}
 const DIF_MOT=['Paquete pagado por adelantado','Shampoo Fanola','Cortesía no registrada','Servicio autorizado por gerencia','Otro'];
 function difLista(c,K0){const L=[],lo=cierre.lote||{},sob=(v,a,b)=>v>0?`${a} ${money(v)}`:`${b} ${money(-v)}`;
   K0.met.filter(x=>x.z!=null&&Math.abs(x.sinExp)>=0.005).forEach(x=>L.push({k:'met:'+x.m,lbl:`${MET_LBL[x.m]}: Fiscal Z contra total real`,monto:x.sinExp,txt:sob(x.sinExp,'Sobran en lo real','Faltan en lo real')}));
@@ -1783,12 +1792,23 @@ function conciliaHtml(c,k){
   k.canjeL.forEach(t=>h+=row(`− Canje de puntos · ${esc(t.cliente)}${t.canjePuntos.premio?' · '+esc(t.canjePuntos.premio):''}`,'−'+money(t.canjePuntos.monto)));
   k.abL.forEach(x=>h+=row(`− Cuenta sin cobrar todavía · ${esc(x.t.cliente)}`,'−'+money(x.monto)));
   (k.debL||[]).forEach(t=>h+=row(`− Abono: queda debiendo · ${esc(t.cliente)}`,'−'+money(t.abono.debe)));
+  (k.cqL||[]).forEach(t=>h+=row(`− Cargo a quincena de ${esc(t.cargoQ.estilista)} · ${esc(t.cliente)}`,'−'+money(t.cargoQ.monto)));
   h+=row('= Debería coincidir con el subtotal cobrado',money(k.esperado),'tot');
   h+=row('Subtotal cobrado (ventas sin ITBMS)',money(c.sub));
   h+=Math.abs(k.sinExpC)<0.005?row('✓ Comandas y cobros cuadran','','ok'):row('Sin explicar: explícalo arriba, en «Diferencias por explicar»',money(k.sinExpC),'bad');
   if(k.psc.length)h+=row(`Incluye productos sin comisión: ${k.psc.map(l=>`${esc(l.producto)} (${esc(l.estilista)})`).join(', ')}`,money(k.pscT),'info');
   if(vaDia.length){h+=row('Aparte · Ventas a alquilados (no facturadas, no van en el Fiscal Z ni en las comandas)',money(vaTot()),'info');vaDia.forEach(v=>h+=row(`${esc(v.estilista)} · ${esc(vaDesc(v))} · ${v.metodo==='pendiente'?'PENDIENTE: al cierre pasa al alquiler':VA_MET[v.metodo]||v.metodo}`,money(v.total),v.metodo==='pendiente'?'bad':'info'))}
   return h+'</div>'}
+
+/* ---------- cargo a quincena ---------- */
+const cqOn=()=>!!($('#cqOn')&&$('#cqOn').checked);
+function cqReset(){if(!$('#cqOn'))return;$('#cqOn').checked=false;$('#cqCampos').hidden=true;$('#cqEst').innerHTML='<option value="">— elige —</option>'+cfg.estilistas.filter(e=>!e.inactivo).map(e=>`<option>${esc(e.nombre)}</option>`).join('');$('#cqPartes').value='1';$('#cqInfo').innerHTML=''}
+function cqFechas(n){const out=[hoy()];let d=new Date();for(let k=1;k<n;k++){const day=d.getDate();if(day<=15)d=new Date(d.getFullYear(),d.getMonth(),16);else d=new Date(d.getFullYear(),d.getMonth()+1,1);out.push(ymd(d))}return out}
+function cqPartes(m,n){const p=r2(Math.floor(m*100/n)/100),L=Array(n).fill(p);L[n-1]=r2(m-p*(n-1));return L}
+function cqInfoRender(){const b=$('#cqInfo');if(!b)return;const t=cobroTotales();if(!t||!cqOn()){b.innerHTML='';return}const e=$('#cqEst').value,n=+$('#cqPartes').value||1,P=cqPartes(t.carg,n),F=cqFechas(n);
+  b.innerHTML=`<div class="notice" style="margin:0">${e?`Se le descuenta a <b>${esc(e)}</b>: `:'<span class="neg">Elige a quién se le descuenta.</span> '}${P.map((v,i)=>`<b>${money(v)}</b> en la quincena del ${fechaCorta(F[i])}`).join(' · ')}<br><small>En caja no se cobra nada. El profesional que hizo el servicio cobra su comisión normal.</small></div>`}
+document.addEventListener('change',e=>{if(e.target.id==='cqOn'){const on=cqOn();$('#cqCampos').hidden=!on;if(on){$('#cobroItbms').checked=false;if(abOn()){$('#abOn').checked=false;$('#abCampos').hidden=true;$('#abMonto').value=''}}refreshCobro();const t=cobroTotales();METODOS.forEach(m=>$(pId(m)).value='');if(!on&&t)$('#pTarjeta').value=t.total>0.004?t.total.toFixed(2):'';refreshCuadra();cqInfoRender()}
+  if(e.target.id==='cqEst'||e.target.id==='cqPartes')cqInfoRender()});
 
 /* ---------- abonos y saldos pendientes ---------- */
 const abOn=()=>!!($('#abOn')&&$('#abOn').checked);
@@ -2873,7 +2893,7 @@ function ptsDuplicados(m){const g={};m.filter(x=>x.tipo==='gana'&&x.ticketId).fo
 /* Los puntos se ganan solo por lo que se pagó a precio completo: los servicios con descuento, precio especial o canje no suman */
 function ptsPromo(l){return (descPct()>0&&descSel.has(l.id))||!!l.descCli||(l.descuentoCliente&&+l.descuentoCliente.pct>0)||(l.especial&&l.especial.estado!=='rechazado')||!!l.canje||!!(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo==='servicio'&&cobroPts.canje.lineaId===l.id)}
 function ptsBase(){const ls=cobroTicket?lineasDe(cobroTicket).filter(l=>+l.precio>0||l.descCli):[],t=cobroTotales();let b=ls.filter(l=>!ptsPromo(l)).reduce((a,l)=>a+(+l.precio||0)*(l.paqueteSes?0.5:1)*(l.ptsMult!=null?+l.ptsMult:1),0);
-  if(t){if(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo!=='servicio')b-=t.dPts||0;b-=t.cort||0;if(t.deb>0&&t.sub0>0)b*=t.sub/t.sub0}return Math.max(0,r2(b))}
+  if(t){if(cobroPts&&cobroPts.canje&&cobroPts.canje.premio.tipo!=='servicio')b-=t.dPts||0;b-=t.cort||0;if(((t.deb||0)+(t.carg||0))>0&&t.sub0>0)b*=t.sub/t.sub0}return Math.max(0,r2(b))}
 function ptsSinMotivo(){const ls=cobroTicket?lineasDe(cobroTicket):[],ex=ls.filter(l=>(+l.precio>0||l.descCli)&&ptsPromo(l));if(!ex.length&&!(typeof cortOn==='function'&&cortOn())&&!ls.some(l=>l.paqueteSes&&+l.precio>0))return '';
   const pq=ls.filter(l=>l.paqueteSes&&+l.precio>0&&!ptsPromo(l));return [ex.length?`${ex.map(l=>l.servicio).join(', ')} no suma${ex.length>1?'n':''} (tiene${ex.length>1?'n':''} descuento o promoción)`:(typeof cortOn==='function'&&cortOn()?'es cortesía':''),pq.length?'los paquetes suman la mitad de los puntos':''].filter(Boolean).join(' · ')}
 function ptsGana(){return Math.floor(ptsBase()*ptsDolar())}
@@ -2996,7 +3016,7 @@ document.addEventListener('click',async e=>{
   else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&modo==='caja'&&!duena&&l0.estilista===cajero)revisarLog('quito-propio',l0.cliente,`Quitó su propio ${l0.servicio} (${money(l0.precio)}) de la cuenta`);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
     await db.doc('lineas/'+id).delete();if(l0&&l0.paqueteId)await paqRecontar(l0.paqueteId);if(l0&&l0.invId)try{await invMover(l0.invId,{dc:1,tipo:'Venta anulada',nota:l0.cliente||''})}catch(err){}}catch(err){toast('No se pudo quitar.')}}
   else if(act==='del-ticket'){if(!armed(b))return;try{await db.doc('tickets/'+id).delete()}catch(err){toast('No se pudo eliminar.')}}
-  else if(act==='reabrir'){{const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede reabrir la cuenta. Pide a gerencia que abra el cierre.');return}}if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta',abono:null});await reabrirPts(id);try{await saldosReabrir(id)}catch(er){}toast('Comanda reabierta. Los puntos de esa cuenta se quitaron; se vuelven a sumar al cerrarla.')}catch(err){toast('No se pudo reabrir.')}}
+  else if(act==='reabrir'){{const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede reabrir la cuenta. Pide a gerencia que abra el cierre.');return}}if(!armed(b))return;try{await db.doc('tickets/'+id).update({estado:'abierta',abono:null,cargoQ:null});await reabrirPts(id);try{await saldosReabrir(id)}catch(er){}try{const dq=await db.collection('descuentos').where('ticketId','==',id).get();for(const d of dq.docs)await d.ref.delete()}catch(er){}toast('Comanda reabierta. Los puntos de esa cuenta se quitaron; se vuelven a sumar al cerrarla.')}catch(err){toast('No se pudo reabrir.')}}
   else if(act==='del-gasto'){if(diaCerrado()){toast('El cierre de este día ya se guardó.');return}if(!armed(b))return;try{await db.doc('gastos/'+id).delete()}catch(err){toast('No se pudo borrar.')}}
 });
 $$('[data-close]').forEach(b=>b.onclick=()=>{b.closest('.sheet-bg').hidden=true});
@@ -3327,8 +3347,8 @@ async function aplicarDescCli(t,dCli,pct,motivo){if(!(dCli>0))return;const ex=co
     await db.doc('lineas/'+l.id).update({precio:np,descCli:{pct,monto:part,precioNormal:+l.precio||0,motivo,por,...(cambia?{insumosNormal:l.insumos,insTotNormal:+l.insumosTotal||0}:{})},...(cambia?{insumos:ins,insumosTotal:r2(ins.reduce((a,x)=>a+(+x.costo||0),0))}:{})})}}
 function cobroTotales(){
   const t=tickets.find(x=>x.id===cobroTicket);if(!t)return null;
-  const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),dCli=r2(descBase()*descPct()/100),cort=cortMontoDe(r2(bruto-dCli),dPts),sub0=r2(bruto-dPts-dCli-cort),deb=abDebeDe(sub0),sub=r2(sub0-deb), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
-  return {t,sub,imp,total:r2(sub+imp),bruto,dPts,dCli,cort,deb,sub0};
+  const bruto=subtotalDe(t.id),dPts=canjeMonto(t,bruto),dCli=r2(descBase()*descPct()/100),cort=cortMontoDe(r2(bruto-dCli),dPts),sub0=r2(bruto-dPts-dCli-cort),deb=abDebeDe(sub0),carg=cqOn()?r2(sub0-deb):0,sub=r2(sub0-deb-carg), imp=$('#cobroItbms').checked?r2(sub*(+cfg.itbms||0)/100):0;
+  return {t,sub,imp,total:r2(sub+imp),bruto,dPts,dCli,cort,deb,carg,sub0};
 }
 let cdOpen=null;
 function cobroLineaHtml(l){
@@ -3361,7 +3381,7 @@ function openCobro(id){if(modo==='caja'&&!duena&&!PRAC&&!esMovil&&cajaEstricta()
   cdOpen=null;
   {const t0=tickets.find(x=>x.id===id);if(t0&&diaCerrado(t0.fecha)){toast('El cierre de este día ya se guardó: no se puede cobrar. Pide a gerencia que abra el cierre.');return}}
   if(lineas.some(l=>l.ticketId===id&&l.especial&&l.especial.estado==='pendiente')){toast('Primero autoriza o rechaza el precio especial.');return}
-  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();abReset();descReset();setTimeout(()=>{const L=lineasDe(id);if(L.length&&L.every(l=>l.saldoId)&&$('#cobroItbms').checked){$('#cobroItbms').checked=false;refreshCobro();const tt=cobroTotales();if(tt){$('#pTarjeta').value=tt.total.toFixed(2);refreshCuadra()}}},0);tarjUser=false;cobroPaso(1);{const w=$('#cobroSheet .tel-movil-ef');if(w)w.hidden=!esMovil}
+  cobroTicket=id;const t=tickets.find(x=>x.id===id);if(!t)return;cortReset();abReset();cqReset();descReset();setTimeout(()=>{const L=lineasDe(id);if(L.length&&L.every(l=>l.saldoId)&&$('#cobroItbms').checked){$('#cobroItbms').checked=false;refreshCobro();const tt=cobroTotales();if(tt){$('#pTarjeta').value=tt.total.toFixed(2);refreshCuadra()}}},0);tarjUser=false;cobroPaso(1);{const w=$('#cobroSheet .tel-movil-ef');if(w)w.hidden=!esMovil}
   if(t.descSol&&t.descSol.estado!=='rechazada'&&+t.descSol.pct>0){const v=+t.descSol.pct;cobDesc=DESC_OP.includes(v)?{p:v,otro:false}:{p:0,otro:true};if(cobDesc.otro)$('#descOtro').value=v;$('#descMot').value=t.descSol.motivo||'';descSel=new Set((t.descSol.lineas||[]).filter(id=>lineasDe(t.id).some(l=>l.id===id)));renderDesc()}cobTerm={m:termLeer(),sg:''};$('#pscForm').hidden=true;$('#pscAdd').hidden=false;
   $('#cobroCliente').textContent=t.cliente;$('#cobroItbmsPct').textContent=cfg.itbms;
   $('#cobroItbms').checked=t.itbmsAplicado!==false;
@@ -3376,7 +3396,7 @@ function refreshCobro(){if(cobrando&&cobrando===cobroTicket)return;
   const tot=cobroTotales();if(!tot){$('#cobroSheet').hidden=true;return}
   $('#cobroLineas').innerHTML=lineasDe(tot.t.id).map(cobroLineaHtml).join('');
   renderPtsCobro();
-  $('#cobroTot').innerHTML=`${tot.dPts||tot.dCli?`<div class="l"><span>Servicios</span><span>${money(tot.bruto)}</span></div>`:''}${tot.dPts?`<div class="l"><span>Canje de puntos</span><span>−${money(tot.dPts)}</span></div>`:''}${tot.dCli?`<div class="l"><span>Descuento ${descPct()}%</span><span>−${money(tot.dCli)}</span></div>`:''}${tot.deb?`<div class="l"><span>Total de la cuenta</span><span>${money(tot.sub0)}</span></div><div class="l"><span>Queda debiendo (abono)</span><span>−${money(tot.deb)}</span></div>`:''}${tot.cort?`<div class="l"><span>Cortesía de gerencia</span><span>−${money(tot.cort)}</span></div>`:''}<div class="l"><span>Subtotal</span><span>${money(tot.sub)}</span></div><div class="l"><span>ITBMS</span><span>${money(tot.imp)}</span></div><div class="l t"><span>Total a cobrar</span><span>${money(tot.total)}</span></div>`;
+  $('#cobroTot').innerHTML=`${tot.dPts||tot.dCli?`<div class="l"><span>Servicios</span><span>${money(tot.bruto)}</span></div>`:''}${tot.dPts?`<div class="l"><span>Canje de puntos</span><span>−${money(tot.dPts)}</span></div>`:''}${tot.dCli?`<div class="l"><span>Descuento ${descPct()}%</span><span>−${money(tot.dCli)}</span></div>`:''}${tot.carg?`<div class="l"><span>Cargo a quincena${$('#cqEst').value?' de '+esc($('#cqEst').value):''}</span><span>−${money(tot.carg)}</span></div>`:''}${tot.deb?`<div class="l"><span>Total de la cuenta</span><span>${money(tot.sub0)}</span></div><div class="l"><span>Queda debiendo (abono)</span><span>−${money(tot.deb)}</span></div>`:''}${tot.cort?`<div class="l"><span>Cortesía de gerencia</span><span>−${money(tot.cort)}</span></div>`:''}<div class="l"><span>Subtotal</span><span>${money(tot.sub)}</span></div><div class="l"><span>ITBMS</span><span>${money(tot.imp)}</span></div><div class="l t"><span>Total a cobrar</span><span>${money(tot.total)}</span></div>`;
   $('#cobrarBtn').textContent='Cerrar cuenta · '+money(tot.total);refreshCuadra();
 }
 function pagos(){return {tarjeta:r2($('#pTarjeta').value),efectivo:r2($('#pEfectivo').value),yappy:r2($('#pYappy').value)}}
@@ -3431,14 +3451,18 @@ $('#cobroForm').addEventListener('submit',async e=>{
   if(descPct()&&!descSel.size){toast('Marca a qué servicio se le aplica el descuento.');$('#descBox').scrollIntoView({block:'center'});return}
   if(descPct()&&!$('#descMot').value.trim()){toast('Escribe el motivo del descuento.');$('#descMot').focus();return}
   if(!descAutOk()){toast(`Más de ${DESC_MAX_CAJA}% necesita autorización de gerencia. Toca «Pedir autorización a gerencia».`);$('#descBox').scrollIntoView({block:'center'});return}
+  if(cqOn()&&!$('#cqEst').value){toast('Elige a qué profesional se le descuenta de la quincena.');$('#cqEst').focus();return}
   if(abOn()){const v=r2($('#abMonto').value);if(!(v>0)||v>=tot.sub0){toast(`Escribe cuánto abona hoy (menos de ${money(tot.sub0)}).`);$('#abMonto').focus();return}}
   const p=c.net,propinas=c.props;
   let terminales=null;{const tj=r2(+p.tarjeta||0);if(tj>0.004){if(!cobTerm.m){toast('Toca en qué punto pasó la tarjeta: St. Georges o Banesco.');$('#termBox').scrollIntoView({block:'center'});return}
     if(cobTerm.m==='dos'){const sg=r2(cobTerm.sg);if(!(sg>0&&sg<tj)){toast('Escribe cuánto pasó por St. Georges (el resto va a Banesco).');$('#termSg')?.focus();return}terminales={sg,bz:r2(tj-sg)}}else terminales={[cobTerm.m]:tj}}}
   $('#cobrarBtn').disabled=true;cobrando=tot.t.id;
   try{const ya=await db.doc('tickets/'+tot.t.id).get();if(ya.exists&&ya.data().estado==='cobrada'){toast(`Esta cuenta ya la cerró ${ya.data().cobradoPor||'otra persona de caja'}. No se cobró de nuevo.`);$('#cobroSheet').hidden=true;$('#cobrarBtn').disabled=false;cobrando=null;return}}catch(err){}
-  try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),...(tot.deb>0?{abono:{paga:tot.sub,debe:tot.deb,total:tot.sub0}}:{abono:null}),puntosGanados:cobroPts.tel?ptsGana(tot.sub):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
+  try{await db.doc('tickets/'+tot.t.id).update({estado:'cobrada',subtotal:tot.sub,itbmsAplicado:$('#cobroItbms').checked,impuesto:tot.imp,total:tot.total,pagos:p,terminales,propinas,recibido:c.p,vuelto:c.vuelto,cobrado:new Date().toISOString(),cobradoPor:cajero||encargada(),canjePuntos:cobroPts.canje?{premio:cobroPts.canje.premio.nombre,puntos:+cobroPts.canje.premio.puntos,monto:tot.dPts}:null,...(tot.cort?{cortesia:{monto:tot.cort,motivo:$('#cortMot').value,nota:$('#cortNota').value.trim(),marcadaPor:cajero||encargada(),servicios:lineasDe(tot.t.id).map(l=>l.servicio).join(', '),profesionales:[...new Set(lineasDe(tot.t.id).map(l=>l.estilista))].join(', ')},cortesiaEstado:'pendiente'}:{cortesia:null,cortesiaEstado:null}),...(tot.deb>0?{abono:{paga:tot.sub,debe:tot.deb,total:tot.sub0}}:{abono:null}),...(tot.carg>0?{cargoQ:{estilista:$('#cqEst').value,monto:tot.carg,partes:+$('#cqPartes').value||1}}:{cargoQ:null}),puntosGanados:cobroPts.tel?ptsGana(tot.sub):0,descCli:tot.dCli?{pct:descPct(),monto:tot.dCli,motivo:$('#descMot').value.trim(),por:cajero||encargada()}:null});
     try{await aplicarDescCli(tot.t,tot.dCli,descPct(),$('#descMot').value.trim())}catch(err){}
+    if(tot.carg>0){try{const e=$('#cqEst').value,n=+$('#cqPartes').value||1,P=cqPartes(tot.carg,n),F=cqFechas(n),sv=lineasDe(tot.t.id).filter(l=>+l.precio>0).map(l=>String(l.servicio).split(':')[0]).join(' + ').slice(0,80);
+      for(let i=0;i<n;i++)await db.collection('descuentos').add({estilista:e,fecha:F[i],monto:P[i],detalle:`Consumo en el salón · ${sv}${n>1?` (${i+1} de ${n})`:''} · ${fechaCorta(hoy())}`,origen:'cargo',ticketId:tot.t.id,creado:new Date().toISOString(),por:cajero||encargada()});
+      revisarLog('cargo-q',tot.t.cliente,`Cargo a quincena de ${e}: ${money(tot.carg)} en ${n} parte${n>1?'s':''} (${sv})`)}catch(err){toast('Ojo: no se pudo guardar el cargo a la quincena.')}}
     try{const L=lineasDe(tot.t.id);if(tot.deb>0){const pq=L.some(l=>l.paqueteSes),mx=L.filter(l=>!l.saldoId).sort((a,b)=>(+b.precio||0)-(+a.precio||0))[0];
         await db.collection('saldos').add({cliente:tot.t.cliente,clienteKey:tot.t.clienteKey||ckey(tot.t.cliente),ticketId:tot.t.id,fecha:tot.t.fecha||hoy(),total:tot.sub0,saldo:tot.deb,detalle:L.filter(l=>!l.saldoId&&+l.precio>0).map(l=>String(l.servicio).split(' · sesión')[0]).filter((v,i,a)=>a.indexOf(v)===i).join(' + ').slice(0,120),estilista:mx?mx.estilista:'',ptsMult:pq?0.5:1,estado:'pend',creado:new Date().toISOString(),por:cajero||encargada()})}
       for(const l of L.filter(l=>l.saldoId)){const r=db.doc('saldos/'+l.saldoId),d=await r.get();if(d.exists){const x=d.data(),nv=r2(Math.max(0,(+x.saldo||0)-(+l.precio||0)));await r.update({saldo:nv,estado:nv<0.005?'pagado':'pend',pagos:[...(x.pagos||[]),{ticketId:tot.t.id,monto:+l.precio||0,fecha:hoy()}]})}}}catch(err){toast('Ojo: no se pudo guardar el saldo pendiente.')}
@@ -3761,7 +3785,7 @@ function hojaCierre(c,fz){
   DL.push(['Total comandas (registrado por los profesionales)',c.totalComandas]);
   c.cortL.forEach(t=>DL.push([`− Cortesía de gerencia · ${t.cliente} · ${t.cortesia.motivo}${t.cortesiaEstado==='pendiente'?' (por aprobar)':''}`,-t.cortesia.monto]));
   K.canjeL.forEach(t=>DL.push([`− Canje de puntos · ${t.cliente}`,-t.canjePuntos.monto]));
-  K.abL.forEach(x=>DL.push([`− Cuenta sin cobrar todavía · ${x.t.cliente}`,-x.monto]));(K.debL||[]).forEach(t=>DL.push([`− Abono: queda debiendo · ${t.cliente}`,-t.abono.debe]));
+  K.abL.forEach(x=>DL.push([`− Cuenta sin cobrar todavía · ${x.t.cliente}`,-x.monto]));(K.debL||[]).forEach(t=>DL.push([`− Abono: queda debiendo · ${t.cliente}`,-t.abono.debe]));(K.cqL||[]).forEach(t=>DL.push([`− Cargo a quincena de ${t.cargoQ.estilista} · ${t.cliente}`,-t.cargoQ.monto]));
   DL.push(['= Debería coincidir con el subtotal cobrado',K.esperado,0,1]);DL.push(['Subtotal cobrado',c.sub]);
   DL.push(Math.abs(K.sinExpC)<0.005?['✓ Comandas y cobros cuadran','']:['SIN EXPLICAR (ver notas)',K.sinExpC,1]);
   if(K.psc.length)DL.push([`Incluye productos sin comisión: ${K.psc.map(l=>`${l.producto} (${l.estilista})`).join(', ')}`,K.pscT]);
@@ -3874,7 +3898,7 @@ function dibujarCierre(doc){
   DL.push(['Total comandas (registrado por los profesionales)',M$(c.totalComandas)]);
   c.cortL.forEach(t=>DL.push([`- Cortesía de gerencia · ${t.cliente} · ${t.cortesia.motivo}${t.cortesiaEstado==='pendiente'?' (por aprobar)':''}`,'-'+M$(t.cortesia.monto)]));
   K.canjeL.forEach(t=>DL.push([`- Canje de puntos · ${t.cliente}`,'-'+M$(t.canjePuntos.monto)]));
-  K.abL.forEach(x=>DL.push([`- Cuenta sin cobrar todavía · ${x.t.cliente}`,'-'+M$(x.monto)]));(K.debL||[]).forEach(t=>DL.push([`- Abono: queda debiendo · ${t.cliente}`,'-'+M$(t.abono.debe)]));
+  K.abL.forEach(x=>DL.push([`- Cuenta sin cobrar todavía · ${x.t.cliente}`,'-'+M$(x.monto)]));(K.debL||[]).forEach(t=>DL.push([`- Abono: queda debiendo · ${t.cliente}`,'-'+M$(t.abono.debe)]));(K.cqL||[]).forEach(t=>DL.push([`- Cargo a quincena de ${t.cargoQ.estilista} · ${t.cliente}`,'-'+M$(t.cargoQ.monto)]));
   DL.push(['= Debería coincidir con el subtotal cobrado',M$(K.esperado),0,1]);DL.push(['Subtotal cobrado',M$(c.sub)]);
   DL.push(Math.abs(K.sinExpC)<0.005?['Comandas y cobros cuadran ✓','']:['SIN EXPLICAR (ver notas)',M$(K.sinExpC),1]);
   if(K.psc.length)DL.push([`Incluye productos sin comisión: ${K.psc.map(l=>`${l.producto} (${l.estilista})`).join(', ')}`,M$(K.pscT)]);
