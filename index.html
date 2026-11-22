@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="43ac986314f9"</script>
-<script src="web.js?v=43ac986314f9"></script>
+<script>window.BUILD="10d25e397b2f"</script>
+<script src="web.js?v=10d25e397b2f"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2380,14 +2380,14 @@ async function renderMias(){
    if(inq&&per==='quincena'){per='mes';perOff=0;$$('#v-mias [data-per]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.per==='mes'))}}
   const [a,b,lbl]=rangoPer();$('#perLbl').textContent=lbl;$('#perNext').disabled=perOff>=0;
   let L,T;
-  if(a===hoy()&&b===hoy()&&dia===hoy()){L=lineas.filter(l=>l.estilista===soy);T=tickets}
+  if(a===hoy()&&b===hoy()&&dia===hoy()){lineasSinDescFix();L=lineas.filter(l=>l.estilista===soy);T=tickets}
   else{
     if(!db){$('#miasOut').innerHTML='<div class="empty">Sin conexión.</div>';return}
     const key=a+b;
     if(!miasCache||miasCache.key!==key){
       $('#miasOut').innerHTML='<div class="empty">Cargando…</div>';
       try{const [ls,ts]=await Promise.all([db.collection('lineas').where('fecha','>=',a).where('fecha','<=',b).where('estilista','==',soy).limit(1000).get(),db.collection('tickets').where('fecha','>=',a).where('fecha','<=',b).limit(1000).get()]);
-        miasCache={key,L:ls.docs.map(d=>({id:d.id,...d.data()})),T:ts.docs.map(d=>({id:d.id,...d.data()}))};
+        miasCache={key,L:ls.docs.map(d=>({id:d.id,...d.data()})),T:ts.docs.map(d=>({id:d.id,...d.data()}))};lineasSinDescFix(miasCache.L);
       }catch(e){$('#miasOut').innerHTML='<div class="empty">No se pudo cargar ('+esc(e.code)+').</div>';return}
       if(rangoPer()[0]+rangoPer()[1]!==key)return;
     }
@@ -3098,7 +3098,7 @@ const usaCatTabs=a=>a!=='Manicura'&&catsDe(a).filter(Boolean).length>=3;
 function precioLbl(s){if(s.precios&&s.precios.length)return s.precios.length>2?`${money(Math.min(...s.precios))} a ${money(Math.max(...s.precios))}`:s.precios.map(v=>money(v)).join(' o ');return s.libre?(s.minimo?'desde '+money(s.minimo):'tú pones el precio'):money(s.precio)}
 /* servicio con producto que trae la clienta: no lleva descuento de material */
 const svcSinDesc=n=>/producto\s+(de|del)\s+(la\s+|el\s+)?client|tra[ií]d[oa]\s+por\s+(la\s+|el\s+)?client/i.test(String(n||''));
-function lineasSinDescFix(){if(modo!=='caja'||!db)return;lineas.forEach(l=>{if(l._sdf||!svcSinDesc(l.servicio)||!Array.isArray(l.insumos))return;const ok=l.insumos.filter(x=>!(x.porcion==='descuento fijo'||/^material \d/.test(x.porcion||'')));if(ok.length===l.insumos.length)return;l._sdf=1;db.doc('lineas/'+l.id).update({insumos:ok,insumosTotal:r2(ok.reduce((s,x)=>s+(+x.costo||0),0))}).catch(()=>{l._sdf=0})})}
+function lineasSinDescFix(arr){const A=arr||lineas;if(!db||!Array.isArray(A))return;A.forEach(l=>{if(!svcSinDesc(l.servicio)||!(+l.insumosTotal>0||(l.insumos||[]).length))return;l.insumos=[];l.insumosTotal=0;if(l._sdf)return;l._sdf=1;db.doc('lineas/'+l.id).update({insumos:[],insumosTotal:0}).catch(()=>{l._sdf=0})})}
 function insDisp(area){return cfg.insumos.map((p,i)=>({p,i})).filter(x=>area==null||!norm(x.p.area)||norm(x.p.area)===area)}
 function insDeItem(it){let r;if(Array.isArray(it.productos)){const ns=it.productos.map(n=>norm(n).toLowerCase());r=cfg.insumos.map((p,i)=>({p,i})).filter(x=>ns.includes(norm(x.p.nombre).toLowerCase()))}else r=insDisp(it.area);return r}
 function precioBase(it){return modo==='est'&&!it.libre?r2(it.precio):r2(it.precioIn)}
