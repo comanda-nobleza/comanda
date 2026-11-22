@@ -2007,7 +2007,7 @@ function vacDiasEn(n,a,b){let t=0;VAC.filter(x=>x.estilista===n&&x.tipo==='vac')
 /* fijo de un día: el fijo de la quincena repartido entre sus días sin domingo; el domingo no genera fijo (se paga aparte como domingo trabajado) */
 function salDiaFijo(n,f){const d=new Date(f+'T12:00:00');if(d.getDay()===0)return 0;const y=d.getFullYear(),m=d.getMonth(),ult=new Date(y,m+1,0).getDate(),[i0,i1]=d.getDate()<=15?[1,15]:[16,ult];let k=0;for(let i=i0;i<=i1;i++)if(new Date(y,m,i).getDay()!==0)k++;return k?r2(salarioMes(n,f)/2/k):0}
 function salQ(n,a,b,hasta){const sm=salarioMes(n,a);if(!sm)return 0;const tot=dd2(a,b),fin=hasta&&hasta<b?hasta:b,ing=ingresoDe(n),ini=ing&&ing>a?ing:a;if(ini>fin)return 0;
-  const van=dd2(ini,fin),vd=vacDiasEn(n,ini,fin);return Math.max(0,r2(sm/2*van/tot-valorDiaVac(n,ini)*vd))}
+  const van=dd2(ini,fin),vd=vacDiasEn(n,ini,fin);return Math.max(0,r2(sm/2*van/tot-salarioSolo(n,ini)/30*vd))}
 const fmtD=v=>{const r=r1(v);return (r%1?r.toFixed(1):String(r))+' día'+(r===1?'':'s')};
 const vacTxt=x=>x.tipo==='vac'?`${fechaCorta(x.desde)}${x.dias>1?' al '+fechaCorta(x.hasta):''} · Vacaciones · ${money(x.monto)}`:`${fechaCorta(x.desde)} · Falta cubierta con vacaciones`;
 function vacWa(x){const t=(cfg.estilistas.find(e=>e.nombre===x.estilista)||{}).whatsapp||(perfiles[x.estilista]||{}).whatsapp||'';
