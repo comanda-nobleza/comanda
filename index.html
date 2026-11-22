@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="6b90b73f238c"</script>
-<script src="web.js?v=6b90b73f238c"></script>
+<script>window.BUILD="7ec1fa4fbcf9"</script>
+<script src="web.js?v=7ec1fa4fbcf9"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2306,8 +2306,9 @@ function pintarResQ(d){
 
 /* ---------- render ---------- */
 function domFix1(){if(!duena||!db||!cfgLoaded||cfg.domFix1)return;cfg.domFix1=true;const u={domFix1:true};if(+cfg.pagoDomingo!==35){u.pagoDomingo=35;cfg.pagoDomingo=35}db.doc('config/main').update(u).catch(()=>{cfg.domFix1=false})}
-function salFix1(){if(!duena||!db||!cfgLoaded||cfg.salFix1||!cfg.estilistas.length)return;const P={pedro:[500,600],rita:[650,700]};let ch=false;const arr=cfg.estilistas.map(e=>{const k=Object.keys(P).find(k=>new RegExp('^'+k+'(\\s|$)','i').test(e.nombre||''));if(!k||e.salDesde)return e;const [ant,nue]=P[k],bono=+e.comisionFija||0;ch=true;const o={...e,salAnt:r2(ant-bono),salDesde:'2026-12-01'};return o});cfg.salFix1=true;db.doc('config/main').update({...(ch?{estilistas:arr}:{}),salFix1:true}).catch(()=>{cfg.salFix1=false})}
-function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{salFix1()}catch(e){}try{domFix1()}catch(e){}try{lineasSinDescFix()}catch(e){}try{subSaldos();const sr=$('#saldosRes');if(sr){const h=saldosResHtml();if(sr.innerHTML!==h)sr.innerHTML=h}}catch(e){}try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
+function salFix2(){if(!duena||!db||!cfgLoaded||cfg.salFix2||!cfg.estilistas.length)return;let ch=false;const arr=cfg.estilistas.map(e=>{if(!/^rita(\s|$)/i.test(e.nombre||''))return e;ch=true;return {...e,ritaPrev:{salario:e.salario??null,comisionFija:e.comisionFija??null,salAnt:e.salAnt??null},salario:700,comisionFija:0,salAnt:650,salDesde:'2026-12-01'}});if(ch)cfg.estilistas=arr;cfg.salFix2=true;db.doc('config/main').update({...(ch?{estilistas:arr}:{}),salFix2:true}).catch(()=>{cfg.salFix2=false})}
+function salFix1(){if(!duena||!db||!cfgLoaded||cfg.salFix1||!cfg.estilistas.length)return;const P={pedro:[500,600],rita:[650,700]};let ch=false;const arr=cfg.estilistas.map(e=>{const k=Object.keys(P).find(k=>new RegExp('^'+k+'(\\s|$)','i').test(e.nombre||''));if(!k||e.salDesde)return e;const [ant,nue]=P[k],bono=+e.comisionFija||0;ch=true;const o={...e,salAnt:r2(ant-bono),salDesde:'2026-12-01'};return o});if(ch)cfg.estilistas=arr;cfg.salFix1=true;db.doc('config/main').update({...(ch?{estilistas:arr}:{}),salFix1:true}).catch(()=>{cfg.salFix1=false})}
+function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{salFix1()}catch(e){}try{salFix2()}catch(e){}try{domFix1()}catch(e){}try{lineasSinDescFix()}catch(e){}try{subSaldos();const sr=$('#saldosRes');if(sr){const h=saldosResHtml();if(sr.innerHTML!==h)sr.innerHTML=h}}catch(e){}try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
   try{renderViejas()}catch(e){}
   try{revisarAvisos()}catch(e){}
   if(modo!=='caja'&&cajaLocked)aplicarLock();
