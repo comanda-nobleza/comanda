@@ -2001,6 +2001,8 @@ function vacGan(n,f){const ing=ingresoDe(n);f=f||hoy();if(!ing||f<ing)return 0;r
 const vacUsados=n=>VAC.filter(x=>x.estilista===n).reduce((s,x)=>s+(+x.dias||0),0);
 const vacDisp=n=>r1(vacGan(n)-vacUsados(n));
 function vacDiasEn(n,a,b){let t=0;VAC.filter(x=>x.estilista===n&&x.tipo==='vac').forEach(x=>{const xh=x.hasta||x.desde,i=x.desde>a?x.desde:a,h=xh<b?xh:b;if(i<=h)t+=dd2(i,h)});return t}
+/* fijo de un día: el fijo de la quincena repartido entre sus días sin domingo; el domingo no genera fijo (se paga aparte como domingo trabajado) */
+function salDiaFijo(n,f){const d=new Date(f+'T12:00:00');if(d.getDay()===0)return 0;const y=d.getFullYear(),m=d.getMonth(),ult=new Date(y,m+1,0).getDate(),[i0,i1]=d.getDate()<=15?[1,15]:[16,ult];let k=0;for(let i=i0;i<=i1;i++)if(new Date(y,m,i).getDay()!==0)k++;return k?r2(salarioMes(n)/2/k):0}
 function salQ(n,a,b,hasta){const sm=salarioMes(n);if(!sm)return 0;const tot=dd2(a,b),fin=hasta&&hasta<b?hasta:b,ing=ingresoDe(n),ini=ing&&ing>a?ing:a;if(ini>fin)return 0;
   const van=dd2(ini,fin),vd=vacDiasEn(n,ini,fin);return Math.max(0,r2(sm/2*van/tot-valorDiaVac(n)*vd))}
 const fmtD=v=>{const r=r1(v);return (r%1?r.toFixed(1):String(r))+' día'+(r===1?'':'s')};
@@ -2279,7 +2281,7 @@ function pintarResQ(d){
 }
 
 /* ---------- render ---------- */
-function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{subSaldos();const sr=$('#saldosRes');if(sr){const h=saldosResHtml();if(sr.innerHTML!==h)sr.innerHTML=h}}catch(e){}try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
+function renderDyn(){try{renderSwRol()}catch(e){}if(modo==='caja'){try{lineasSinDescFix()}catch(e){}try{subSaldos();const sr=$('#saldosRes');if(sr){const h=saldosResHtml();if(sr.innerHTML!==h)sr.innerHTML=h}}catch(e){}try{subTareas();renderTareas()}catch(e){console.warn(e)}try{renderTelExtra()}catch(e){}}{const nb=$('#nuevaBtn'),v=modo==='est'&&abreCuentas(soy);nb.hidden=!v;nb.style.display=v?'':'none';if(!v)$('#nuevaForm').hidden=true}
   try{renderViejas()}catch(e){}
   try{revisarAvisos()}catch(e){}
   if(modo!=='caja'&&cajaLocked)aplicarLock();
@@ -2383,7 +2385,7 @@ async function renderMias(){
   if(sinAdel){}
   else if(esQActual)card=adelCard(calcAdelanto(L,T,Ar,soy),Ar);
   else if(perOff===0&&db){try{const qd=await qDatosEst(),Aq=misAdel.filter(x=>x.fecha>=qa&&x.fecha<=qb);card=adelCard(calcAdelanto(qd.L,qd.T,Aq,soy),Aq)}catch(e){}}
-  const salP=!salarioMes(soy)?0:per==='dia'?((!ingresoDe(soy)||a>=ingresoDe(soy))&&!vacDiasEn(soy,a,a)?r2(salarioMes(soy)/30):0):per==='quincena'?salQ(soy,a,b):r2(salQ(soy,a,a.slice(0,8)+'15')+salQ(soy,a.slice(0,8)+'16',b));
+  const salP=!salarioMes(soy)?0:per==='dia'?((!ingresoDe(soy)||a>=ingresoDe(soy))&&!vacDiasEn(soy,a,a)?salDiaFijo(soy,a):0):per==='quincena'?salQ(soy,a,b):r2(salQ(soy,a,a.slice(0,8)+'15')+salQ(soy,a.slice(0,8)+'16',b));
   if(!L.length&&!props&&!entregados&&!cuotasEn(misPed,a,b,soy).length&&!salP){$('#miasOut').innerHTML=`<div class="empty">${salarioMes(soy)&&ingresoDe(soy)>b?`Empiezas el ${fechaCorta(ingresoDe(soy))}. Desde ese día verás aquí tu fijo.`:'No tienes servicios en este periodo.'}</div>${perOff===0?alqCard()+extCard()+(salarioMes(soy)?vacCard():''):''}${accRow([{k:'adel',ic:'💵',lbl:'Pedir adelanto',html:card,est:misAdel.some(x=>x.estado==='pendiente')?'Esperando aprobación':''},{k:'ped',ic:'📦',lbl:'Pedir producto',html:perOff===0?pedCard():'',est:misPed.some(p=>p.estado==='pendiente')?'Pedido en espera':''}])}`;return}
   const Pc=cuotasEn(misPed,a,b,soy),prodD=r2(Pc.reduce((s,c)=>s+c.monto,0));
   const extP=r2(misExt.filter(x=>x.fecha>=a&&x.fecha<=b&&(!x.estado||x.estado==='aprobado')).reduce((s,x)=>s+(+x.monto||0),0)+extraFijaEn(soy,a,b).monto);
@@ -3073,6 +3075,9 @@ async function cargarFrec(est){
 }
 const usaCatTabs=a=>a!=='Manicura'&&catsDe(a).filter(Boolean).length>=3;
 function precioLbl(s){if(s.precios&&s.precios.length)return s.precios.length>2?`${money(Math.min(...s.precios))} a ${money(Math.max(...s.precios))}`:s.precios.map(v=>money(v)).join(' o ');return s.libre?(s.minimo?'desde '+money(s.minimo):'tú pones el precio'):money(s.precio)}
+/* servicio con producto que trae la clienta: no lleva descuento de material */
+const svcSinDesc=n=>/producto\s+(de|del)\s+(la\s+|el\s+)?client|tra[ií]d[oa]\s+por\s+(la\s+|el\s+)?client/i.test(String(n||''));
+function lineasSinDescFix(){if(modo!=='caja'||!db)return;lineas.forEach(l=>{if(l._sdf||!svcSinDesc(l.servicio)||!Array.isArray(l.insumos))return;const ok=l.insumos.filter(x=>!(x.porcion==='descuento fijo'||/^material \d/.test(x.porcion||'')));if(ok.length===l.insumos.length)return;l._sdf=1;db.doc('lineas/'+l.id).update({insumos:ok,insumosTotal:r2(ok.reduce((s,x)=>s+(+x.costo||0),0))}).catch(()=>{l._sdf=0})})}
 function insDisp(area){return cfg.insumos.map((p,i)=>({p,i})).filter(x=>area==null||!norm(x.p.area)||norm(x.p.area)===area)}
 function insDeItem(it){let r;if(Array.isArray(it.productos)){const ns=it.productos.map(n=>norm(n).toLowerCase());r=cfg.insumos.map((p,i)=>({p,i})).filter(x=>ns.includes(norm(x.p.nombre).toLowerCase()))}else r=insDisp(it.area);return r}
 function precioBase(it){return modo==='est'&&!it.libre?r2(it.precio):r2(it.precioIn)}
@@ -3302,7 +3307,7 @@ $('#svcForm').addEventListener('submit',async e=>{
   const btn=$('#svcGuardar');btn.disabled=true;const base=Date.now();let ok=0;
   try{
     for(const [k,it] of cart.entries()){
-      const insumos=[...(it.descuento?[{nombre:it.nombre,porcion:'descuento fijo',costo:it.descuento}]:[]),...(it.descPct?[{nombre:it.nombre,porcion:`material ${it.descPct}%`,costo:matDe(it)}]:[]),...it.insumos.map(x=>({...x}))];
+      const sd=svcSinDesc(it.nombre)||svcSinDesc(it.detalleIn)||svcSinDesc(it.varIn),insumos=[...(it.descuento&&!sd?[{nombre:it.nombre,porcion:'descuento fijo',costo:it.descuento}]:[]),...(it.descPct&&!sd?[{nombre:it.nombre,porcion:`material ${it.descPct}%`,costo:matDe(it)}]:[]),...it.insumos.map(x=>({...x}))];
       const lref=await db.collection('lineas').add({...(it.sesiones>0?{paqueteSes:it.sesiones}:{}),fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),...(it.formula?{formulaPend:true}:{}),...(prodCaja(it,est)?{formulaPend:true,prodPend:true,prodNom:insDeItem(it).map(d=>d.p.nombre),...(it.formula?{}:{soloProd:true})}:{}),estilista:est,...(esAlq()?{alquilado:true}:{}),servicio:it.detalle?`${it.nombre}: ${norm(it.detalleIn)}`:it.varIn?`${it.nombre}: ${it.varIn}`:it.nombre,area:it.area||'',precio:precioDe(it),precioLibre:!!it.libre,...(it.dpIn?{descuentoCliente:{pct:it.dpIn,precioNormal:precioBase(it)}}:{}),...(extraDe(it)?{productoExtra:extraDe(it)}:{}),...(it.espOn?{especial:{estado:'pendiente',minimo:it.minimo,motivo:norm(it.motivoIn),solicitado:new Date().toISOString()}}:{}),insumos,insumosTotal:r2(insumos.reduce((s,x)=>s+x.costo,0)),creado:new Date(base+k).toISOString()});
       if(it.sesiones>0&&lref&&lref.id){const pr=precioDe(it);const pref=await db.collection('paquetes').add({cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),servicio:it.nombre,sesiones:it.sesiones,total:pr,valSesion:r2(pr/it.sesiones),usadas:0,fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,lineaId:lref.id,vendio:svcEstilista(),creado:new Date().toISOString()});
         if(it.ses1!==false&&pref&&pref.id){const nom=String(it.nombre).replace(/\s*·?\s*paquete.*$/i,'').trim()||it.nombre;await db.collection('lineas').add({fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),estilista:est,servicio:`${nom} · sesión 1 de ${it.sesiones} (paquete)`,area:'',precio:0,insumos:[],insumosTotal:0,paqueteId:pref.id,paqueteVal:r2(pr/it.sesiones),paqueteN:1,creado:new Date().toISOString(),...(esInq(est)?{alquilado:true}:{})});await db.doc('paquetes/'+pref.id).update({usadas:1})}}
