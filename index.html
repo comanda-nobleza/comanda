@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="d0bc6b5ba296"</script>
-<script src="web.js?v=d0bc6b5ba296"></script>
+<script>window.BUILD="b264c3714961"</script>
+<script src="web.js?v=b264c3714961"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2657,16 +2657,17 @@ const pagoDomingo=()=>cfg.pagoDomingo!=null&&cfg.pagoDomingo!==''?+cfg.pagoDomin
 function renderExtPend(){
   const box=$('#extPendBox');if(!box)return;
   if(!extPend.length){box.innerHTML='';return}
-  box.innerHTML=`<div class="adel-pend"><h3>Horas extras y domingos por aprobar</h3>${extPend.map(x=>{const v=valorHora(x.estilista),sug=x.tipo==='domingo'?pagoDomingo():v?r2(v*(+x.horas||0)):'';return `<div class="adel-row"><div><b>${esc(x.estilista)}</b> ${x.tipo==='domingo'?'trabaja hoy <b>domingo</b>':`pidió <b>${x.horas} hora${x.horas>1?'s':''} extra</b>`} · ${x.fecha===hoy()?'hoy':fechaCorta(x.fecha)} a las ${hora(x.creado)}${x.motivo?`<br><small>${esc(x.motivo)}</small>`:''}${v&&x.tipo!=='domingo'?`<br><small>${money(v)} por hora</small>`:''}</div>
+  box.innerHTML=`<div class="adel-pend"><h3>Horas extras y domingos por aprobar</h3>${extPend.map(x=>{const v=valorHora(x.estilista),sug=x.tipo==='domingo'?pagoDomingo():v?r2(v*(+x.horas||0)):'';return `<div class="adel-row"><div><b>${esc(x.estilista)}</b> ${x.tipo==='domingo'?`trabaja <b>domingo</b>${extPend.some(y=>y!==x&&y.tipo==='domingo'&&y.estilista===x.estilista&&y.fecha===x.fecha&&(y.creado||'')<(x.creado||''))?' <span class="chip urg">Repetida</span>':''}`:`pidió <b>${x.horas} hora${x.horas>1?'s':''} extra</b>`} · ${x.fecha===hoy()?'hoy':fechaCorta(x.fecha)} a las ${hora(x.creado)}${x.motivo?`<br><small>${esc(x.motivo)}</small>`:''}${v&&x.tipo!=='domingo'?`<br><small>${money(v)} por hora</small>`:''}</div>
     <div class="row" style="gap:6px"><input type="number" step="0.01" min="0" inputmode="decimal" placeholder="Monto $" id="exm-${x.id}" value="${sug}" aria-label="Monto a pagar" style="width:110px"><button class="btn small primary" data-ext-ok="${x.id}">Aprobar</button><button class="btn small ghost danger" data-ext-no="${x.id}">Rechazar</button></div></div>`}).join('')}</div>`;
 }
 document.addEventListener('click',async e=>{
-  const dm=e.target.closest('[data-ext-dom]');if(dm){if(!needDb())return;if(new Date().getDay()!==0)return;dm.disabled=true;try{await db.collection('extras').add({estilista:soy,fecha:hoy(),tipo:'domingo',horas:0,motivo:'Domingo trabajado',estado:'pendiente',creado:new Date().toISOString()});toast('Enviado a gerencia')}catch(err){toast('No se pudo enviar.');dm.disabled=false}return}
+  const dm=e.target.closest('[data-ext-dom]');if(dm){if(!needDb())return;if(new Date().getDay()!==0)return;if(misExt.some(x=>x.fecha===hoy()&&x.tipo==='domingo'&&x.estado!=='rechazado'))return toast('Ya enviaste el domingo de hoy.');dm.disabled=true;try{const s=await db.collection('extras').where('estilista','==',soy).get();if(s.docs.some(d=>{const x=d.data();return x.fecha===hoy()&&x.tipo==='domingo'&&x.estado!=='rechazado'})){toast('Ya enviaste el domingo de hoy.');return}
+    const id='dom_'+hoy()+'_'+String(soy).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-');await db.doc('extras/'+id).set({estilista:soy,fecha:hoy(),tipo:'domingo',horas:0,motivo:'Domingo trabajado',estado:'pendiente',creado:new Date().toISOString()});toast('Enviado a gerencia')}catch(err){toast('No se pudo enviar.');dm.disabled=false}return}
   const xh=e.target.closest('[data-exh]');if(xh){exHoras=+xh.dataset.exh;$$('#exHs button').forEach(b=>b.setAttribute('aria-pressed',b===xh));return}
   const ok=e.target.closest('[data-ext-ok]'),no=e.target.closest('[data-ext-no]'),ca=e.target.closest('[data-ext-cancel]');
   if(!ok&&!no&&!ca)return;if(!needDb())return;
   try{
-    if(ok){const id=ok.dataset.extOk,m=r2($('#exm-'+id).value);if(!(m>0)){toast('Escribe el monto a pagar.');return}await db.doc('extras/'+id).update({estado:'aprobado',monto:m,resuelto:new Date().toISOString(),por:porGer()});toast('Horas extras aprobadas');if(qData)calcQ()}
+    if(ok){const id=ok.dataset.extOk,m=r2($('#exm-'+id).value);if(!(m>0)){toast('Escribe el monto a pagar.');return}const x0=extPend.find(x=>x.id===id);if(x0&&x0.tipo==='domingo'){const s=await db.collection('extras').where('estilista','==',x0.estilista).get();if(s.docs.some(d=>d.id!==id&&d.data().tipo==='domingo'&&d.data().fecha===x0.fecha&&d.data().estado==='aprobado')){await db.doc('extras/'+id).update({estado:'rechazado',motivoRech:'Repetida: ese domingo ya estaba aprobado',resuelto:new Date().toISOString(),por:porGer()});toast(`El domingo de ${x0.estilista} ya estaba aprobado. Esta solicitud repetida se rechazó sola.`);return}}await db.doc('extras/'+id).update({estado:'aprobado',monto:m,resuelto:new Date().toISOString(),por:porGer()});let nd=0;if(x0&&x0.tipo==='domingo')for(const y of extPend.filter(y=>y.id!==id&&y.tipo==='domingo'&&y.estilista===x0.estilista&&y.fecha===x0.fecha)){await db.doc('extras/'+y.id).update({estado:'rechazado',motivoRech:'Repetida: ese domingo ya estaba aprobado',resuelto:new Date().toISOString(),por:porGer()});nd++}toast(x0&&x0.tipo==='domingo'?`Domingo aprobado${nd?` · ${nd} repetida${nd>1?'s':''} se rechazó sola`:''}`:'Horas extras aprobadas');if(qData)calcQ()}
     if(no){if(!armed(no))return;await db.doc('extras/'+no.dataset.extNo).update({estado:'rechazado',resuelto:new Date().toISOString(),por:porGer()});toast('Horas extras rechazadas')}
     if(ca){if(!armed(ca))return;await db.doc('extras/'+ca.dataset.extCancel).delete();toast('Solicitud cancelada')}
   }catch(err){toast('No se pudo guardar ('+(err.code||'error')+').')}
