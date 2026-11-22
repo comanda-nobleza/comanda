@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="f19f521be62d"</script>
-<script src="web.js?v=f19f521be62d"></script>
+<script>window.BUILD="83d44e7c1de3"</script>
+<script src="web.js?v=83d44e7c1de3"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -767,7 +767,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 
   <section class="view" id="v-fichas" hidden>
     <h2>Fichas de clientas</h2>
-    <form class="inline-form" id="fichaForm"><input id="fichaQ" placeholder="Nombre de la clienta" autocomplete="off" aria-label="Buscar clienta"><button class="btn primary">Buscar</button></form>
+    <form class="inline-form" id="fichaForm"><input id="fichaQ" placeholder="Nombre o teléfono de la clienta" autocomplete="off" aria-label="Buscar clienta"><button class="btn primary">Buscar</button></form>
     <div id="fichaOut"><div class="empty">Busca a una clienta para ver sus fórmulas de color y sus servicios anteriores.</div></div>
     <h2 style="margin-top:28px">Puntos de clientas</h2>
     <form class="inline-form" id="ptsForm"><input id="ptsQ" type="tel" inputmode="tel" placeholder="Teléfono de la clienta" autocomplete="off" aria-label="Teléfono"><button class="btn primary">Ver puntos</button></form>
@@ -1008,6 +1008,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
     <div class="actions"><button class="btn primary" id="perfilGuardar">Guardar y entrar</button></div>
   </form>
 </div>
+<div class="sheet-bg" id="cliEdSheet" hidden><div class="sheet"><div id="cliEdBody" style="display:grid;gap:10px"></div></div></div>
 <div class="sheet-bg" id="citaDetSheet" hidden><div class="sheet"><div id="citaDetBody" style="display:grid;gap:10px"></div><div class="actions"><button type="button" class="btn ghost" data-close>Cerrar</button></div></div></div>
 <div class="sheet-bg" id="citaSheet" hidden>
   <form class="sheet" id="citaForm" novalidate>
@@ -2465,7 +2466,8 @@ async function ultimaFormula(cliente){
     const f=s.docs.map(d=>d.data()).filter(l=>l.formula&&l.formula.tinte).sort((a,b)=>(b.creado||'').localeCompare(a.creado||''));return f[0]||null}catch(e){return null}
 }
 async function buscarFichas(){
-  const q=ckey($('#fichaQ').value);const out=$('#fichaOut');
+  let q=ckey($('#fichaQ').value);const out=$('#fichaOut');
+  {const raw=$('#fichaQ').value.replace(/\D/g,'');if(raw.length>=7&&db){const c=await getCliente(telKey(raw));if(!c){out.innerHTML='<div class="empty">No hay ninguna clienta con ese teléfono.</div>';return}q=c.nombreKey||ckey((c.nombre||'')+' '+(c.apellido||''))}}
   if(q.length<2){out.innerHTML='<div class="empty">Escribe al menos 2 letras del nombre de la clienta.</div>';return}
   if(!needDb())return;out.innerHTML='<div class="empty">Buscando…</div>';
   try{const s=await db.collection('lineas').where('clienteKey','>=',q).where('clienteKey','<=',q+'\uf8ff').limit(500).get();
@@ -2473,7 +2475,7 @@ async function buscarFichas(){
     if(!L.length){out.innerHTML='<div class="empty">No hay clientas con ese nombre. Solo aparecen las atendidas desde que se usa esta página.</div>';return}
     const g={};L.forEach(l=>(g[l.clienteKey]=g[l.clienteKey]||{nombre:l.cliente,L:[]}).L.push(l));
     out.innerHTML=Object.values(g).map(c=>{const ls=c.L.sort((a,b)=>(b.creado||'').localeCompare(a.creado||''));const fs=ls.filter(l=>l.formula);
-      return `<div class="adel"><h3>${esc(c.nombre)}</h3><small>${ls.length} servicio${ls.length===1?'':'s'} · última visita ${fechaCorta(ls[0].fecha)}</small>
+      return `<div class="adel"><div class="row between" style="gap:8px"><h3 style="margin:0">${esc(c.nombre)}</h3>${modo==='caja'?`<button type="button" class="btn small" data-cli-ed="${esc(ls[0].clienteKey||ckey(c.nombre))}" data-nom="${esc(c.nombre)}" data-tk="${esc(ls[0].ticketId||'')}">✏️ Editar datos</button>`:''}</div><small>${ls.length} servicio${ls.length===1?'':'s'} · última visita ${fechaCorta(ls[0].fecha)}</small>
       ${fs.length?`<b>Fórmulas</b><div class="tw"><table><thead><tr><th>Fecha</th><th>Servicio</th><th>Tinte</th><th>Peróxido</th><th>Estilista</th></tr></thead><tbody>${fs.map(l=>`<tr><td>${fechaCorta(l.fecha)}</td><td>${esc(l.servicio)}</td><td><b>${esc(l.formula.tinte)}</b></td><td>${esc(l.formula.peroxido)} vol</td><td>${esc(l.estilista)}</td></tr>`).join('')}</tbody></table></div>`:'<small class="muted">Sin fórmulas registradas.</small>'}
       <details><summary>Ver todos sus servicios</summary><div class="dia-g">${ls.map(l=>`<div class="svc-row"><span class="s">${esc(l.servicio)}</span><span class="v">${money(valLinea(l))}</span><span class="c">${fechaCorta(l.fecha)} · ${esc(l.estilista)}</span></div>`).join('')}</div></details></div>`}).join('');
   }catch(err){out.innerHTML='<div class="empty">No se pudo buscar ('+esc(err.code)+').</div>'}
@@ -2718,10 +2720,37 @@ function renderFichaCobro(){const box=$('#ptsFicha');if(!box)return;const c=cobr
   if(!cobroPts.tel||cobroPts.cli===undefined){box.innerHTML='';return}
   if(!c)box.innerHTML=`<div class="fc-box"><b>🆕 Clienta nueva: completa su ficha</b>${fichaCampos('fc',null,t&&t.t.cliente)}<small class="muted">Se guarda al cerrar la cuenta. El cumpleaños le da ${ptsCumple()} puntos de regalo.</small></div>`;
   else if(!c.cumpleMes)box.innerHTML=`<div class="fc-box"><b>🎂 Pregúntale su cumpleaños</b>${fichaCampos('fc',c)}<small class="muted">Se guarda al cerrar la cuenta.</small></div>`;
-  else box.innerHTML=`<small class="muted">Ficha: <b>${esc((c.nombre||'')+' '+(c.apellido||''))}</b> · 🎂 ${cumpleTxt(c)}</small>`;
+  else box.innerHTML=cobroPts.fcEdit?`<div class="fc-box"><b>✏️ Corregir datos de la ficha</b>${fichaCampos('fc',c)}<small class="muted">Se guarda al cerrar la cuenta. Para cambiar el teléfono, hazlo desde Fichas.</small></div>`:`<small class="muted">Ficha: <b>${esc((c.nombre||'')+' '+(c.apellido||''))}</b> · 🎂 ${cumpleTxt(c)} · <button type="button" class="btn small ghost" data-fc-edit style="padding:2px 8px">✏️ Corregir</button></small>`;
   if(c&&t&&telOtra(c,t.t.cliente))box.innerHTML=`<div class="notice warn" style="display:grid;gap:8px"><span>⚠️ Este teléfono ya pertenece a <b>${esc(((c.nombre||'')+' '+(c.apellido||'')).trim())}</b>, y la cuenta es de <b>${esc(t.t.cliente)}</b>. Los puntos se sumarían a ${esc(c.nombre||'esa clienta')}.</span><label class="row" style="gap:8px"><input type="checkbox" id="telConfirma" ${cobroPts.telOk?'checked':''}> Sí, es la misma clienta</label><small>Si no es ella, corrige el teléfono.</small></div>`+box.innerHTML}
 function telOtra(c,cliente){const a=ckey(c.nombre||'').split(' ')[0],b=ckey(cliente||'').split(' ')[0];return !!(a&&b&&a!==b)}
 document.addEventListener('change',e=>{if(e.target.id==='telConfirma')cobroPts.telOk=e.target.checked});
+document.addEventListener('click',e=>{if(e.target.closest('[data-fc-edit]')){cobroPts.fcEdit=true;renderFichaCobro()}});
+/* ---------- editar datos de la clienta ---------- */
+let cliEd=null;
+async function cliBuscarDoc(key,tk){try{const s=await db.collection('clientes').where('nombreKey','==',key).limit(1).get();if(s.docs.length)return {id:s.docs[0].id,...s.docs[0].data()}}catch(e){}
+  if(tk){try{const d=await db.doc('ticketsTel/'+tk).get();if(d.exists&&d.data().tel){const c=await getCliente(d.data().tel);return c?{id:d.data().tel,...c}:{id:d.data().tel,tel:d.data().tel}}}catch(e){}}return null}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-cli-ed]');if(!b||!db||modo!=='caja')return;const key=b.dataset.cliEd,nom=b.dataset.nom;b.disabled=true;
+  const c=await cliBuscarDoc(key,b.dataset.tk);b.disabled=false;cliEd={key,nom,c,tel0:c?c.id:''};
+  $('#cliEdBody').innerHTML=`<h3>Editar datos · ${esc(nom)}</h3>${fichaCampos('ce',c,nom)}<label class="f" for="ceTel">Teléfono<input id="ceTel" type="tel" inputmode="tel" value="${esc(c&&c.id?String(c.id).replace(/^507/,''):'')}" autocomplete="off" placeholder="Teléfono de la clienta"></label>${c?'':'<small class="muted">Esta clienta todavía no tenía ficha con teléfono: se crea ahora.</small>'}<small class="muted">Si cambias el teléfono, sus puntos pasan al número nuevo. Si cambias el nombre, se corrige también en su historial.</small><div class="actions"><button type="button" class="btn ghost" data-ce-x>Cancelar</button><button type="button" class="btn primary" data-ce-ok>Guardar cambios</button></div>`;$('#cliEdSheet').hidden=false});
+document.addEventListener('click',async e=>{if(e.target.closest('[data-ce-x]')){$('#cliEdSheet').hidden=true;cliEd=null;return}const ok=e.target.closest('[data-ce-ok]');if(!ok||!cliEd||!db)return;
+  const F=leerFicha('ce'),k1=cliEd.tel0,k2=telKey($('#ceTel').value);if(!F.nombre){toast('Escribe el nombre.');return}if(!k2){toast('Escribe el teléfono.');return}
+  const full=norm(((F.nombre||'')+' '+(F.apellido||'')).trim()),nk=ckey(full),ok0=cliEd.key;
+  if(k2!==k1){const otra=await getCliente(k2);if(otra&&(otra.nombreKey||'')!==nk&&(otra.nombreKey||'')!==ok0){toast(`Ese teléfono ya es de ${((otra.nombre||'')+' '+(otra.apellido||'')).trim()}. Revisa el número.`);return}}
+  ok.disabled=true;ok.textContent='Guardando…';const cambios=[];
+  try{const base={...(cliEd.c||{})};delete base.id;const o={...base,...F,tel:k2,nombreKey:nk};if(!F.cumpleMes){delete o.cumpleMes;delete o.cumpleDia}if(!base.creado)o.creado=new Date().toISOString();
+    await db.doc('clientes/'+k2).set(o);
+    if(k1&&k1!==k2){await db.doc('clientes/'+k1).delete().catch(()=>{});
+      for(const col of ['puntos','ticketsTel','citasTel']){try{const s2=await db.collection(col).where('tel','==',k1).limit(1000).get();for(const d of s2.docs)await d.ref.update({tel:k2})}catch(er){}}
+      cambios.push(`teléfono ${String(k1).replace(/^507/,'')} → ${String(k2).replace(/^507/,'')}`)}
+    if(nk!==ok0){for(const col of ['lineas','tickets','citas','paquetes','saldos','mant']){try{const s2=await db.collection(col).where('clienteKey','==',ok0).limit(1000).get();for(const d of s2.docs)await d.ref.update({cliente:full,clienteKey:nk})}catch(er){}}
+      try{const s2=await db.collection('puntos').where('tel','==',k2).limit(1000).get();for(const d of s2.docs)await d.ref.update({cliente:full})}catch(er){}
+      try{await db.doc('puntosResumen/'+ckey(cliEd.nom).replace(/[^a-z0-9_\-.~:@+]/g,'_')).delete()}catch(er){}
+      cambios.push(`nombre «${cliEd.nom}» → «${full}»`)}
+    try{await guardarResumenPts(k2,full)}catch(er){}
+    const c0=cliEd.c||{};if(+c0.cumpleMes!==+F.cumpleMes||+c0.cumpleDia!==+F.cumpleDia)cambios.push('cumpleaños '+(F.cumpleMes?cumpleTxt(F):'quitado'));
+    if(cambios.length)revisarLog('ficha',full,`Cambió los datos de ${full}: ${cambios.join(' · ')}`);
+    toast(cambios.length?'Listo, datos corregidos.':'Listo, guardado.');$('#cliEdSheet').hidden=true;cliEd=null;$('#fichaQ').value=full;buscarFichas()}
+  catch(err){ok.disabled=false;ok.textContent='Guardar cambios';toast('No se pudo guardar. Revisa el internet y vuelve a intentar.')}});
 
 /* ---------- insumos ---------- */
 let insTab='sol',insFrecCat={},insumos=[],insUn=null,insUrg=false,insRecibe=null,insCat='';
