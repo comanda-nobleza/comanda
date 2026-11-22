@@ -1047,6 +1047,8 @@ const r2=n=>Math.round((+n||0)*100)/100;
 const money=n=>{const v=r2(n);return (v<0?'-$':'$')+Math.abs(v).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2})};
 const ymd=d=>d.toLocaleDateString('en-CA');
 const hoy=()=>ymd(new Date());
+const DIA_CARGA=ymd(new Date());
+setInterval(()=>{try{if(ymd(new Date())===DIA_CARGA)return;const libre=!document.querySelector('.sheet-bg:not([hidden])')&&!(document.activeElement&&/INPUT|TEXTAREA|SELECT/.test(document.activeElement.tagName));if(libre)location.reload()}catch(e){}},60000);
 const hora=iso=>iso?new Date(iso).toLocaleTimeString('es-PA',{hour:'numeric',minute:'2-digit'}):'';
 const fechaLarga=f=>new Date(f+'T12:00:00').toLocaleDateString('es-PA',{weekday:'long',day:'numeric',month:'long'});
 const fechaCorta=f=>new Date(f+'T12:00:00').toLocaleDateString('es-PA',{weekday:'short',day:'numeric',month:'short',...(String(f).slice(0,4)!==hoy().slice(0,4)?{year:'numeric'}:{})});
@@ -1915,7 +1917,7 @@ function cajaRecibir(){const pr=turnoPorRecibir();
   if(pr){if(pr.entrega.a!==cajero){toast(`La caja se le entregó a ${pr.entrega.a}.`);return}turnoFlow={tipo:'recibirDe',t:pr,intento:1};
     turnoShow(`<h3>Recibir caja de ${esc(pr.cajero)}</h3><small>Cuenta todo el efectivo, billete por billete.</small>${conteoHtml('r','Tu conteo')}${btns('data-turno-recibir','Recibir caja')}`);return}
   if(turnoAbierto()){toast('La caja ya la tiene '+turnoAbierto().cajero+'.');return}
-  const prev=turnosHoy.filter(t=>t.estado==='cerrado').pop(),base=prev&&prev.entrega&&prev.entrega.a==='cierre'?+prev.entrega.contado:+cfg.fondo||0;turnoFlow={tipo:'abrir',base};
+  const base=+cfg.fondo||0;turnoFlow={tipo:'abrir',base};
   turnoShow(`<h3>Recibir caja · ${esc(cajero)}</h3><small>Cuenta el fondo de caja (debe ser ${money(base)}), billete por billete.</small>${conteoHtml('a','Tu conteo')}${btns('data-turno-abrir','Recibir caja')}`)}
 /* entregar */
 function cajaEntregar(){const ab=turnoAbierto();if(!ab||ab.cajero!==cajero)return;const otros=[encargada(),...cubreCaja()].filter((n,i,a)=>n&&a.indexOf(n)===i&&n!==ab.cajero);turnoFlow={tipo:'elegir',t:ab};
