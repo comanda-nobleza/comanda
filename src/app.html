@@ -1998,7 +1998,7 @@ let VAC=[],unsubVac=null;
 function subVac(){if(unsubVac){unsubVac();unsubVac=null}VAC=[];if(!db)return;const q=modo==='est'?(soy?db.collection('vacaciones').where('estilista','==',soy):null):duena?db.collection('vacaciones'):null;if(!q)return;
   unsubVac=q.onSnapshot(s=>{VAC=s.docs.map(d=>({id:d.id,...d.data()}));if(modo==='est'&&tab==='mias')renderMias();if(duena&&tab==='quincena'){$('#vacBox')&&$('#vacBox').open&&renderVac();qData&&renderQ()}},()=>{})}
 const tieneVac=n=>!!(ingresoDe(n)&&salarioSolo(n)&&!esInq(n));
-const valorDiaVac=n=>r2(salarioSolo(n)/30);
+const valorDiaVac=(n,f)=>r2(salarioSolo(n,f||hoy())/30);
 function vacGan(n,f){const ing=ingresoDe(n);f=f||hoy();if(!ing||f<ing)return 0;return dd2(ing,f)/11}
 const vacUsados=n=>VAC.filter(x=>x.estilista===n).reduce((s,x)=>s+(+x.dias||0),0);
 const vacDisp=n=>r1(vacGan(n)-vacUsados(n));
@@ -2006,7 +2006,7 @@ function vacDiasEn(n,a,b){let t=0;VAC.filter(x=>x.estilista===n&&x.tipo==='vac')
 /* fijo de un día: el fijo de la quincena repartido entre sus días sin domingo; el domingo no genera fijo (se paga aparte como domingo trabajado) */
 function salDiaFijo(n,f){const d=new Date(f+'T12:00:00');if(d.getDay()===0)return 0;const y=d.getFullYear(),m=d.getMonth(),ult=new Date(y,m+1,0).getDate(),[i0,i1]=d.getDate()<=15?[1,15]:[16,ult];let k=0;for(let i=i0;i<=i1;i++)if(new Date(y,m,i).getDay()!==0)k++;return k?r2(salarioMes(n,f)/2/k):0}
 function salQ(n,a,b,hasta){const sm=salarioMes(n,a);if(!sm)return 0;const tot=dd2(a,b),fin=hasta&&hasta<b?hasta:b,ing=ingresoDe(n),ini=ing&&ing>a?ing:a;if(ini>fin)return 0;
-  const van=dd2(ini,fin),vd=vacDiasEn(n,ini,fin);return Math.max(0,r2(sm/2*van/tot-valorDiaVac(n)*vd))}
+  const van=dd2(ini,fin),vd=vacDiasEn(n,ini,fin);return Math.max(0,r2(sm/2*van/tot-valorDiaVac(n,ini)*vd))}
 const fmtD=v=>{const r=r1(v);return (r%1?r.toFixed(1):String(r))+' día'+(r===1?'':'s')};
 const vacTxt=x=>x.tipo==='vac'?`${fechaCorta(x.desde)}${x.dias>1?' al '+fechaCorta(x.hasta):''} · Vacaciones · ${money(x.monto)}`:`${fechaCorta(x.desde)} · Falta cubierta con vacaciones`;
 function vacWa(x){const t=(cfg.estilistas.find(e=>e.nombre===x.estilista)||{}).whatsapp||(perfiles[x.estilista]||{}).whatsapp||'';
@@ -3604,7 +3604,7 @@ function resumenQ(L,T,A,P){A=A||[];P=P||[];const E=((qData&&qData.E)||[]).filter
   Object.keys(props).forEach(e=>{if(!pr.find(p=>p.estilista===e))pr.push({estilista:e,n:0,bruto:0,ins:0,neto:0,com:comisionDe(e),pago:0})});
   [...A,...P,...E,...((qData&&qData.D)||[])].forEach(x=>{if(!pr.find(p=>p.estilista===x.estilista))pr.push({estilista:x.estilista,n:0,bruto:0,ins:0,neto:0,com:comisionDe(x.estilista),pago:0})});
   cfg.estilistas.filter(e=>(salarioMes(e.nombre)||e.extraFija||cafeQ(e.nombre))&&!esInq(e.nombre)&&!pr.find(p=>p.estilista===e.nombre)).forEach(e=>pr.push({estilista:e.nombre,n:0,bruto:0,ins:0,neto:0,com:comisionDe(e.nombre),pago:0}));
-  pr.forEach(p=>{p.prop=r2(props[p.estilista]||0);p.sal=qData?salQ(p.estilista,qData.a,qData.b):r2(salarioMes(p.estilista)/2);p.vacD=qData?vacDiasEn(p.estilista,qData.a,qData.b):0;p.fx=qData?extraFijaEn(p.estilista,qData.a,qData.b):{horas:0,monto:0};p.ext=r2(E.filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0)+p.fx.monto);p.total=r2(p.pago+p.prop+p.sal+p.ext);p.adel=r2(A.filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.prod=r2(P.filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.alq=r2(((qData&&qData.AL)||[]).filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.otros=r2(((qData&&qData.D)||[]).filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.cafe=cafeQ(p.estilista);p.neto2=r2(p.total-p.adel-p.prod-p.alq-p.otros-p.cafe)});
+  pr.forEach(p=>{p.prop=r2(props[p.estilista]||0);p.sal=qData?salQ(p.estilista,qData.a,qData.b):r2(salarioMes(p.estilista,hoy())/2);p.vacD=qData?vacDiasEn(p.estilista,qData.a,qData.b):0;p.fx=qData?extraFijaEn(p.estilista,qData.a,qData.b):{horas:0,monto:0};p.ext=r2(E.filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0)+p.fx.monto);p.total=r2(p.pago+p.prop+p.sal+p.ext);p.adel=r2(A.filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.prod=r2(P.filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.alq=r2(((qData&&qData.AL)||[]).filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.otros=r2(((qData&&qData.D)||[]).filter(x=>x.estilista===p.estilista).reduce((s,x)=>s+(+x.monto||0),0));p.cafe=cafeQ(p.estilista);p.neto2=r2(p.total-p.adel-p.prod-p.alq-p.otros-p.cafe)});
   for(let i=pr.length-1;i>=0;i--)if(esInq(pr[i].estilista))pr.splice(i,1);
   pr.sort((x,y)=>x.estilista.localeCompare(y.estilista));
   return {pr,pend};
@@ -3703,7 +3703,7 @@ function fichaHtml(n){
     <dt>Descuentos (productos)</dt><dd class="neg">${p.ins?'−'+money(p.ins):money(0)}</dd>
     <dt>Base para comisión</dt><dd>${money(p.neto)}</dd>
     <dt>Comisión (servicios ${p.com}%${lc.some(l=>l.venta)?` · ventas ${pctVenta()}%`:''})</dt><dd>${money(p.pago)}</dd>
-    ${salarioSolo(n)?`<dt>Salario fijo (quincena)</dt><dd>${money(salarioSolo(n)/2)}</dd>`:''}
+    ${salarioSolo(n,qData?qData.a:hoy())?`<dt>Salario fijo (quincena)</dt><dd>${money(salarioSolo(n,qData?qData.a:hoy())/2)}</dd>`:''}
     ${fijaMes(n)?`<dt>Bono (quincena)</dt><dd>${money(fijaMes(n)/2)}</dd>`:''}
     ${p.ext?`<dt>Horas extras</dt><dd>${money(p.ext)}</dd>`:''}
     <dt>Propinas</dt><dd>${money(p.prop)}</dd>
