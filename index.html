@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="d376f2f89e4a"</script>
-<script src="web.js?v=d376f2f89e4a"></script>
+<script>window.BUILD="6b6b592a6767"</script>
+<script src="web.js?v=6b6b592a6767"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1118,7 +1118,8 @@ const sumCom=ls=>r2(ls.reduce((s,l)=>s+comLinea(l),0));
 const horasOK=n=>{const e=cfg.estilistas.find(x=>x.nombre===n)||{};return !!(salarioMes(n)&&e.horasExtra!==false)};
 const extVis=n=>horasOK(n)||((qData&&qData.E)||[]).some(x=>x.estilista===n&&(!x.estado||x.estado==='aprobado'))||extraFijaEn(n,qData?qData.a:'',qData?qData.b:'').horas>0;
 /* salario del mes; con fecha usa el salario anterior si el nuevo todavía no empezaba (salAnt / salDesde) */
-function salarioSolo(n,f){const e=cfg.estilistas.find(x=>x.nombre===n);if(!e)return 0;if(f&&e.salDesde&&f<e.salDesde&&+e.salAnt>0)return +e.salAnt;return +e.salario>0?+e.salario:0}
+const SAL_DEF={pedro:500,rita:650};/* fijo anterior al mes (con bono) hasta el 30-nov-2026, por si Ajustes todavía no lo tiene guardado */
+function salarioSolo(n,f){const e=cfg.estilistas.find(x=>x.nombre===n);if(!e)return 0;let d=e.salDesde,s=+e.salAnt;if(!d){const k=Object.keys(SAL_DEF).find(k=>new RegExp('^'+k+'(\\s|$)','i').test(e.nombre||''));if(k){d='2026-12-01';s=SAL_DEF[k]-(+e.comisionFija||0)}}if(f&&d&&f<d&&s>0)return s;return +e.salario>0?+e.salario:0}
 function salSoloProm(n,a,b){if(a>b)return salarioSolo(n,a);let s=0,k=0;for(let d=new Date(a+'T12:00:00');ymd(d)<=b;d.setDate(d.getDate()+1)){s+=salarioSolo(n,ymd(d));k++}return k?s/k:0}
 function fijaMes(n){const e=cfg.estilistas.find(x=>x.nombre===n);return e&&+e.comisionFija>0?+e.comisionFija:0}
 const cafeQ=n=>{const e=cfg.estilistas.find(x=>x.nombre===n);return e&&+e.cafeteria>0?+e.cafeteria:0};
@@ -2659,7 +2660,7 @@ function extraPermitida(n){if(PRAC)return {ok:true};const e=cfg.estilistas.find(
   const d=new Date(),dias=Array.isArray(e.diasTemprano)?e.diasTemprano:[],ht=e.extraDesdeTemprano||'17:00',desde=dias.includes(d.getDay())?ht:e.extraDesde;
   const ok=d.getHours()*60+d.getMinutes()>=aMin(desde);
   return {ok,msg:`Hoy las horas extras se pueden pedir desde las ${h12(desde)}.${dias.length?` (Los ${dias.map(i=>DIAS[i]).join(' y ')} desde las ${h12(ht)}; los demás días desde las ${h12(e.extraDesde)}.)`:''}`}}
-const pagoDomingo=()=>cfg.pagoDomingo!=null&&cfg.pagoDomingo!==''?+cfg.pagoDomingo:35;
+const pagoDomingo=()=>!cfg.domFix1?35:cfg.pagoDomingo!=null&&cfg.pagoDomingo!==''?+cfg.pagoDomingo:35;
 function renderExtPend(){
   const box=$('#extPendBox');if(!box)return;
   if(!extPend.length){box.innerHTML='';return}
