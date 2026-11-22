@@ -4572,7 +4572,7 @@ function escuchar(){
   db.doc('config/main').onSnapshot(s=>{if(s.exists)cfg=normCfg({...cfg,...s.data()});cfgLoaded=true;
     if(modo==='est'&&cfg.estilistas.length&&!todos().some(e=>e.nombre===soy))setModo('');
     if(tab==='inicio')renderInicio();if(tab==='ajustes'&&!ajDirty)renderAjustes();if(tab==='quincena'&&qData)renderQ();renderDyn()},e=>banner('No se pudo leer la configuración ('+e.code+').'));
-  subDia();subMisAdel();subMisPed();revisarPerfil();
+  subDia();subMisAdel();subMisPed();subMisExt();subMisAlq();subMisDesc();subVac();revisarPerfil();
   db.collection('pedidos').where('estado','==','pendiente').onSnapshot(s=>{pedPend=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(x.creado||'').localeCompare(y.creado||''));renderDyn()},()=>{});
   subAgenda();subPorConf();subMes();
   db.collection('extras').where('estado','==','pendiente').onSnapshot(s=>{extPend=s.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(x.creado||'').localeCompare(y.creado||''));renderDyn()},()=>{});
