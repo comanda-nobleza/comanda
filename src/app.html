@@ -1410,19 +1410,30 @@ function decPer(f){const y=+f.slice(0,4),md=f.slice(5);
   if(md<='04-15')return {a:`${y-1}-12-16`,b:`${y}-04-15`};if(md<='08-15')return {a:`${y}-04-16`,b:`${y}-08-15`};if(md<='12-15')return {a:`${y}-08-16`,b:`${y}-12-15`};return {a:`${y}-12-16`,b:`${y+1}-04-15`}}
 const decPagoTxt=b=>`15 de ${MESES[+b.slice(5,7)-1]} de ${b.slice(0,4)}`;
 const dd2=(x,y)=>Math.round((new Date(y+'T12:00:00')-new Date(x+'T12:00:00'))/864e5)+1;
+/* décimo: (todo lo devengado en el cuatrimestre: fijo + vacaciones + horas extras y domingos + comisiones) ÷ 12 */
+let decTk={};
+async function decCobradas(a,h){const k=a+h;if(decTk[k]&&Date.now()-decTk[k].t<300000)return decTk[k].s;const s=await db.collection('tickets').where('fecha','>=',a).where('fecha','<=',h).limit(8000).get();const S=new Set(s.docs.filter(d=>d.data().estado==='cobrada').map(d=>d.id));decTk={[k]:{t:Date.now(),s:S}};return S}
 async function calcDecimo(n,per){per=per||decPer(hoy());const {a,b}=per,h=hoy()<b?hoy():b,tot=dd2(a,b),ing=ingresoDe(n),ini=ing&&ing>a?ing:a,
-    dias=ini>b?0:dd2(ini,b),van=ini>h?0:Math.min(dias,dd2(ini,h));
-  const base=salSoloProm(n,ini>a?ini:a,b),full=r2(base*4/12*dias/tot),dec=dias?r2(full*van/dias):0,parcial=dias<tot;let pagado=null;
+    dias=ini>b?0:dd2(ini,b),van=ini>h?0:Math.min(dias,dd2(ini,h)),parcial=dias<tot;
+  const base=salSoloProm(n,ini>a?ini:a,b);let fijo=0,fijoFull=0;
+  for(let qa=a;qa<=b;){const y=+qa.slice(0,4),m=+qa.slice(5,7),d=+qa.slice(8),ult=new Date(y,m,0).getDate(),qb=qa.slice(0,8)+String(d<=15?15:ult).padStart(2,'0');fijoFull+=salQ(n,qa,qb);if(qa<=h)fijo+=salQ(n,qa,qb,h);qa=sumaD(qb,1)}
+  const vac=r2(VAC.filter(x=>x.estilista===n&&x.tipo==='vac'&&x.desde>=a&&x.desde<=h).reduce((s,x)=>s+(+x.monto||r2((+x.valorDia||0)*(+x.dias||0))),0));
+  let ext=0,com=0,err=false;
+  if(van>0){try{const es=await db.collection('extras').where('estilista','==',n).get();ext=es.docs.map(d=>d.data()).filter(x=>x.fecha>=ini&&x.fecha<=h&&(!x.estado||x.estado==='aprobado')).reduce((s,x)=>s+(+x.monto||0),0)+extraFijaEn(n,ini,h).monto}catch(e){err=true}
+    try{const [ls,S]=await Promise.all([db.collection('lineas').where('fecha','>=',ini).where('fecha','<=',h).where('estilista','==',n).limit(5000).get(),decCobradas(ini,h)]);com=ls.docs.map(d=>({id:d.id,...d.data()})).filter(l=>S.has(l.ticketId)).reduce((s,l)=>s+comLinea(l),0)}catch(e){err=true}}
+  fijo=r2(fijo);fijoFull=r2(fijoFull);ext=r2(ext);com=r2(com);
+  const dev=r2(fijo+vac+ext+com),devFull=r2(dev+fijoFull-fijo),dec=r2(dev/12),full=r2(devFull/12);let pagado=null;
   try{const dc=await db.doc('decimos/'+b+'_'+perfId(n)).get();if(dc.exists)pagado=dc.data().pagado||null}catch(e){}
-  return {n,a,b,base,full,dec,pagado,completo:h===b,ini,parcial,dias,tot}}
+  return {n,a,b,h,base,fijo,fijoFull,vac,ext,com,dev,devFull,full,dec,pagado,completo:h===b,ini,parcial,dias,tot,err}}
+const decDesglose=x=>[x.fijoFull?`Fijo ${money(x.fijoFull)}`:'',x.vac?`vacaciones ${money(x.vac)}`:'',x.ext?`extras ${money(x.ext)}`:'',x.com?`comisiones ${money(x.com)}`:''].filter(Boolean).join(' + ')+` = ${money(x.devFull)} ÷ 12`;
 let decC=null;
 async function renderDecimo(force){const box=$('#decOut');if(!box||!db||!duena)return;const L=cfg.estilistas.filter(e=>e.decimo).map(e=>e.nombre);
   if(!L.length){$('#decSum').textContent='';box.innerHTML='<small class="muted">Marca "Cobra décimo" en Ajustes → Personal.</small>';return}
   const per=decPer(hoy());if(force||!decC||decC.b!==per.b||Date.now()-decC.t>60000){box.innerHTML='<small class="muted">Calculando…</small>';decC={b:per.b,t:Date.now(),R:await Promise.all(L.map(n=>calcDecimo(n,per)))}}
   const R2=decC.R,tot=r2(R2.reduce((s,x)=>s+x.full,0));$('#decSum').textContent=`· pago del ${decPagoTxt(per.b)} · total ${money(tot)}`;
-  box.innerHTML=`<small class="muted">Período del ${fechaCorta(per.a)} al ${fechaCorta(per.b)}. Se calcula solo con el salario base: (salario mensual × 4) ÷ 12.</small>
-  ${R2.map(x=>`<div class="adel-row"><div><b>${esc(x.n)}</b> ${x.pagado?`<span class="chip ok">Pagado ${fechaCorta(x.pagado)}</span>`:''}<br><small>Salario base ${money(x.base)} al mes × 4 ÷ 12${x.parcial?` · desde su ingreso el ${fechaCorta(x.ini)} (${x.dias} de ${x.tot} días)`:''}</small><br><b>Décimo: ${money(x.full)}</b>${x.completo?'':` <small class="muted">· acumulado hoy ${money(x.dec)}</small>`}</div>
-    <div class="row" style="gap:6px"><button class="btn small" data-dec-pdf="${esc(x.n)}">Ficha PDF</button><a class="btn small wa" target="_blank" rel="noopener" href="${(()=>{const t=(cfg.estilistas.find(e=>e.nombre===x.n)||{}).whatsapp||(perfiles[x.n]||{}).whatsapp||'',msg=`Hola ${x.n} 👋\nTu *décimo tercer mes* del ${decPagoTxt(x.b)}:\n\nSalario base ${money(x.base)} × 4 ÷ 12${x.parcial?`\nDesde tu ingreso el ${fechaCorta(x.ini)} (${x.dias} de ${x.tot} días)`:''}\n🎁 *Décimo: ${money(x.full)}*\n\n¡Gracias por tu trabajo! ✨`;return waLink(t,msg)||'https://wa.me/?text='+encodeURIComponent(msg)})()}">WhatsApp</a>${x.pagado?'':`<button class="btn small primary" data-dec-pag="${esc(x.n)}">Marcar pagado</button>`}</div></div>`).join('')}`}
+  box.innerHTML=`<small class="muted">Período del ${fechaCorta(per.a)} al ${fechaCorta(per.b)}. Se calcula con todo lo ganado en el período (fijo, vacaciones, horas extras y domingos, comisiones) ÷ 12. Lo que falta del período se estima con el fijo.</small>
+  ${R2.map(x=>`<div class="adel-row"><div><b>${esc(x.n)}</b> ${x.pagado?`<span class="chip ok">Pagado ${fechaCorta(x.pagado)}</span>`:''}<br><small>${decDesglose(x)}${x.parcial?` · desde su ingreso el ${fechaCorta(x.ini)}`:''}</small><br><b>Décimo: ${money(x.full)}</b>${x.completo?'':` <small class="muted">· acumulado hoy ${money(x.dec)}</small>`}</div>
+    <div class="row" style="gap:6px"><button class="btn small" data-dec-pdf="${esc(x.n)}">Ficha PDF</button><a class="btn small wa" target="_blank" rel="noopener" href="${(()=>{const t=(cfg.estilistas.find(e=>e.nombre===x.n)||{}).whatsapp||(perfiles[x.n]||{}).whatsapp||'',msg=`Hola ${x.n} 👋\nTu *décimo tercer mes* del ${decPagoTxt(x.b)}:\n\nGanado en el período: ${money(x.devFull)}${x.completo?'':' (con lo que falta estimado)'}\n${decDesglose(x)}\n÷ 12\n🎁 *Décimo: ${money(x.full)}*\n\n¡Gracias por tu trabajo! ✨`;return waLink(t,msg)||'https://wa.me/?text='+encodeURIComponent(msg)})()}">WhatsApp</a>${x.pagado?'':`<button class="btn small primary" data-dec-pag="${esc(x.n)}">Marcar pagado</button>`}</div></div>`).join('')}`}
 document.addEventListener('click',async e=>{const pg=e.target.closest('[data-dec-pag]'),pdf=e.target.closest('[data-dec-pdf]');
   if(pg){if(!armed(pg))return;const n=pg.dataset.decPag,x=decC.R.find(r=>r.n===n);try{const ref=db.doc('decimos/'+x.b+'_'+perfId(n)),g=await ref.get();await ref.set({...(g.exists?g.data():{}),nombre:n,periodo:x.b,pagado:hoy(),monto:x.full,por:porGer()});toast('Décimo marcado como pagado');renderDecimo(true)}catch(err){toast('No se pudo guardar.')}}
   if(pdf){const x=decC.R.find(r=>r.n===pdf.dataset.decPdf);if(!x||!dl){toast('La descarga no está disponible en esta vista.');return}
@@ -1430,7 +1441,7 @@ document.addEventListener('click',async e=>{const pg=e.target.closest('[data-dec
       doc.setFillColor(12,12,12);doc.rect(0,0,W,792,'F');doc.setTextColor(...G);doc.setFont('times','bold');doc.setFontSize(34);doc.text('Nobleza',W/2,70,{align:'center'});doc.setFont('helvetica','normal');doc.setFontSize(9);doc.text('B E A U T Y   R O O M',W/2,84,{align:'center'});
       doc.setTextColor(255);doc.setFont('times','bold');doc.setFontSize(18);doc.text('DÉCIMO TERCER MES',W/2,118,{align:'center'});doc.setFontSize(14);doc.text(x.n.toUpperCase(),W/2,140,{align:'center'});
       doc.setTextColor(...G);doc.setFontSize(10);doc.text(`Pago del ${decPagoTxt(x.b)} · período ${fechaCorta(x.a)} al ${fechaCorta(x.b)}`,W/2,158,{align:'center'});doc.setDrawColor(...G);doc.line(80,170,W-80,170);
-      const rows=[['Salario base mensual',M(x.base)],['Meses del período','4'],...(x.parcial?[[`Días trabajados (desde ${fechaCorta(x.ini)})`,`${x.dias} de ${x.tot}`],['Total del período',M(x.base*4*x.dias/x.tot)]]:[['Total del período',M(x.base*4)]]),['Dividido entre 12','']];
+      const rows=[...(x.fijoFull?[['Salario fijo',M(x.fijoFull)]]:[]),...(x.vac?[['Vacaciones pagadas',M(x.vac)]]:[]),...(x.ext?[['Horas extras y domingos',M(x.ext)]]:[]),...(x.com?[['Comisiones',M(x.com)]]:[]),...(x.parcial?[[`Desde su ingreso`,fechaCorta(x.ini)]]:[]),['Total ganado en el período',M(x.devFull)],['Dividido entre 12','']];
       rows.forEach((r,i)=>{doc.setFont('helvetica',i===rows.length-2?'bold':'normal');doc.setFontSize(12);doc.setTextColor(235);doc.text(r[0],100,200+i*24);doc.text(r[1],W-100,200+i*24,{align:'right'})});
       const y=200+rows.length*24+20;doc.setFillColor(28,24,12);doc.roundedRect(100,y,W-200,70,6,6,'F');doc.setTextColor(...G);doc.setFontSize(12);doc.text('DÉCIMO A PAGAR',W/2,y+24,{align:'center'});doc.setTextColor(255);doc.setFontSize(26);doc.text(M(x.full),W/2,y+54,{align:'center'});
       doc.setFontSize(8);doc.setTextColor(150);doc.text(`Generado el ${fechaCorta(hoy())} · ${SALON} · Control interno`,W/2,768,{align:'center'});
