@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="2706300d1059"</script>
-<script src="web.js?v=2706300d1059"></script>
+<script>window.BUILD="09d519185b02"</script>
+<script src="web.js?v=09d519185b02"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1371,7 +1371,7 @@ function renderAlq(){
     const abierto=alqPay===e.nombre,q=liqG?liqCalc(e,mes,liqG.L,liqG.T,liqG.P):null;
     if(q&&q.pagar===0)return `<div class="adel-row"><div><b>${esc(e.nombre)}</b> <span class="chip ok">Cubierto con ganancias</span><br><small>${liqTxt(q)}${q.favor?` · <b>el salón le debe ${money(q.favor)}</b>`:''}</small></div><div class="row" style="gap:6px"><button class="btn small" data-alq-liq="${esc(e.nombre)}">Marcar liquidado</button></div></div>`;
     return `<div class="adel-row"><div><b>${esc(e.nombre)}</b> <span class="chip ${d.tarde?'neg':'warn'}">${d.tarde?'Atrasado':'Pendiente'}</span><br><small>${q?`${liqTxt(q)} → <b>paga ${money(q.pagar)}</b>`:'Calculando…'}${d.tarde?'':` · ${plazoTxt(d,mes)}`}</small></div>
-      <div class="row" style="gap:6px">${abierto?`<input type="number" step="0.01" min="0" inputmode="decimal" id="alqM" value="${q?q.pagar:d.total}" aria-label="Monto" style="width:100px">${['efectivo','yappy','tarjeta'].map(m=>`<button class="btn small" data-alq-pay="${esc(e.nombre)}" data-m="${m}">${MET_LBL[m]}</button>`).join('')}<button class="btn small" data-alq-pay="${esc(e.nombre)}" data-m="quincena">Descontar de su quincena</button><button class="btn small ghost" data-alq-x>✕</button>`:`<button class="btn small" data-alq-open="${esc(e.nombre)}">Registrar pago</button>`}</div></div>`}).join('')}</div>${acum?`<details style="margin-top:10px"><summary><b>Cómo va el alquiler de ${mesLbl(sm)}</b></summary><div style="display:grid;gap:8px;margin-top:8px">${acum}</div></details>`:''}`;
+      <div class="row" style="gap:6px">${abierto?`<input type="number" step="0.01" min="0" inputmode="decimal" id="alqM" value="${q?q.pagar:d.total}" aria-label="Monto" style="width:100px">${['efectivo','yappy','transferencia'].map(m=>`<button class="btn small" data-alq-pay="${esc(e.nombre)}" data-m="${m}">${ALQ_MET[m]}</button>`).join('')}<button class="btn small" data-alq-pay="${esc(e.nombre)}" data-m="quincena">Descontar de su quincena</button><button class="btn small ghost" data-alq-x>✕</button>`:`<button class="btn small" data-alq-open="${esc(e.nombre)}">Registrar pago</button>`}</div></div>`}).join('')}</div>${acum?`<details style="margin-top:10px"><summary><b>Cómo va el alquiler de ${mesLbl(sm)}</b></summary><div style="display:grid;gap:8px;margin-top:8px">${acum}</div></details>`:''}`;
 }
 document.addEventListener('click',async e=>{
   const lq=e.target.closest('[data-alq-liq]');if(lq){if(!needDb()||!liqG)return;const est=cfg.estilistas.find(z=>z.nombre===lq.dataset.alqLiq),q=liqCalc(est,mesDe(hoy()),liqG.L,liqG.T,liqG.P);try{await db.collection('alquileres').add({estilista:est.nombre,mes:mesDe(hoy()),monto:0,metodo:'liquidado',ganado:q.ganado,productos:q.prod,aFavor:q.favor,estado:'aceptado',fecha:hoy(),creado:new Date().toISOString(),por:porGer()});toast(q.favor?`Liquidado. Págale ${money(q.favor)} a ${est.nombre}.`:'Liquidado')}catch(err){toast('No se pudo guardar.')}return}
