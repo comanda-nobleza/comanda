@@ -2173,7 +2173,7 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
   const nunca=x=>`<select class="th-sel danger" data-thno="${x.t}" data-k="${esc(x.t==='mant'?x.ids.join(','):x.t==='react'?x.id:x.key+'|'+x.vence)}" aria-label="No volver a recordar"><option value="">No recordar…</option><option>Ya no viene al salón</option><option>Pidió no recibir mensajes</option><option>Se mudó / no está en Panamá</option><option>Otro motivo</option></select>`;
   const pr=(x,msg)=>row(`<b>${esc(x.cliente)}</b><br><small>${x.servs?esc(x.servs.join(' + '))+' · ':''}${x.txt}${x.tel?'':' · '+sinTel}</small>`,
     `${wa(x.tel,msg,`data-thenv="${x.t}" data-k="${esc(x.t==='mant'?x.ids.join(','):x.t==='react'?x.id:x.t==='cum'?x.id:x.key+'|'+x.vence)}"`,x.t==='cum'?'Felicitar por WhatsApp':'WhatsApp')}${x.t==='cum'?`<button class="btn small ghost" data-cumple-ok="${esc(x.id)}" data-solo="1">Ya la felicité</button>`:`<button class="btn small" data-thag="${esc(x.cliente)}" data-tel="${esc(x.tel||'')}" data-svc="${esc((x.docs||[]).map(z=>z.servicio).join('|'))}" data-est="${esc(x.est||'')}">Agendar</button>${later(x)}${nunca(x)}`}`);
-  const ahM=aMin(new Date().toTimeString().slice(0,5)),confAtr=c=>confDesde(c)<h||(c.fecha===h&&(ahM>=12*60||aMin(c.inicio)<=ahM));
+  const ahM=aMin(new Date().toTimeString().slice(0,5)),confAtr=c=>confDesde(c)<h;
   const confR=({c,tel})=>{const cuando=c.fecha===h?'Hoy':c.fecha===manana()?'Mañana':fechaCorta(c.fecha);
     return row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${cuando} ${h12(c.inicio)}</span><br><small>${esc(svcTodos(c)||'servicio por definir')} · ${esc(atiendeTxt(c))}${c.confEnv?` · <b>📨 enviado ${hora(c.confEnv)} · esperando</b>`:''}${tel?'':' · '+sinTel}</small>`,
       c.confEnv?`<button class="btn small primary" data-ag="conf-sin" data-id="${c.id}">✓ Confirmó</button><button class="btn small" data-ag="editar" data-id="${c.id}">Cambiar hora</button><button class="btn small ghost danger" data-ag="cancelar" data-id="${c.id}">Canceló</button>${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Reenviar','ghost')}`
@@ -2194,7 +2194,7 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('a-form','🧪 Fórmulas y productos sin anotar','de días anteriores',A.form.length,A.form.map(formR).join(''))+
     grp('a-cum','🎂 Cumpleaños sin felicitar','ya pasó el día',cumA.length,cumA.map(oth).join('')):vacio('✓ Nada atrasado'));
   const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',nH?
-    grp('conf','📅 Confirmar citas','las de mañana antes del mediodía y las de hoy en la tarde',H.conf.length,H.conf.map(confR).join(''))+
+    grp('conf','📅 Confirmar citas','las de mañana (se habilitan a las 4:00 p. m.)',H.conf.length,H.conf.map(confR).join(''))+(pcLuego().length?`<p class="muted" style="margin:4px 0 8px"><small>🔒 ${pcLuego().length} cita${pcLuego().length>1?'s':''} de ${fechaCorta(pcLuego()[0].fecha)} para confirmar · se habilita${pcLuego().length>1?'n':''} hoy a las 4:00 p. m.</small></p>`:'')+
     grp('rec','💬 Recordar citas de mañana','',D.rec.length,D.rec.map(recR).join(''))+
     grp('rep','🔁 Reprogramar (no vinieron)','escríbeles para buscar otra fecha',H.rep.length,H.rep.map(repR).join(''))+
     grp('form','🧪 Fórmula y productos por anotar','',H.form.length,H.form.map(formR).join(''))+
@@ -4284,10 +4284,14 @@ function gradDe(P){const st=(k)=>P.map((x,i)=>{const [h,sa,l1,l2]=COLORES[colorD
 function lavadorDe(c){const t=c.tk||(c.puerta?null:(typeof ticketDeCita==='function'?ticketDeCita(c):null));if(!t)return '';const l=lineasDe(t.id).find(x=>esLavado(x)&&x.estilista&&x.estilista!==c.estilista);return l?l.estilista:''}
 function estHue(n){const [h,sat,l1,l2,t1]=COLORES[colorDe(n)];return `${h};--s:${sat}%;--l1:${l1}%;--l2:${l2}%${t1?`;--t1:${t1}%`:''}`}
 const citasManana=()=>agDia===manana()?citas:citasMan;
-/* cuándo toca confirmar una cita: antes del mediodía → el día anterior; después del mediodía → ese mismo día;
-   las del lunes en la mañana → desde el sábado (el domingo no cuenta) */
-function confDesde(c){const dw=new Date(c.fecha+'T12:00:00').getDay();if(aMin(c.inicio||'00:00')>=12*60)return c.fecha;return addDias(c.fecha,dw===1?-2:-1)}
-const pcHoy=()=>pcFut().filter(c=>confDesde(c)<=hoy());
+/* cuándo toca confirmar una cita: todas (mañana o tarde) se confirman el día anterior, desde las 4:00 p. m.;
+   las del lunes → el sábado (el domingo no cuenta) */
+const CONF_HORA=16*60;
+function confDesde(c){const dw=new Date(c.fecha+'T12:00:00').getDay();return addDias(c.fecha,dw===1?-2:-1)}
+const confHabil=c=>{const d=confDesde(c),h=hoy();return d<h||(d===h&&aMin(new Date().toTimeString().slice(0,5))>=CONF_HORA)};
+const pcHoy=()=>pcFut().filter(confHabil);
+const pcLuego=()=>pcFut().filter(c=>confDesde(c)===hoy()&&!confHabil(c));
+setInterval(()=>{const m=aMin(new Date().toTimeString().slice(0,5));if(m>=CONF_HORA&&window._c16!==hoy()){window._c16=hoy();try{renderDyn()}catch(e){}}},60000);
 const pcFut=()=>unaPorGrupo(porConf.filter(c=>c.fecha>=hoy())).sort((a,b)=>(a.fecha+a.inicio).localeCompare(b.fecha+b.inicio));
 
 const agMov=n=>modo==='caja'?(agVista==='mes'?movMes(n):addDias(agDia,n)):agVE==='mes'?movMes(n):agVE==='semana'?addDias(agDia,7*n):addDias(agDia,n);
@@ -4418,7 +4422,7 @@ function renderAgenda(){try{renderTlDet()}catch(e){}
   // paneles
   const pc=pcFut(), man=unaPorGrupo(citasManana().filter(c=>c.estado==='confirmada'||c.estado==='por_confirmar')).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio));
   let pan='';
-  if(pc.length){const fila=c=>`<div class="ag-prow"><div><b>${esc(c.cliente)}</b> · ${esc(svcTodos(c))}${confDesde(c)<=hoy()?' <span class="chip warn">Confirmar hoy</span>':`<small class="muted"> · se confirma el ${fechaCorta(confDesde(c))}</small>`}<br><small>${fechaCorta(c.fecha)} · ${h12(c.inicio)} · ${esc(atiendeTxt(c))}${c.creadoPor&&!esCaja(c.creadoPor)?' · agendada por '+esc(c.creadoPor):''}</small></div>${c.fecha===agDia?'<small>Está en este día ↓</small>':`<button class="btn small" data-ag="ir" data-f="${c.fecha}">Ver ese día</button>`}</div>`;pan+=`<details class="ag-panel"><summary><b>Todas las citas por confirmar (${pc.length})</b> <small class="muted">· incluye las de los próximos días, por si quieres adelantarte</small></summary><div style="display:grid;gap:10px;margin-top:10px">${pc.map(fila).join('')}</div></details>`}
+  if(pc.length){const fila=c=>`<div class="ag-prow"><div><b>${esc(c.cliente)}</b> · ${esc(svcTodos(c))}${confHabil(c)?' <span class="chip warn">Confirmar hoy</span>':`<small class="muted"> · se confirma ${confDesde(c)===hoy()?'hoy':'el '+fechaCorta(confDesde(c))} desde las 4:00 p. m.</small>`}<br><small>${fechaCorta(c.fecha)} · ${h12(c.inicio)} · ${esc(atiendeTxt(c))}${c.creadoPor&&!esCaja(c.creadoPor)?' · agendada por '+esc(c.creadoPor):''}</small></div>${c.fecha===agDia?'<small>Está en este día ↓</small>':`<button class="btn small" data-ag="ir" data-f="${c.fecha}">Ver ese día</button>`}</div>`;pan+=`<details class="ag-panel"><summary><b>Todas las citas por confirmar (${pc.length})</b> <small class="muted">· incluye las de los próximos días, por si quieres adelantarte</small></summary><div style="display:grid;gap:10px;margin-top:10px">${pc.map(fila).join('')}</div></details>`}
   if(false&&agDia===hoy()&&man.length){const pend=man.filter(c=>!c.recordatorio).length;
     pan+=`<div class="ag-panel ${pend?'':'ok'}"><h3>Recordatorios para mañana (${pend?pend+' por enviar':'todos enviados ✓'})</h3>${man.map(c=>{const tel=telMap[c.id]||'',l=waLink(tel,msgRecordar(c));return `<div class="ag-prow"><div><b>${esc(c.cliente)}</b> · ${h12(c.inicio)} con ${esc(atiendeTxt(c))}<br><small>${esc(svcTodos(c))} · ${tel?esc(tel):'<span class="neg">sin teléfono</span>'}</small></div>${c.recordatorio?'<span class="chip ok">✓ Enviado</span>':`<a class="btn small wa" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="recordar" data-id="${c.id}">Enviar recordatorio</a>`}</div>`}).join('')}</div>`}
   $('#agPaneles').innerHTML=pan;
