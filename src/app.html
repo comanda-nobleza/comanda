@@ -2035,7 +2035,8 @@ const valorDiaVac=(n,f)=>r2(salarioSolo(n,f||hoy())/30);
 /* Código de Trabajo: 30 días por cada 11 meses de trabajo. Días trabajados = días desde el ingreso menos los días que estuvo de vacaciones */
 const VAC_MES11=11*365/12;
 function vacDiasTomados(n,f){return VAC.filter(x=>x.estilista===n&&(x.tipo==='vac'||x.tipo==='prev')&&x.desde&&x.desde<=f).reduce((s,x)=>{const h=(x.hasta||x.desde)<f?(x.hasta||x.desde):f;return s+dd2(x.desde,h)},0)}
-function vacGan(n,f){const ing=ingresoDe(n);f=f||hoy();if(!ing||f<ing)return 0;return Math.max(0,dd2(ing,f)-vacDiasTomados(n,f))*30/VAC_MES11}
+function mesesEntre(a,f){const [y1,m1,d1]=a.split('-').map(Number),[y2,m2,d2]=f.split('-').map(Number);let m=(y2-y1)*12+(m2-m1),d=d2-d1;if(d<0){m--;d+=30}return m+d/30}
+function vacGan(n,f){const ing=ingresoDe(n);f=f||hoy();if(!ing||f<ing)return 0;return Math.max(0,mesesEntre(ing,f))*30/11}
 const vacUsados=n=>VAC.filter(x=>x.estilista===n).reduce((s,x)=>s+(+x.dias||0),0);
 const vacDisp=n=>r1(vacGan(n)-vacUsados(n));
 function vacPartes(n){const g=vacGan(n),comp=Math.floor(g/30+1e-9)*30,u=vacUsados(n);return {comp:r1(Math.max(0,comp-u)),acum:r1(g-comp),meses:r1((g-comp)/30*11)}}
