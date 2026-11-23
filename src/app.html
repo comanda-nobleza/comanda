@@ -2346,10 +2346,11 @@ const AMP_NUEVAS=[['Salerm','Ampolla Salerm Placenta Vegetal',15],['Salerm','Amp
 /* ampollas: cada servicio de ampolla cobrado descuenta 1 ampolla de su producto del inventario (como «Se terminó») */
 const AMP_INV=[[/placenta vegetal/i,'v10',/placenta vegetal/i],[/hair revitalizer/i,'v09',/revitalizador capilar/i],[/pro keratin/i,'v08',/pro-?queratina/i],[/alfaparf shine/i,'v12',/shine lotion/i],[/essential oil/i,'v13',/essential oil/i],[/scalp protector/i,'v14',/scalp protector/i],[/beauty genesis/i,'v11',/beauty genesis/i],[/energizing/i,'v112',/energizing/i],[/thickening/i,'v113',/thickening/i],[/chroma re-?vital/i,'v114',/chroma re-?vital/i],[/plex ?forte/i,'v15',/plex ?forte.*(n[º°o]?\s*3|bond repair)/i]];
 let ampInvs=null;
-async function ampProd(servicio){const s=String(servicio||'');if(!/^ampolla/i.test(s.trim()))return null;const m=AMP_INV.find(x=>x[0].test(s));if(!m)return null;
+const SVC_INV=[[/^(?=.*reconstrucci)(?=.*(biokera|bioplast))/i,'v06',/vial reconstructor/i]];
+async function ampProd(servicio){const s=String(servicio||'').trim();const m=(/^ampolla/i.test(s)?AMP_INV.find(x=>x[0].test(s)):null)||SVC_INV.find(x=>x[0].test(s));if(!m)return null;
   if(invById[m[1]])return invById[m[1]];try{const d=await db.doc('inventario/'+m[1]).get();if(d.exists&&m[2].test(d.data().nombre||''))return {id:d.id,...d.data()}}catch(e){}
   if(!ampInvs){const q=await db.collection('inventario').get();ampInvs=q.docs.map(d=>({id:d.id,...d.data()}))}
-  return ampInvs.find(p=>m[2].test(p.nombre||'')&&/ampolla/i.test((p.nombre||'')+' '+(p.pres||'')))||null}
+  return ampInvs.find(p=>m[2].test(p.nombre||'')&&/ampolla|vial/i.test((p.nombre||'')+' '+(p.pres||'')))||null}
 async function ampDescontar(t,L){for(const l of L){if(l.ampInv||l.saldoId||l.venta)continue;const p=await ampProd(l.servicio);if(!p)continue;
     const r=await invMover(p.id,{term:true,tipo:'Ampolla usada en servicio',nota:`${t.cliente||''} · ${l.estilista||''}`});if(r)await db.doc('lineas/'+l.id).update({ampInv:{pid:p.id,dc:r.dc||0,da:r.da||0,mid:r.id||''}})}}
 async function ampDevolver(tid){const q=await db.collection('lineas').where('ticketId','==',tid).get();for(const d of q.docs){const a=d.data().ampInv;if(!a||!a.pid)continue;
