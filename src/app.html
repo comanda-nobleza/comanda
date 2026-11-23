@@ -1362,7 +1362,7 @@ document.addEventListener('click',async e=>{
   try{
     if(pay){const n=pay.dataset.alqPay,m=r2($('#alqM').value),est=cfg.estilistas.find(z=>z.nombre===n),d=alqDebe(est,mesDe(hoy()));if(!(m>0)){toast('Escribe el monto.');return}
       const q=liqG?liqCalc(est,mesDe(hoy()),liqG.L,liqG.T,liqG.P):{};
-      await db.collection('alquileres').add({estilista:n,mes:mesDe(hoy()),monto:m,recargo:d.tarde,metodo:pay.dataset.m,ganado:q.ganado??null,productos:q.prod??null,estado:'aceptado',fecha:hoy(),creado:new Date().toISOString(),por:porGer()});alqPay=null;toast(`Alquiler de ${n} registrado`)}
+      await db.collection('alquileres').add({estilista:n,mes:mesDe(hoy()),monto:m,recargo:d.tarde&&m>d.base+0.009,metodo:pay.dataset.m,ganado:q.ganado??null,productos:q.prod??null,estado:'aceptado',fecha:hoy(),creado:new Date().toISOString(),por:porGer()});alqPay=null;toast(`Alquiler de ${n} registrado`)}
     if(ok){await db.doc('alquileres/'+ok.dataset.alqOk).update({estado:'aceptado',revisado:new Date().toISOString(),por:porGer()});toast('Pago aceptado')}
     if(no){if(!armed(no))return;await db.doc('alquileres/'+no.dataset.alqNo).update({estado:'rechazado',revisado:new Date().toISOString(),por:porGer()});toast('Pago rechazado. Le aparecerá para enviarlo de nuevo.')}
     if(del){if(!armed(del))return;await db.doc('alquileres/'+del.dataset.alqDel).delete();toast('Pago anulado')}
