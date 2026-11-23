@@ -2024,7 +2024,9 @@ function renderTurnoDifs(){const box=$('#turnoDifBox');if(!box)return;if(!duena)
     <div class="row" style="gap:6px"><input placeholder="¿Qué pasó? (opcional)" style="flex:1;min-width:140px"><button class="btn small primary" data-turno-rev="${t.id}">Revisada</button></div></div>`).join('')}</div>`}
 
 /* ---------- vacaciones ---------- */
-const ingresoDe=n=>(cfg.estilistas.find(x=>x.nombre===n)||{}).ingreso||'';
+/* fechas de ingreso confirmadas (por si gerencia todavía no abrió la app para guardarlas) */
+const ING_DEF=[[/^mateo(\s|$)/i,'2026-11-21','ingFix1'],[/^pedro(\s|$)/i,'2024-10-04','vacFix1'],[/^rita(\s|$)/i,'2026-03-03','salFix3']];
+const ingresoDe=n=>{const e=cfg.estilistas.find(x=>x.nombre===n)||{},d=ING_DEF.find(z=>z[0].test(n||''));if(d&&!cfg[d[2]])return d[1];return e.ingreso||''};
 const r1=v=>Math.floor((+v||0)*10+1e-9)/10;
 const sumaD=(f,k)=>{const d=new Date(f+'T12:00:00');d.setDate(d.getDate()+k);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 let VAC=[],unsubVac=null;
