@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="0250b71db6ba"</script>
-<script src="web.js?v=0250b71db6ba"></script>
+<script>window.BUILD="516325b57e0c"</script>
+<script src="web.js?v=516325b57e0c"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2054,7 +2054,7 @@ document.addEventListener('click',async e=>{
   if(rg){if(!needDb())return;const n=rg.dataset.vacReg,f=rg.closest('[data-vac-form]'),tipo=f.querySelector('[data-vac-tipo]').value,desde=f.querySelector('[data-vac-desde]').value,dias=Math.round(+f.querySelector('[data-vac-dias]').value||0);
     if(!desde)return toast('Elige la fecha.');if(dias<1)return toast('Escribe cuántos días.');if(desde<ingresoDe(n))return toast('La fecha es antes de su ingreso.');
     const disp=vacDisp(n);if(dias>disp+1e-9)return toast(`${n} solo tiene ${fmtD(disp)} disponibles.`);
-    const vd=valorDiaVac(n,desde),doc={estilista:n,tipo,desde,hasta:sumaD(desde,dias-1),dias,valorDia:vd,monto:tipo==='vac'?r2(vd*dias):0,saldo:r1(disp-dias),por:porGer(),creado:new Date().toISOString()};
+    const vd=valorDiaVac(n,desde),doc={estilista:n,tipo,desde,hasta:sumaD(desde,dias-1),dias,valorDia:vd,monto:tipo==='vac'?r2(salarioSolo(n,desde)/30*dias):0,saldo:r1(disp-dias),por:porGer(),creado:new Date().toISOString()};
     rg.disabled=true;try{await db.collection('vacaciones').add(doc);f.querySelector('[data-vac-dias]').value='';toast(tipo==='vac'?`Vacaciones registradas · pagar ${money(doc.monto)}`:'Falta cubierta con vacaciones')}catch(err){toast('No se pudo guardar.')}rg.disabled=false;return}
   const dl0=e.target.closest('[data-vac-del]');
   if(dl0){if(!armed(dl0))return;try{await db.doc('vacaciones/'+dl0.dataset.vacDel).delete();toast('Anulado')}catch(err){toast('No se pudo anular.')}return}
