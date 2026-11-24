@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="76cd8884da89"</script>
-<script src="web.js?v=76cd8884da89"></script>
+<script>window.BUILD="db9f7a356c36"</script>
+<script src="web.js?v=db9f7a356c36"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2146,6 +2146,7 @@ async function guardarMant(t,tel){if(!db||!t)return;const k=ckey(t.cliente),f=t.
 var TH={t:0,busy:false,mant:[],fut:new Set(),cont:{},react:[],vence:[],av:{},hechas:[],telT:{}},thUn=[];
 function subTareas(){if(thUn.length||!db||modo!=='caja')return;const h=hoy(),m=x=>x.docs.map(d=>({id:d.id,...d.data()})),on=(q,f)=>thUn.push(q.onSnapshot(x=>{f(m(x));TH.t=Date.now();renderTareas()},()=>{}));
   on(db.collection('tareasHechas').where('fecha','==',h),L=>{TH.hechas=L.sort((a,b)=>(b.hora||'').localeCompare(a.hora||''))});
+  on(db.collection('tareasHechas').where('tipo','==','rut').limit(500),L=>{TH.rut=new Set(L.map(x=>x.rk).filter(Boolean))});
   thUn.push(db.collection('citasTel').where('fecha','>=',h).where('fecha','<=',addDias(h,2)).onSnapshot(x=>{x.docs.forEach(d=>TH.telT[d.id]=d.data().tel||'');renderTareas()},()=>{}));
   on(db.collection('mant').where('toca','<=',h).limit(500),L=>{TH.mant=L});
   on(db.collection('citas').where('fecha','>=',h).limit(1000),L=>{TH.fut=new Set(L.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)));TH.citasHoy=L.filter(c=>c.fecha===hoy());TH.hoyN=new Set(L.filter(c=>c.fecha===hoy()&&activa(c)).map(c=>c.clienteKey||ckey(c.cliente))).size;agBadgeSet()});
@@ -2158,6 +2159,26 @@ function subTareas(){if(thUn.length||!db||modo!=='caja')return;const h=hoy(),m=x
   try{if(!cumpleRun)cumplesGerencia()}catch(e){}}
 function cargarTareas(){/* ahora todo se actualiza en vivo para todos los usuarios de caja */renderTareas()}
 async function thGrupo(c){if(!c.grupo)return [c];try{const s=await db.collection('citas').where('grupo','==',c.grupo).get();const l=s.docs.map(d=>({id:d.id,...d.data()}));return l.length?l:[c]}catch(e){return [c]}}
+/* tareas fijas del equipo (no son de clientas) */
+const RUT=[
+  {k:'redes9',p:'Rita',ic:'📱',t:'Subir estado de WhatsApp e Instagram',hora:'09:00',diario:1},
+  {k:'redes12',p:'Rita',ic:'📱',t:'Subir estado de WhatsApp e Instagram',hora:'12:00',diario:1},
+  {k:'redes15',p:'Rita',ic:'📱',t:'Subir estado de WhatsApp e Instagram',hora:'15:00',diario:1},
+  {k:'fbads',p:'Pedro',ic:'📊',t:'Revisar si las pautas de Facebook Ads están dando resultados e informarle a Samuel',dow:3},
+  {k:'invlav',p:'Pedro',ic:'🔍',t:'Inspección del inventario del lavacabezas: revisar que no falten insumos',dom:[3,17],inv:'Lavacabezas'},
+  {k:'invventa',p:'Rita',ic:'🔍',t:'Revisar el inventario de productos de venta: que no haya faltantes',dom:[5],inv:'Venta'}];
+const RUT_DESDE='2026-11-24';
+const rutMia=r=>duena||(cajero&&new RegExp('^'+r.p+'(\\s|$)','i').test(cajero));
+function rutTareas(h){const out={hoy:[],luego:[],atr:[]},hecho=(r,f)=>TH.rut&&TH.rut.has(r.k+'@'+f),ahM=aMin(new Date().toTimeString().slice(0,5)),esDomF=f=>new Date(f+'T12:00:00').getDay()===0;
+  for(const r of RUT){if(!rutMia(r))continue;
+    if(r.diario){if(esDomF(h)||h<RUT_DESDE||hecho(r,h))continue;(aMin(r.hora)<=ahM?out.hoy:out.luego).push({r,f:h});continue}
+    for(let i=20;i>=0;i--){const f0=addDias(h,-i),d=new Date(f0+'T12:00:00');if(!(r.dow!=null?d.getDay()===r.dow:(r.dom||[]).includes(d.getDate())))continue;const f=esDomF(f0)?addDias(f0,1):f0;if(f>h||f<RUT_DESDE||hecho(r,f))continue;(f<h?out.atr:out.hoy).push({r,f})}}
+  return out}
+const rutRow=(x,lock)=>((izq,der)=>`<div class="adel-row th-r"><div>${izq}</div><div class="row th-b">${der}</div></div>`)(`<b>${x.r.ic} ${esc(x.r.t)}</b><br><small>${x.r.hora?h12(x.r.hora)+' · ':''}${x.f<hoy()?'desde el '+fechaCorta(x.f)+' · ':''}${duena?'le toca a '+esc(x.r.p):'tarea tuya'}</small>`,lock?`<button type="button" class="btn small" disabled>🔒 ${h12(x.r.hora)}</button>`:`${x.r.inv?`<button type="button" class="btn small" data-rut-inv="${x.r.inv}">Abrir inventario</button>`:''}<button type="button" class="btn small primary" data-rut="${x.r.k}" data-rut-f="${x.f}">✓ Hecho</button>`);
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-rut],[data-rut-inv]');if(!b||!db)return;
+  if(b.dataset.rutInv){invUbSel=b.dataset.rutInv;invSub='inv';setTab('inv');return}
+  const r=RUT.find(z=>z.k===b.dataset.rut),f=b.dataset.rutF;if(!r)return;b.disabled=true;
+  try{await db.collection('tareasHechas').add({fecha:hoy(),hora:new Date().toISOString(),tipo:'rut',rk:r.k+'@'+f,cliente:r.ic+' '+r.t,txt:(r.hora?h12(r.hora)+' · ':'')+'tarea de '+r.p,por:cajero||encargada(),undo:[{op:'delete',p:'rutNada/x'}]});toast('✓ Tarea hecha')}catch(err){toast('No se pudo guardar.');b.disabled=false}});
 async function thHecha(tipo,cliente,txt,undo){try{await db.collection('tareasHechas').add({fecha:hoy(),hora:new Date().toISOString(),tipo,cliente:cliente||'',txt,por:cajero||encargada(),undo:undo||[]})}catch(e){}}
 const nomCli=c=>((c.nombre||'')+' '+(c.apellido||'')).trim();
 function msgMant(x){return `¡Hola ${primerNombre(x.cliente)}! 💛\n\nYa va tocando tu ${x.servs.join(' y ').toLowerCase()} en ${SALON}${x.est?` (la última vez te atendió ${x.est})`:''}.\n\n¿Te agendamos? Responde este mensaje y te buscamos un espacio. ✨`}
@@ -2208,15 +2229,17 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
   const H={conf:D.conf.filter(x=>!confAtr(x.c)),rep:D.rep.filter(x=>!(x.c.fecha<h)),form:D.form.filter(l=>!((l.fecha||h)<h))};
   const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),oth=x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x)),cumF=D.otros.filter(x=>x.t==='cum'&&x.f>h),cumA=D.otros.filter(x=>x.t==='cum'&&x.f<h),otrosH=D.otros.filter(x=>!(x.t==='cum'&&x.f!==h)),otros=otrosH.map(oth).join('');
   const cumFR=x=>row(`<b>${esc(x.cliente)}</b> <span class="chip gris">🎂 Cumple el ${fechaCorta(x.f)}</span><br><small>Felicitar ese día · ya se le sumaron ${ptsCumple()} puntos</small>`,`<button type="button" class="btn small" disabled title="Se activa el día de su cumpleaños">🔒 Se activa el ${fechaCorta(x.f).replace(',','').replace(/ \S+$/,'')}</button>`);
-  const nA=A.conf.length+A.rep.length+A.form.length+cumA.length,nH=H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+otrosH.length,hh=TH.hechas;
+  const RT=rutTareas(h);
+  const nA=A.conf.length+A.rep.length+A.form.length+cumA.length+RT.atr.length,nH=H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+otrosH.length+RT.hoy.length,hh=TH.hechas;
   const sec=(cls,ic,tit,n,sub,body)=>`<section class="th-sec ${cls}"><div class="th-sh"><span class="th-ic">${ic}</span><b>${tit}</b><span class="th-n">${n}</span>${sub?`<small class="muted">${sub}</small>`:''}</div>${body}</section>`;
   const vacio=t=>`<div class="th-vacio">${t}</div>`;
   const atrHtml=sec('atr'+(nA?'':' cero'),'⚠️','Atrasadas',nA,'',nA?
     grp('a-conf','📅 Citas sin confirmar','ya debían estar confirmadas',A.conf.length,A.conf.map(confR).join(''))+
     grp('a-rep','🔁 Reprogramar (no vinieron)','de días anteriores',A.rep.length,A.rep.map(repR).join(''))+
     grp('a-form','🧪 Fórmulas y productos sin anotar','de días anteriores',A.form.length,A.form.map(formR).join(''))+
-    grp('a-cum','🎂 Cumpleaños sin felicitar','ya pasó el día',cumA.length,cumA.map(oth).join('')):vacio('✓ Nada atrasado'));
-  const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',nH?
+    grp('a-cum','🎂 Cumpleaños sin felicitar','ya pasó el día',cumA.length,cumA.map(oth).join(''))+grp('a-rut','🗂️ Tareas del equipo','de días anteriores',RT.atr.length,RT.atr.map(x=>rutRow(x)).join('')):vacio('✓ Nada atrasado'));
+  const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',(nH?
+    grp('rut','🗂️ Tareas del equipo','',RT.hoy.length,RT.hoy.map(x=>rutRow(x)).join(''))+
     grp('conf','📅 Confirmar citas','las de mañana (se habilitan a las 2:00 p. m.)',H.conf.length,H.conf.map(confR).join(''))+(pcLuego().length?`<p class="muted" style="margin:4px 0 8px"><small>🔒 ${pcLuego().length} cita${pcLuego().length>1?'s':''} de ${fechaCorta(pcLuego()[0].fecha)} para confirmar · se habilita${pcLuego().length>1?'n':''} hoy a las 2:00 p. m.</small></p>`:'')+
     grp('rec','💬 Recordar citas de mañana','',D.rec.length,D.rec.map(recR).join(''))+
     grp('rep','🔁 Reprogramar (no vinieron)','escríbeles para buscar otra fecha',H.rep.length,H.rep.map(repR).join(''))+
@@ -2224,7 +2247,7 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('mant','🔁 Toca mantenimiento','ya les toca volver según su último servicio',D.mant.length,mant)+
     grp('react','💌 Te extrañamos','más de 45 días sin venir',D.react.length,react)+
     grp('otros','🎂 Cumpleaños · ⭐ Puntos por vencer','',otrosH.length,otros)+
-    (D.mant.length+D.react.length+otrosH.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día')).replace(/<\/section>$/,(cumF.length?`<div class="th-prox">${grp('cumf','🔒 Próximos cumpleaños','se activan ese día',cumF.length,cumF.map(cumFR).join(''))}</div>`:'')+'</section>');
+    (D.mant.length+D.react.length+otrosH.length?'<small class="muted">Máximo un mensaje por semana a cada clienta.</small>':''):vacio('✓ Todo al día'))+(RT.luego.length?`<div class="th-prox">${grp('rutl','🔒 Más tarde hoy','se activan a su hora',RT.luego.length,RT.luego.map(x=>rutRow(x,1)).join(''))}</div>`:'')).replace(/<\/section>$/,(cumF.length?`<div class="th-prox">${grp('cumf','🔒 Próximos cumpleaños','se activan ese día',cumF.length,cumF.map(cumFR).join(''))}</div>`:'')+'</section>');
   const hechHtml=sec('hech','✓','Hechas hoy',hh.length,'',hh.length?`<div class="th-l">${hh.map(x=>row(`<b>${esc(x.cliente)}</b><br><small>${esc(x.txt)} · ${hora(x.hora)} · ${esc(x.por||'')}</small>`,(x.undo||[]).length?`<button class="btn small ghost" data-thundo="${x.id}">Deshacer</button>`:'')).join('')}</div>`:vacio('Todavía nada'));
   {const tb=$('#tarBadge'),nt=nA+nH;if(tb){tb.hidden=!nt;tb.textContent=nt;tb.classList.toggle('bad',nA>0)}}
   const res=[`${nH} de hoy`,hh.length?`${hh.length} hecha${hh.length>1?'s':''}`:'',nA?`<b class="neg">${nA} atrasada${nA>1?'s':''}</b>`:''].filter(Boolean).join(' · ');
