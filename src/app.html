@@ -4299,14 +4299,22 @@ const COLOR_DEF={Jesus:'verde',Jeffrey:'grafito',Humberto:'gris claro',Nicoll:'s
 function colorDe(n){if(esInq(n))return 'rojo';/* rojo = todos los profesionales en modalidad alquilado */const e=cfg.estilistas.find(x=>x.nombre===n);let c=e&&e.color==='gris oscuro'?'grafito':e&&e.color||COLOR_DEF[n];if(!COLORES[c]){const usados=new Set(['rojo',...Object.values(COLOR_DEF),...cfg.estilistas.map(x=>x.color||COLOR_DEF[x.nombre]).filter(Boolean)]),libres=Object.keys(COLORES).filter(k=>!usados.has(k)),otros=cfg.estilistas.filter(x=>!COLORES[x.color||COLOR_DEF[x.nombre]]).map(x=>x.nombre),i=Math.max(0,otros.indexOf(n));c=libres.length?libres[i%libres.length]:Object.keys(COLORES)[i%16]}return c}
 function estVars2(n){const [h,sat,l1,l2,t1]=COLORES[colorDe(n)];return `--h2:${h};--s2:${sat}%;--l12:${l1}%;--l22:${l2}%`}
 const esLavado=l=>{if(l.venta)return false;if(l.area)return l.area==='Lavados';const sv=cfg.servicios.find(x=>x.nombre===String(l.servicio||'').split(':')[0]);return !!sv&&sv.area==='Lavados'};
-function equipoDe(c){const t=c.tk||(c.puerta?null:(typeof ticketDeCita==='function'?ticketDeCita(c):null));if(!t)return [];
-  const ls=lineasDe(t.id).filter(l=>!l.venta&&l.estilista),P=[],add=(n,lav)=>{let o=P.find(x=>x.n===n);if(!o){o={n,sv:[],lav:false};P.push(o)}if(lav)o.lav=true;return o};
+/* cuentas y servicios de otros días (solo lectura) para ver quién atendió cada cita en la agenda */
+const AGD={};let agdUn=[],agdF=null;
+function agdCargar(f){if(!db||!f||f===dia||agdF===f)return;agdF=f;agdUn.forEach(u=>{try{u()}catch(e){}});agdUn=[];AGD[f]=AGD[f]||{T:[],L:[]};
+  agdUn.push(db.collection('tickets').where('fecha','==',f).onSnapshot(s=>{AGD[f].T=s.docs.map(d=>({id:d.id,...d.data()}));try{renderAgenda()}catch(e){}},()=>{}));
+  agdUn.push(db.collection('lineas').where('fecha','==',f).onSnapshot(s=>{AGD[f].L=s.docs.map(d=>({id:d.id,...d.data()}));try{renderAgenda()}catch(e){}},()=>{}))}
+function tkDeCitaDia(c){if(c.tk)return c.tk;if(c.puerta)return null;if(!c.fecha||c.fecha===dia)return typeof ticketDeCita==='function'?ticketDeCita(c):null;const D=AGD[c.fecha];if(!D)return null;
+  return D.T.find(t=>t.id===c.ticketId)||D.T.find(t=>t.citaId===c.id)||(c.grupo?D.T.find(t=>citas.some(x=>x.grupo===c.grupo&&(x.id===t.citaId||x.ticketId===t.id))):null)||null}
+const lsDeTk=(t,f)=>(!f||f===dia)?lineasDe(t.id):((AGD[f]||{L:[]}).L.filter(l=>l.ticketId===t.id));
+function equipoDe(c){const t=tkDeCitaDia(c);if(!t)return [];
+  const ls=lsDeTk(t,c.fecha).filter(l=>!l.venta&&l.estilista),P=[],add=(n,lav)=>{let o=P.find(x=>x.n===n);if(!o){o={n,sv:[],lav:false};P.push(o)}if(lav)o.lav=true;return o};
   ls.filter(esLavado).forEach(l=>add(l.estilista,true).sv.push(String(l.servicio).split(':')[0]));ls.filter(l=>!esLavado(l)).forEach(l=>add(l.estilista).sv.push(String(l.servicio).split(':')[0]));
   if(c.estilista){const a=P.find(x=>x.n===c.estilista)||add(c.estilista);a.at=true;P.splice(P.indexOf(a),1);P.push(a)}
   if(P.length<2)return [];const at=P.find(x=>x.at);let pr=at;if(!at||esInq(at.n)){const sal=P.filter(x=>!esInq(x.n));pr=sal.find(x=>!x.lav)||sal[0]||at||P[P.length-1]}P.forEach(x=>x.pr=x===pr);return P}
 function franjasDe(P){const W=5,O=P.filter(x=>!x.pr),fr=O.map((x,i)=>{const [h,sa,,l2]=COLORES[colorDe(x.n)];return `hsl(${h} ${sa}% ${Math.min(45,l2+12)}%) ${i*W}px ${(i+1)*W}px`}).join(',');return `--gs:linear-gradient(90deg,${fr},transparent ${O.length*W}px);--gw:${O.length*W}px`}
 function gradDe(P){const st=(k)=>P.map((x,i)=>{const [h,sa,l1,l2]=COLORES[colorDe(x.n)];const col=k?`hsl(${h} ${sa*.75}% ${l2}%)`:`hsl(${h} ${sa}% ${l1}%)`;return `${col} ${Math.round(i*100/(P.length-1))}%`}).join(',');const W=5,fr=P.map((x,i)=>{const [h,sa,,l2]=COLORES[colorDe(x.n)];return `hsl(${h} ${sa}% ${Math.min(45,l2+12)}%) ${i*W}px ${(i+1)*W}px`}).join(',');return `--gs:linear-gradient(90deg,${fr},transparent ${P.length*W}px);--gw:${P.length*W}px;--gl:linear-gradient(90deg,${st(0)});--gd:linear-gradient(90deg,${st(1)})`}
-function lavadorDe(c){const t=c.tk||(c.puerta?null:(typeof ticketDeCita==='function'?ticketDeCita(c):null));if(!t)return '';const l=lineasDe(t.id).find(x=>esLavado(x)&&x.estilista&&x.estilista!==c.estilista);return l?l.estilista:''}
+function lavadorDe(c){const t=tkDeCitaDia(c);if(!t)return '';const l=lsDeTk(t,c.fecha).find(x=>esLavado(x)&&x.estilista&&x.estilista!==c.estilista);return l?l.estilista:''}
 function estHue(n){const [h,sat,l1,l2,t1]=COLORES[colorDe(n)];return `${h};--s:${sat}%;--l1:${l1}%;--l2:${l2}%${t1?`;--t1:${t1}%`:''}`}
 const citasManana=()=>agDia===manana()?citas:citasMan;
 /* cuándo toca confirmar una cita: todas (mañana o tarde) se confirman el día anterior, desde las 2:00 p. m.;
@@ -4425,6 +4433,7 @@ function itemsEst(est,mode){
   return {cs,bs,html:it.map(i=>i.h).join('')};
 }
 function renderAgenda(){try{renderTlDet()}catch(e){}
+  try{if(agDia!==dia)agdCargar(agDia)}catch(e){}
   const enMes=modo==='caja'&&agVista==='mes';
   if(agVista==='est')agVista='dia';
   $$('#agVista button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.v==='mes'?agVista==='mes':agVista==='dia'&&agDia===(x.dataset.v==='man'?manana():hoy())));
@@ -4435,7 +4444,7 @@ function renderAgenda(){try{renderTlDet()}catch(e){}
   if(modo==='est'){
     $$('#agVistaEst button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ve==='mes'?agVE==='mes':agVE==='dia'&&agDia===(x.dataset.ve==='man'?manana():hoy())));
     if(agVE!=='dia'){$('#agPrev').setAttribute('aria-label',agVE==='mes'?'Mes anterior':'Semana anterior');$('#agNext').setAttribute('aria-label',agVE==='mes'?'Mes siguiente':'Semana siguiente');renderEstRango(out);return}
-    const {cs:cs0,bs,html}=itemsEst(soy,'est'),part=c=>{const t=c.tk||(c.puerta?null:ticketDeCita(c));return !!t&&lineasDe(t.id).some(l=>l.estilista===soy&&!l.venta)},cs=[...cs0,...(agDia===hoy()?[...citas.filter(c=>c.fecha===agDia&&activa(c)&&c.estilista!==soy&&!cs0.some(x=>x.id===c.id)&&part(c)),...puertaHoy().filter(x=>x.estilista===soy||part(x))]:[])];
+    const {cs:cs0,bs,html}=itemsEst(soy,'est'),part=c=>{const t=tkDeCitaDia(c);return !!t&&lsDeTk(t,c.fecha).some(l=>l.estilista===soy&&!l.venta)},cs=[...cs0,...citas.filter(c=>c.fecha===agDia&&activa(c)&&c.estilista!==soy&&!cs0.some(x=>x.id===c.id)&&part(c)),...(agDia===hoy()?puertaHoy().filter(x=>x.estilista===soy||part(x)):[])];
     out.innerHTML=(cs.length||bs.length)?`${tlHtml(cs,bs,'est',false)}<small>Tu agenda la maneja <b>caja</b>. Si necesitas una cita o un cambio, pídeselo a caja.</small>`:`<div class="empty">No tienes citas este día. Si una clienta te escribe para agendar, pásale el contacto a caja.</div>`;
     return;
   }
