@@ -57,8 +57,16 @@
   const archivos={upload:async(f)=>{const data=await comprimir(f);if(data.length>950000)throw new Error('El archivo es muy grande. Mándalo como foto.');
     const ref=await FS.collection('archivos').add({data,tipo:f.type||'',nombre:f.name||'',creado:new Date().toISOString()});return {id:ref.id}}};
   document.addEventListener('click',async e=>{const a=e.target.closest&&e.target.closest('a[href^="/_blob/"]');if(!a||!FS)return;e.preventDefault();
-    const w=window.open('','_blank');try{const d=await FS.collection('archivos').doc(a.getAttribute('href').slice(7)).get();if(!d.exists){if(w)w.close();alertar('No encontré ese archivo.');return}
-      const b=await (await fetch(d.data().data)).blob();const u=URL.createObjectURL(b);if(w)w.location=u;else location.href=u}catch(err){if(w)w.close();alertar('No se pudo abrir el archivo.')}},true);
+    /* se muestra dentro de la app: en el iPhone (app anclada) abrir otra ventana la deja en blanco */
+    const ov=document.createElement('div');ov.id='compVer';ov.setAttribute('style','position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.92);display:flex;flex-direction:column;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px calc(env(safe-area-inset-bottom,0px) + 12px)');
+    ov.innerHTML='<div style="display:flex;gap:8px;justify-content:space-between;align-items:center;margin-bottom:10px"><b style="color:#fff">Comprobante</b><span style="display:flex;gap:8px"><a id="compDl" style="display:none;color:#fff;border:1px solid #fff;border-radius:99px;padding:8px 14px;text-decoration:none;font-weight:700">Guardar</a><button type="button" id="compX" style="background:#fff;color:#000;border:0;border-radius:99px;padding:8px 16px;font-weight:800">Cerrar</button></span></div><div id="compIn" style="flex:1;min-height:0;display:flex;align-items:center;justify-content:center;color:#fff">Cargando…</div>';
+    document.body.appendChild(ov);let u=null;const cerrar=()=>{ov.remove();if(u)setTimeout(()=>URL.revokeObjectURL(u),60000)};ov.querySelector('#compX').onclick=cerrar;
+    try{const d=await FS.collection('archivos').doc(a.getAttribute('href').slice(7)).get();if(!d.exists){cerrar();alertar('No encontré ese archivo.');return}
+      const x=d.data(),data=x.data||'',tipo=x.tipo||(data.slice(5,data.indexOf(';'))||''),inn=ov.querySelector('#compIn'),dl=ov.querySelector('#compDl');
+      const b=await (await fetch(data)).blob();u=URL.createObjectURL(b);dl.href=u;dl.download=x.nombre||('comprobante'+(/pdf/.test(tipo)?'.pdf':'.jpg'));dl.style.display='';
+      if(/^image\//.test(tipo)||/^data:image\//.test(data)){inn.innerHTML='';const im=document.createElement('img');im.src=data;im.alt='Comprobante';im.setAttribute('style','max-width:100%;max-height:100%;object-fit:contain;border-radius:8px;background:#fff');inn.appendChild(im)}
+      else{inn.innerHTML='';const fr=document.createElement('iframe');fr.src=u;fr.title='Comprobante';fr.setAttribute('style','width:100%;height:100%;border:0;background:#fff;border-radius:8px');inn.appendChild(fr)}}
+    catch(err){cerrar();alertar('No se pudo abrir el archivo.')}},true);
   function alertar(t){try{toast(t)}catch(e){}}
 
   /* ---- pantalla para conectar el dispositivo (solo la primera vez) ---- */
