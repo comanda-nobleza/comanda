@@ -4435,7 +4435,7 @@ function renderAgenda(){try{renderTlDet()}catch(e){}
   if(modo==='est'){
     $$('#agVistaEst button').forEach(x=>x.setAttribute('aria-pressed',x.dataset.ve==='mes'?agVE==='mes':agVE==='dia'&&agDia===(x.dataset.ve==='man'?manana():hoy())));
     if(agVE!=='dia'){$('#agPrev').setAttribute('aria-label',agVE==='mes'?'Mes anterior':'Semana anterior');$('#agNext').setAttribute('aria-label',agVE==='mes'?'Mes siguiente':'Semana siguiente');renderEstRango(out);return}
-    const {cs:cs0,bs,html}=itemsEst(soy,'est'),cs=[...cs0,...(agDia===hoy()?puertaHoy().filter(x=>x.estilista===soy):[])];
+    const {cs:cs0,bs,html}=itemsEst(soy,'est'),part=c=>{const t=c.tk||(c.puerta?null:ticketDeCita(c));return !!t&&lineasDe(t.id).some(l=>l.estilista===soy&&!l.venta)},cs=[...cs0,...(agDia===hoy()?[...citas.filter(c=>c.fecha===agDia&&activa(c)&&c.estilista!==soy&&!cs0.some(x=>x.id===c.id)&&part(c)),...puertaHoy().filter(x=>x.estilista===soy||part(x))]:[])];
     out.innerHTML=(cs.length||bs.length)?`${tlHtml(cs,bs,'est',false)}<small>Tu agenda la maneja <b>caja</b>. Si necesitas una cita o un cambio, pídeselo a caja.</small>`:`<div class="empty">No tienes citas este día. Si una clienta te escribe para agendar, pásale el contacto a caja.</div>`;
     return;
   }
