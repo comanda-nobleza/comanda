@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="0bfa19c7bee5"</script>
-<script src="web.js?v=0bfa19c7bee5"></script>
+<script>window.BUILD="f6a598b0d132"</script>
+<script src="web.js?v=f6a598b0d132"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1065,7 +1065,7 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
       <label class="f" for="blDesde">Desde<input id="blDesde" type="time" step="300"></label>
       <label class="f" for="blHasta">Hasta<input id="blHasta" type="time" step="300"></label>
     </div>
-    <label class="f" for="blMot">Motivo<select id="blMot"><option>Día libre</option><option>Almuerzo</option><option>Vacaciones</option><option>Turno</option><option>Otro</option></select></label>
+    <label class="f" for="blMot">Motivo<select id="blMot"><option>Día libre</option><option>Almuerzo</option><option>Vacaciones</option><option>Turno</option><option>Cierre del salón</option><option>Otro</option></select></label>
     <div id="blErr" class="notice warn" hidden></div>
     <div class="actions"><button type="button" class="btn ghost" data-close>Cancelar</button><button class="btn primary" id="blGuardar">Cerrar agenda</button></div>
   </form>
@@ -4725,7 +4725,7 @@ $('#citaForm').addEventListener('submit',async e=>{
 
 /* cerrar agenda */
 $('#agCerrar').onclick=()=>{
-  $('#blEst').innerHTML='<option value="">— Elige profesional —</option>'+atienden().map(e=>`<option ${e.nombre===agFiltro?'selected':''}>${esc(e.nombre)}</option>`).join('');
+  $('#blEst').innerHTML='<option value="">— Elige profesional —</option><option value="__todos">Todos los profesionales</option>'+atienden().map(e=>`<option ${e.nombre===agFiltro?'selected':''}>${esc(e.nombre)}</option>`).join('');
   $('#blFecha').value=agDia<hoy()?hoy():agDia;$('#blFechaFin').value='';$('#blTodo').checked=true;$('#blHoras').hidden=true;$('#blDesde').value='';$('#blHasta').value='';$('#blMot').value='Día libre';$('#blErr').hidden=true;blForzar=false;$('#blGuardar').textContent='Cerrar agenda';
   $('#bloqSheet').hidden=false;
 };
@@ -4735,7 +4735,7 @@ $('#bloqForm').addEventListener('submit',async e=>{
   e.preventDefault();if(!needDb())return;
   const est=$('#blEst').value,f1=$('#blFecha').value,f2=$('#blFechaFin').value||f1,todo=$('#blTodo').checked,de=$('#blDesde').value,ha=$('#blHasta').value,mot=$('#blMot').value;
   const err=t=>{$('#blErr').innerHTML=t;$('#blErr').hidden=false};
-  if(!est)return err('Elige el profesional.');
+  if(!est)return err('Elige el profesional.');const ests=est==='__todos'?atienden().map(x=>x.nombre):[est],quien=est==='__todos'?'todos':est;
   if(!f1)return err('Elige el día.');
   if(f2<f1)return err('El último día no puede ser antes del primero.');
   if(!todo&&(!de||!ha||aMin(ha)<=aMin(de)))return err('Revisa las horas: “hasta” debe ser después de “desde”.');
@@ -4744,12 +4744,12 @@ $('#bloqForm').addEventListener('submit',async e=>{
   try{
     if(!blForzar){
       const cs=(await Promise.all(dias.map(f=>db.collection('citas').where('fecha','==',f).get()))).flatMap(s=>s.docs.map(d=>({id:d.id,...d.data()})));
-      const af=cs.filter(c=>c.estilista===est&&activa(c)&&c.estado!=='llego'&&(todo||(aMin(c.inicio)<aMin(ha)&&finDe(c)>aMin(de))));
-      if(af.length){blForzar=true;$('#blGuardar').textContent='Cerrar de todas formas';return err(`<b>${esc(est)}</b> ya tiene ${af.length} cita${af.length===1?'':'s'} en ese horario: ${af.slice(0,4).map(c=>`${esc(c.cliente)} (${fechaCorta(c.fecha)} ${h12(c.inicio)})`).join(', ')}${af.length>4?'…':''}. Esas citas no se cancelan solas: muévelas o avísales a las clientas.`)}
+      const af=cs.filter(c=>ests.includes(c.estilista)&&activa(c)&&c.estado!=='llego'&&(todo||(aMin(c.inicio)<aMin(ha)&&finDe(c)>aMin(de))));
+      if(af.length){blForzar=true;$('#blGuardar').textContent='Cerrar de todas formas';return err(`${quien==='todos'?'Hay':`<b>${esc(est)}</b> ya tiene`} ${af.length} cita${af.length===1?'':'s'} en ese horario: ${af.slice(0,4).map(c=>`${esc(c.cliente)}${quien==='todos'?' con '+esc(c.estilista):''} (${fechaCorta(c.fecha)} ${h12(c.inicio)})`).join(', ')}${af.length>4?'…':''}. Esas citas no se cancelan solas: muévelas o avísales a las clientas.`)}
     }
     const t=new Date().toISOString();
-    await Promise.all(dias.map(f=>db.collection('bloqueos').add({fecha:f,estilista:est,todoDia:todo,desde:todo?'':de,hasta:todo?'':ha,motivo:mot,creado:t})));
-    $('#bloqSheet').hidden=true;toast(`Agenda de ${est} cerrada${dias.length>1?` (${dias.length} días)`:''}`);
+    await Promise.all(dias.flatMap(f=>ests.map(n=>db.collection('bloqueos').add({fecha:f,estilista:n,todoDia:todo,desde:todo?'':de,hasta:todo?'':ha,motivo:mot,creado:t}))));
+    $('#bloqSheet').hidden=true;toast(`${quien==='todos'?`Agenda de todos (${ests.length}) cerrada`:`Agenda de ${est} cerrada`}${dias.length>1?` (${dias.length} días)`:''}`);
   }catch(x){toast('No se pudo cerrar la agenda ('+(x.code||'error')+').')}finally{btn.disabled=false}
 });
 
