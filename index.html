@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="1e6a595655e1"</script>
-<script src="web.js?v=1e6a595655e1"></script>
+<script>window.BUILD="fb51adc6ed8d"</script>
+<script src="web.js?v=fb51adc6ed8d"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1317,7 +1317,7 @@ document.addEventListener('click',async e=>{
 var tkEdit=null;
 const PAQC={};let PAQV=[];
 function paqChip(t){const k=ckey(t.cliente);if(!db||k.length<2)return '';const c=PAQC[k];if(c===undefined){PAQC[k]=null;db.collection('paquetes').where('clienteKey','==',k).get().then(s=>{PAQC[k]=s.docs.map(d=>({id:d.id,...d.data()})).filter(p=>(+p.usadas||0)<(+p.sesiones||0));if(PAQC[k].length)try{renderDyn()}catch(e){}}).catch(()=>{PAQC[k]=[]});return ''}
-  if(!c||!c.length)return '';return `<div class="notice ok" style="margin:4px 0;padding:6px 10px">🎟️ ${c.map(p=>`<b>${esc(p.servicio)}</b> · le quedan ${p.sesiones-(+p.usadas||0)} de ${p.sesiones}`).join('<br>')}<br><small>${mode_est()?'Al anotar tu servicio, toca tu parte en «Paquetes de la clienta».':'Cada profesional anota su parte desde «Anotar servicio».'}</small></div>`}
+  if(!c||!c.length)return '';return `<div class="notice ok" style="margin:4px 0;padding:6px 10px">🎟️ ${c.map(p=>`<b>${esc(p.servicio)}</b> · le quedan ${p.sesiones-(+p.usadas||0)} de ${p.sesiones}`).join('<br>')}<br><small>Para descontar la visita: «+ Servicio», elige el profesional y toca su parte del paquete.</small></div>`}
 const mode_est=()=>modo==='est';
 function ticketCard(t,mode){
   const ls=lineasDe(t.id), sub=subtotalDe(t.id);
@@ -1336,7 +1336,7 @@ function ticketCard(t,mode){
   return `<article class="ticket${ed?' editando':''}"><div class="head"><span class="cliente">${esc(t.cliente)}</span><span class="hora">llegó ${hora(t.creado)}</span></div>
   ${mode==='caja'?saldoAviso(t):''}
   ${ed?edHtml:puedeAt?atHtml.replace(/<\/div>$/,`<button type="button" class="btn small ghost tk-edb" data-tked-ir="${t.id}" title="Corregir el nombre de la clienta">✏️ Corregir nombre</button></div>`):atHtml}
-  <ul class="lines">${items}</ul>
+  ${mode==='caja'?paqChip(t):''}<ul class="lines">${items}</ul>
   ${mode!=='est'&&t.descSol?(()=>{const d=t.descSol,con=r2(sub-(d.base!=null?+d.base:sub)*(+d.pct||0)/100);return d.estado==='aprobada'?`<div class="notice ok" style="margin:6px 0"><span>✓ Descuento de <b>${d.pct}%</b>${d.detalle?' en '+esc(d.detalle):''} autorizado por ${esc(d.resp||'gerencia')} · con descuento: <b>${money(con)}</b> + ITBMS. Se aplica al tocar «Cerrar cuenta».</span></div>`:d.estado==='pendiente'?`<div class="notice warn" style="margin:6px 0"><span>⏳ Descuento de ${d.pct}% esperando autorización de gerencia.</span></div>`:`<div class="notice warn" style="margin:6px 0"><span>✗ Gerencia no autorizó el descuento de ${d.pct}%.</span></div>`})():''}
   <div class="foot">${tot}<span class="row" style="gap:6px">${btns}</span></div></article>`;
 }
