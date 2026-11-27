@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="4c096eaa72dc"</script>
-<script src="web.js?v=4c096eaa72dc"></script>
+<script>window.BUILD="ecf1f92d9467"</script>
+<script src="web.js?v=ecf1f92d9467"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -4434,7 +4434,11 @@ function citaHtml(c,mode,conEst){
       b.push(`<button class="btn small ${c.confEnv?'primary':''}" data-ag="conf-sin" data-id="${c.id}">${c.confEnv?'✓ Confirmó':'Ya está confirmada'}</button>`);
       b.push(`<a class="btn small ${c.confEnv?'':'wa'}" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="confirmar" data-id="${c.id}">${c.confEnv?'Reenviar':'Confirmar por WhatsApp'}</a>`);
     }
-    if(c.estado==='confirmada'&&c.fecha>=hoy()){
+    if(c.estado==='confirmada'&&c.fecha===hoy()){
+      const l=waLink(tel,msgDiaMismo(c));
+      b.push(`<a class="btn small ${c.recDia?'':'wa'}" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="recdia" data-id="${c.id}">${c.recDia?'✓ Recordatorio de hoy enviado · reenviar':'⏰ Recordarle la cita de hoy'}</a>`);
+    }
+    if(c.estado==='confirmada'&&c.fecha>hoy()){
       const l=waLink(tel,msgRecordar(c));
       b.push(`<a class="btn small ${c.recordatorio?'':'wa'}" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="recordar" data-id="${c.id}">${c.recordatorio?'✓ Recordatorio enviado':'Enviar recordatorio'}</a>`);
     }
