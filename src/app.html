@@ -1030,6 +1030,14 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 </div>
 
 <!-- Sheet: cerrar agenda -->
+<div class="sheet-bg" id="avisoSheet" hidden>
+  <div class="sheet">
+    <h3>Cita guardada ✓</h3>
+    <small>Envíale a la clienta el aviso de su cita, con la regla de avisar 24 horas antes si necesita cambiar.</small>
+    <pre id="avisoTxt" style="white-space:pre-wrap;font:inherit;font-size:.9rem;background:var(--card2,rgba(255,255,255,.04));border-radius:10px;padding:10px;margin:10px 0"></pre>
+    <div class="actions"><button type="button" class="btn ghost" data-close>Ahora no</button><a class="btn wa" id="avisoEnviar" target="_blank" rel="noopener">Enviar aviso por WhatsApp</a></div>
+  </div>
+</div>
 <div class="sheet-bg" id="bloqSheet" hidden>
   <form class="sheet" id="bloqForm" novalidate>
     <h3>Cerrar agenda</h3>
@@ -2162,6 +2170,8 @@ async function thHecha(tipo,cliente,txt,undo){try{await db.collection('tareasHec
 const nomCli=c=>((c.nombre||'')+' '+(c.apellido||'')).trim();
 function msgMant(x){return `¡Hola ${primerNombre(x.cliente)}! 💛\n\nYa va tocando tu ${x.servs.join(' y ').toLowerCase()} en ${SALON}${x.est?` (la última vez te atendió ${x.est})`:''}.\n\n¿Te agendamos? Responde este mensaje y te buscamos un espacio. ✨`}
 function msgVence(x){return `¡Hola ${primerNombre(x.cliente)}! ⭐\n\nTienes *${x.saldo} puntos* en ${SALON} que vencen el ${fechaCorta(x.vence)}. ¡Úsalos antes de que se pierdan!\n\n¿Te agendamos una cita? Responde este mensaje. 💛`}
+function diaMismo(){const h=hoy();if(new Date(h+'T12:00:00').getDay()!==1)return [];const cs=(typeof TH!=='undefined'&&TH.citasHoy)?TH.citasHoy:(agDia===h?citas:[]),m=aMin(new Date().toTimeString().slice(0,5));
+  return unaPorGrupo(cs.filter(c=>c.fecha===h&&c.estado==='confirmada'&&!c.recDia&&m>=aMin(c.inicio)-180&&m<aMin(c.inicio))).sort((a,b)=>aMin(a.inicio)-aMin(b.inicio)).map(c=>({c,tel:telMap[c.id]||(TH.telT||{})[c.id]||''}))}
 function tareasDatos(){const h=hoy(),y=new Date().getFullYear(),tel=c=>telMap[c.id]||TH.telT[c.id]||'';
   const fut=new Set([...TH.fut,...porConf.filter(activa).map(c=>c.clienteKey||ckey(c.cliente)),...citas.filter(c=>activa(c)&&c.fecha>=h).map(c=>c.clienteKey||ckey(c.cliente))]);
   const conf=pcHoy().map(c=>({c,tel:tel(c)}));
@@ -2198,18 +2208,19 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     `${wa(x.tel,msg,`data-thenv="${x.t}" data-k="${esc(x.t==='mant'?x.ids.join(','):x.t==='react'?x.id:x.t==='cum'?x.id:x.key+'|'+x.vence)}"`,x.t==='cum'?'Felicitar por WhatsApp':'WhatsApp')}${x.t==='cum'?`<button class="btn small ghost" data-cumple-ok="${esc(x.id)}" data-solo="1">Ya la felicité</button>`:`<button class="btn small" data-thag="${esc(x.cliente)}" data-tel="${esc(x.tel||'')}" data-svc="${esc((x.docs||[]).map(z=>z.servicio).join('|'))}" data-est="${esc(x.est||'')}">Agendar</button>${later(x)}${nunca(x)}`}`);
   const ahM=aMin(new Date().toTimeString().slice(0,5)),confAtr=c=>confDesde(c)<h;
   const confR=({c,tel})=>{const cuando=c.fecha===h?'Hoy':c.fecha===manana()?'Mañana':fechaCorta(c.fecha);
-    return row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${cuando} ${h12(c.inicio)}</span><br><small>${esc(svcTodos(c)||'servicio por definir')} · ${esc(atiendeTxt(c))}${c.confEnv?` · <b>📨 enviado ${hora(c.confEnv)} · esperando</b>`:''}${tel?'':' · '+sinTel}</small>`,
-      c.confEnv?`<button class="btn small primary" data-ag="conf-sin" data-id="${c.id}">✓ Confirmó</button><button class="btn small" data-ag="editar" data-id="${c.id}">Cambiar hora</button><button class="btn small ghost danger" data-ag="cancelar" data-id="${c.id}">Canceló</button>${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Reenviar','ghost')}`
+    return row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${cuando} ${h12(c.inicio)}</span><br><small>${esc(svcTodos(c)||'servicio por definir')} · ${esc(atiendeTxt(c))}${c.confEnv?(liberable(c)?` · <b class="neg">no respondió antes de las 7:00 p. m.</b>`:` · <b>📨 enviado ${hora(c.confEnv)} · esperando</b>`):''}${tel?'':' · '+sinTel}</small>`,
+      c.confEnv&&liberable(c)?`${wa(tel,msgLiberar(c),`data-ag="liberar" data-id="${c.id}"`,'🚫 Liberar espacio','danger')||`<button class="btn small danger" data-ag="liberar" data-id="${c.id}">🚫 Liberar espacio</button>`}<button class="btn small" data-ag="conf-sin" data-id="${c.id}">Sí confirmó</button>`
+      :c.confEnv?`<button class="btn small primary" data-ag="conf-sin" data-id="${c.id}">✓ Confirmó</button><button class="btn small" data-ag="editar" data-id="${c.id}">Cambiar hora</button><button class="btn small ghost danger" data-ag="cancelar" data-id="${c.id}">Canceló</button>${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Reenviar','ghost')}`
       :`${wa(tel,msgConfirmar(c),`data-ag="confirmar" data-id="${c.id}"`,'Confirmar por WhatsApp')}<button class="btn small" data-ag="conf-sin" data-id="${c.id}">Ya está confirmada</button>`)};
   const recR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">Mañana ${h12(c.inicio)}</span><br><small>${esc(atiendeTxt(c))} · confirmada${tel?'':' · '+sinTel}</small>`,wa(tel,msgRecordar(c),`data-ag="recordar" data-id="${c.id}"`,'Enviar recordatorio')||`<button class="btn small" data-ag="recordar" data-id="${c.id}">Ya se lo recordé</button>`);
   const repR=({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">${c.fecha===h?'Hoy':fechaCorta(c.fecha)} ${h12(c.inicio)}</span><br><small>no vino · ${esc(atiendeTxt(c))}${tel?'':' · '+sinTel}</small>`,`${wa(tel,msgReprog(c),`data-ag="reprog" data-id="${c.id}"`,'Enviar mensaje para reprogramar')}<button class="btn small" data-ag="restaurar" data-id="${c.id}">Sí vino</button>`);
   const formR=l=>row(`<b>${esc(l.cliente)}</b> <span class="chip warn">${l.fecha===h?'Hoy':fechaCorta(l.fecha)}</span><br><small>${esc(l.servicio)} · ${esc(l.estilista)} · ${fpTxt(l).replace(/^\S+ /,'')}</small>`,`<button class="btn small primary" data-fx="${l.id}">Anotar</button>`);
-  const A={conf:D.conf.filter(x=>confAtr(x.c)),rep:D.rep.filter(x=>x.c.fecha<h),form:D.form.filter(l=>(l.fecha||h)<h)};
-  const H={conf:D.conf.filter(x=>!confAtr(x.c)),rep:D.rep.filter(x=>!(x.c.fecha<h)),form:D.form.filter(l=>!((l.fecha||h)<h))};
+  const L=D.conf.filter(x=>liberable(x.c)),A={conf:D.conf.filter(x=>confAtr(x.c)&&!liberable(x.c)),rep:D.rep.filter(x=>x.c.fecha<h),form:D.form.filter(l=>(l.fecha||h)<h)};
+  const H={conf:D.conf.filter(x=>!confAtr(x.c)&&!liberable(x.c)),rep:D.rep.filter(x=>!(x.c.fecha<h)),form:D.form.filter(l=>!((l.fecha||h)<h))};
   const mant=D.mant.map(x=>pr(x,msgMant(x))).join(''),react=D.react.map(x=>pr({...x},msgReact({nombre:(x.doc&&x.doc.nombre)||x.cliente,pts:0}))).join(''),oth=x=>pr(x,x.t==='cum'?msgCumple({nombre:x.cliente.split(' ')[0]}):msgVence(x)),cumF=D.otros.filter(x=>x.t==='cum'&&x.f>h),cumA=D.otros.filter(x=>x.t==='cum'&&x.f<h),otrosH=D.otros.filter(x=>!(x.t==='cum'&&x.f!==h)),otros=otrosH.map(oth).join('');
   const cumFR=x=>row(`<b>${esc(x.cliente)}</b> <span class="chip gris">🎂 Cumple el ${fechaCorta(x.f)}</span><br><small>Felicitar ese día · ya se le sumaron ${ptsCumple()} puntos</small>`,`<button type="button" class="btn small" disabled title="Se activa el día de su cumpleaños">🔒 Se activa el ${fechaCorta(x.f).replace(',','').replace(/ \S+$/,'')}</button>`);
   const RT=rutTareas(h);
-  const nA=A.conf.length+A.rep.length+A.form.length+cumA.length+RT.atr.length,nH=H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+otrosH.length+RT.hoy.length,hh=TH.hechas;
+  const DM=diaMismo(),nA=A.conf.length+A.rep.length+A.form.length+cumA.length+RT.atr.length,nH=L.length+DM.length+H.conf.length+D.rec.length+H.rep.length+H.form.length+D.mant.length+D.react.length+otrosH.length+RT.hoy.length,hh=TH.hechas;
   const sec=(cls,ic,tit,n,sub,body)=>`<section class="th-sec ${cls}"><div class="th-sh"><span class="th-ic">${ic}</span><b>${tit}</b><span class="th-n">${n}</span>${sub?`<small class="muted">${sub}</small>`:''}</div>${body}</section>`;
   const vacio=t=>`<div class="th-vacio">${t}</div>`;
   const atrHtml=sec('atr'+(nA?'':' cero'),'⚠️','Atrasadas',nA,'',nA?
@@ -2219,6 +2230,8 @@ function renderTareas(){const bxs=document.querySelectorAll('.tareas-hoy');if(!b
     grp('a-cum','🎂 Cumpleaños sin felicitar','ya pasó el día',cumA.length,cumA.map(oth).join(''))+grp('a-rut','🗂️ Tareas del equipo','de días anteriores',RT.atr.length,RT.atr.map(x=>rutRow(x)).join('')):vacio('✓ Nada atrasado'));
   const hoyHtml=sec('hoy','📋','Tareas de hoy',nH,'',(nH?
     grp('rut','🗂️ Tareas del equipo','',RT.hoy.length,RT.hoy.map(x=>rutRow(x)).join(''))+
+    grp('lib','🚫 No confirmaron · liberar espacio','no respondieron antes de las 7:00 p. m.',L.length,L.map(confR).join(''))+
+    grp('dm','⏰ Recordar la cita de hoy','citas del lunes, 3 horas antes',DM.length,DM.map(({c,tel})=>row(`<b>${esc(c.cliente)}</b> <span class="chip warn">Hoy ${h12(c.inicio)}</span><br><small>${esc(atiendeTxt(c))} · confirmada el sábado${tel?'':' · '+sinTel}</small>`,wa(tel,msgDiaMismo(c),`data-ag="recdia" data-id="${c.id}"`,'Enviar recordatorio')||`<button class="btn small" data-ag="recdia" data-id="${c.id}">Ya se lo recordé</button>`)).join(''))+
     grp('conf','📅 Confirmar citas','las de mañana (se habilitan a las 2:00 p. m.)',H.conf.length,H.conf.map(confR).join(''))+(pcLuego().length?`<p class="muted" style="margin:4px 0 8px"><small>🔒 ${pcLuego().length} cita${pcLuego().length>1?'s':''} de ${fechaCorta(pcLuego()[0].fecha)} para confirmar · se habilita${pcLuego().length>1?'n':''} hoy a las 2:00 p. m.</small></p>`:'')+
     grp('rec','💬 Recordar citas de mañana','',D.rec.length,D.rec.map(recR).join(''))+
     grp('rep','🔁 Reprogramar (no vinieron)','escríbeles para buscar otra fecha',H.rep.length,H.rep.map(repR).join(''))+
@@ -4278,8 +4291,15 @@ const eqDe=c=>Array.isArray(c.equipo)&&c.equipo.length>1?c.equipo:null;
 const svcTodos=c=>{const q=eqDe(c);return q?q.flatMap(x=>x.servicios||[]).join(' + '):(c.servicio||'')};
 const atiendeTxt=c=>{const q=eqDe(c);if(!q)return c.estilista;const p=q.map(x=>`${x.estilista} (${(x.servicios||[]).join(', ')})`);return p.slice(0,-1).join(', ')+' y '+p[p.length-1]};
 const unaPorGrupo=l=>{const v=new Set();return l.filter(c=>{const k=c.grupo&&eqDe(c)?'g'+c.grupo:c.id;if(v.has(k))return false;v.add(k);return true})};
-function msgReprog(c){return `Hola ${primerNombre(c.cliente)}, te extrañamos hoy en ${SALON} 💛\n\nTenías cita ${c.fecha===hoy()?'hoy':'el '+diaCita(c.fecha)} a las *${h12(c.inicio)}*${svcTodos(c)?' para *'+svcTodos(c)+'*':''}. ¿Te buscamos *otro día y hora* que te quede bien? Responde este mensaje y te reprogramamos. ✨`}
-function msgConfirmar(c){return `Hola ${primerNombre(c.cliente)}, te *confirmamos tu cita* en ${SALON}:\n\n• *Servicio: ${svcTodos(c)||'por definir'}*\n• *Día: ${diaCita(c.fecha)}*\n• *Hora: ${h12(c.inicio)}*\n• Te atiende${eqDe(c)?'n':''}: ${atiendeTxt(c)}\n\nEstamos en Paitilla. Si necesitas cambiar la cita, respóndenos por aquí. ¡Te esperamos!`}
+function msgReprog(c){return `Hola ${primerNombre(c.cliente)}, te esperamos ${c.fecha===hoy()?'hoy':'el '+diaCita(c.fecha)} a las *${h12(c.inicio)}* y no pudimos verte 🥺 Esperamos que todo esté bien. Cuando quieras reagendar, aquí estamos.\n\nTe recordamos que si surge algún cambio, nos ayuda mucho que nos avises con anticipación para darle el espacio a otra clienta 💛`}
+const CONF_LIM=19*60;
+const cuandoCita=c=>c.fecha===hoy()?'de hoy':c.fecha===manana()?'de mañana':'del '+new Date(c.fecha+'T12:00:00').toLocaleDateString('es-PA',{weekday:'long'});
+function msgConfirmar(c){const d=confDesde(c),h=hoy(),tarde=d<h||(d===h&&aMin(new Date().toTimeString().slice(0,5))>=CONF_LIM);return `¡Hola ${primerNombre(c.cliente)}! 🌿 Te recordamos tu cita ${cuandoCita(c)} en ${SALON}:\n📅 *${new Date(c.fecha+'T12:00:00').toLocaleDateString('es-PA',{weekday:'long',day:'numeric',month:'long'})} a las ${h12(c.inicio)}*\n💅 *${svcTodos(c)||'servicio por definir'}*\n👩 Te atiende${eqDe(c)?'n':''}: ${atiendeTxt(c)}\n\nPor favor responde *SÍ* para confirmar ${tarde?'lo antes posible':'antes de las *7:00 p. m.* de hoy'}. Si no recibimos respuesta, liberaremos el espacio para otra clienta.`}
+function msgAviso(c){const d=confDesde(c),h=hoy(),lun=new Date(c.fecha+'T12:00:00').getDay()===1;const pre=d>h?(lun?'Te escribiremos el sábado para confirmar. ':'Te escribiremos un día antes para confirmar. '):'';return `¡Listo, tu cita quedó agendada! ✨\n📅 *${diaCita(c.fecha)} a las ${h12(c.inicio)}*\n💅 *${svcTodos(c)||'servicio por definir'}*\n👩 Te atiende${eqDe(c)?'n':''}: ${atiendeTxt(c)}\n\n${pre}Si necesitas cambiar o cancelar, avísanos con *al menos 24 horas* de anticipación para poder darle tu espacio a otra clienta 💛`}
+function msgLiberar(c){return `Hola ${primerNombre(c.cliente)}, como no recibimos tu confirmación, liberamos tu espacio ${cuandoCita(c)}. Si aún deseas venir, escríbenos y con gusto revisamos disponibilidad 🌿`}
+function msgDiaMismo(c){return `¡Hola ${primerNombre(c.cliente)}! Te esperamos hoy a las *${h12(c.inicio)}* en ${SALON} ✨ Si se te presenta algún imprevisto, avísanos lo antes posible 💛`}
+/* se puede liberar: se le pidió confirmar antes del límite y ya pasaron las 7:00 p. m. de ese día */
+function liberable(c){if(c.estado!=='por_confirmar'||!c.confEnv)return false;const d=confDesde(c),lim=new Date(d+'T19:00:00');return new Date()>=lim&&new Date(c.confEnv)<=lim}
 function msgRecordar(c){return `Hola ${primerNombre(c.cliente)}, *te recordamos tu cita ${c.fecha===manana()?'de mañana':'del '+diaCita(c.fecha)}* a las *${h12(c.inicio)}* con *${atiendeTxt(c)}*${svcTodos(c)?' para *'+svcTodos(c)+'*':''} en ${SALON}.\n\nPor favor *confírmanos tu asistencia* respondiendo este mensaje. ¡Te esperamos!`}
 
 function subAgenda(){
@@ -4349,7 +4369,7 @@ function confDesde(c){const dw=new Date(c.fecha+'T12:00:00').getDay();return add
 const confHabil=c=>{const d=confDesde(c),h=hoy();return d<h||(d===h&&aMin(new Date().toTimeString().slice(0,5))>=CONF_HORA)};
 const pcHoy=()=>pcFut().filter(confHabil);
 const pcLuego=()=>pcFut().filter(c=>confDesde(c)===hoy()&&!confHabil(c));
-setInterval(()=>{const m=aMin(new Date().toTimeString().slice(0,5));if(m>=CONF_HORA&&window._c16!==hoy()){window._c16=hoy();try{renderDyn()}catch(e){}}},60000);
+setInterval(()=>{const m=aMin(new Date().toTimeString().slice(0,5)),k=hoy()+(m>=CONF_LIM?'b':m>=CONF_HORA?'a':'')+(new Date().getDay()===1?Math.floor(m/15):'');if(window._c16!==k){window._c16=k;try{renderDyn()}catch(e){}}},60000);
 const pcFut=()=>unaPorGrupo(porConf.filter(c=>c.fecha>=hoy())).sort((a,b)=>(a.fecha+a.inicio).localeCompare(b.fecha+b.inicio));
 
 const agMov=n=>modo==='caja'?(agVista==='mes'?movMes(n):addDias(agDia,n)):agVE==='mes'?movMes(n):agVE==='semana'?addDias(agDia,7*n):addDias(agDia,n);
@@ -4388,7 +4408,8 @@ function citaHtml(c,mode,conEst){
   if(mode==='caja'){
     if(c.estado==='por_confirmar'){
       const l=waLink(tel,msgConfirmar(c));
-      if(c.confEnv)b.push(`<span class="chip warn">📨 Mensaje enviado ${hora(c.confEnv)} · esperando respuesta</span>`);
+      if(c.confEnv&&liberable(c)){const ll=waLink(tel,msgLiberar(c));b.push(`<span class="chip neg">No respondió antes de las 7:00 p. m.</span>`);b.push(`<a class="btn small danger" ${ll?`href="${ll}" target="_blank" rel="noopener"`:''} data-ag="liberar" data-id="${c.id}">🚫 Liberar espacio</a>`)}
+      else if(c.confEnv)b.push(`<span class="chip warn">📨 Mensaje enviado ${hora(c.confEnv)} · esperando respuesta</span>`);
       b.push(`<button class="btn small ${c.confEnv?'primary':''}" data-ag="conf-sin" data-id="${c.id}">${c.confEnv?'✓ Confirmó':'Ya está confirmada'}</button>`);
       b.push(`<a class="btn small ${c.confEnv?'':'wa'}" ${l?`href="${l}" target="_blank" rel="noopener"`:'aria-disabled="true"'} data-ag="confirmar" data-id="${c.id}">${c.confEnv?'Reenviar':'Confirmar por WhatsApp'}</a>`);
     }
@@ -4532,6 +4553,8 @@ document.addEventListener('click',async e=>{
   if(modo!=='caja'&&['confirmar','conf-sin','recordar','novino','cancelar','restaurar','editar','borrar'].includes(a)){toast('La agenda la maneja caja.');return}
   if(a==='confirmar'){const pv=c.confEnv||null;await upd({confEnv:new Date().toISOString()},'Mensaje enviado. Cuando la clienta responda, toca «Confirmó».');thHecha('conf',c.cliente,'Mensaje de confirmación',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{confEnv:pv}})));return}
   if(a==='conf-sin'){await upd({estado:'confirmada',confirmada:new Date().toISOString()},'Cita confirmada');thHecha('confok',c.cliente,'Confirmó la cita',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{estado:'por_confirmar',confirmada:null}})));return}
+  if(a==='liberar'){const g=await thGrupo(c);for(const x of g)await db.doc('citas/'+x.id).update({estado:'cancelada',cancelada:new Date().toISOString(),canceladaPor:soy||enCaja(),motivoCancel:'No confirmó',liberada:true});toast('Espacio liberado. La cita quedó cancelada.');thHecha('lib',c.cliente,'Se liberó el espacio (no confirmó)',g.map(x=>({op:'update',p:'citas/'+x.id,d:{estado:'por_confirmar',cancelada:null,motivoCancel:null,liberada:null}})));return}
+  if(a==='recdia'){if(!c.recDia){await upd({recDia:new Date().toISOString()});thHecha('recdia',c.cliente,'Recordatorio de la cita de hoy',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{recDia:null}})))}return}
   if(a==='recordar'){if(!c.recordatorio){await upd({recordatorio:new Date().toISOString()});thHecha('rec',c.cliente,'Recordatorio de la cita de mañana',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{recordatorio:null}})))}return}
   if(a==='novino'){if(!armed(b))return;await upd({estado:'no_vino'},'Marcada como no vino');return}
   if(a==='cancelar'){if(!armed(b))return;const pe=c.estado;await upd({estado:'cancelada',cancelada:new Date().toISOString(),canceladaPor:soy||enCaja()},'Cita cancelada');if(b.closest('.tareas-hoy'))thHecha('cancel',c.cliente,'Canceló la cita',(await thGrupo(c)).map(x=>({op:'update',p:'citas/'+x.id,d:{estado:pe,cancelada:null}})));return}
@@ -4699,6 +4722,7 @@ $('#citaForm').addEventListener('submit',async e=>{
     if(citaEdit)toast('Cita actualizada'+nP+(cambioHora&&citaEdit.estado==='confirmada'&&modo==='caja'?'. Avísale el cambio a la clienta.':''));
     else{const pf=fecha!==agDia?` para el ${fechaCorta(fecha)}`:'';toast(modo==='caja'?(tel?`Cita guardada${pf}${nP}. Saldrá en Tareas de hoy cuando toque confirmarla.`:`Cita guardada${pf}${nP}. Agrega el teléfono para confirmarla por WhatsApp.`):`Cita guardada${pf}${nP}. Recepción se la confirma a la clienta.`)}
     $('#citaSheet').hidden=true;
+    if(modo==='caja'&&!citaEdit&&tel&&fecha>=hoy()){const c0={...base,estilista:est,inicio:ini,servicio:plan.flatMap(p=>p.servicios).join(' + ')},l=waLink(tel,msgAviso(c0));if(l){$('#avisoTxt').textContent=msgAviso(c0);const a=$('#avisoEnviar');a.href=l;a.onclick=()=>{guardadas.forEach(id=>db.doc('citas/'+id).update({avisoEnv:new Date().toISOString()}).catch(()=>{}));setTimeout(()=>{$('#avisoSheet').hidden=true},300)};$('#avisoSheet').hidden=false}}
   }catch(err){toast('No se pudo guardar la cita ('+(err.code||'error')+').')}finally{btn.disabled=false}
 });
 
