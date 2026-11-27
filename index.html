@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="07d035b4b6f7"</script>
-<script src="web.js?v=07d035b4b6f7"></script>
+<script>window.BUILD="fa8a12be2594"</script>
+<script src="web.js?v=fa8a12be2594"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1051,6 +1051,15 @@ body.tel #v-resumen:not(.solo-pend) > h2:first-of-type{display:none}
 </div>
 
 <!-- Sheet: cerrar agenda -->
+<div class="sheet-bg" id="paqVSheet" hidden>
+  <div class="sheet">
+    <h3>Vender paquete</h3>
+    <small id="paqVCli" class="muted"></small>
+    <div id="paqVList" style="display:grid;gap:8px;margin:12px 0"></div>
+    <small class="muted">Se agrega a la cuenta y caja lo cobra completo. No genera comisión: cada profesional cobra cuando atienda cada sesión.</small>
+    <div class="actions"><button type="button" class="btn ghost" data-close>Cancelar</button></div>
+  </div>
+</div>
 <div class="sheet-bg" id="avisoSheet" hidden>
   <div class="sheet">
     <h3>Cita guardada ✓</h3>
@@ -1314,7 +1323,7 @@ function ticketCard(t,mode){
   const espPend=ls.some(l=>l.especial&&l.especial.estado==='pendiente');
   const btns=mode==='est'
     ?`${del}<button class="btn primary" data-act="add-svc" data-id="${t.id}">+ Mi servicio</button>`
-    :`${del}<button class="btn small" data-act="add-svc" data-id="${t.id}">+ Servicio</button><button class="btn primary small" data-act="cobrar" data-id="${t.id}" ${ls.length&&!espPend?'':'disabled'} ${espPend?'title="Primero autoriza o rechaza el precio especial"':''}>Cerrar cuenta</button>`;
+    :`${del}<button class="btn small" data-act="add-svc" data-id="${t.id}">+ Servicio</button>${cfg.servicios.some(x=>+x.sesiones>0)?`<button class="btn small" data-act="vender-paq" data-id="${t.id}">🎟️ Paquete</button>`:''}<button class="btn primary small" data-act="cobrar" data-id="${t.id}" ${ls.length&&!espPend?'':'disabled'} ${espPend?'title="Primero autoriza o rechaza el precio especial"':''}>Cerrar cuenta</button>`;
   const tot=mode==='est'?`<small>${ls.length} servicio${ls.length===1?'':'s'}</small>`:`<span class="tot">${money(sub)}<small style="font-weight:400"> + ITBMS</small></span>`;
   const puedeAt=mode==='caja'||(mode==='est'&&abreCuentas(soy));
   const atHtml=`<div class="at-row">${puedeAt?`<label class="at-l">👤 Atiende <select class="at-sel" data-atiende="${t.id}" aria-label="Quién la atiende">${atOpts(t.atiende||'','').replace('¿Quién la atiende? (opcional)','— sin elegir —')}${t.atiende&&!atienden().some(e=>e.nombre===t.atiende)?`<option selected>${esc(t.atiende)}</option>`:''}</select></label>`:t.atiende?`<span>👤 Atiende: <b>${esc(t.atiende)}</b></span>`:''}${t.atiende&&t.creadoPor&&t.creadoPor!==t.atiende?`<small class="muted">abrió ${esc(t.creadoPor)}</small>`:''}</div>`;
@@ -3227,6 +3236,7 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.dataset.id, act=b.dataset.act;
   if(act==='add-svc')openSvc(tickets.find(t=>t.id===id));
+  if(act==='vender-paq'){const t=tickets.find(x=>x.id===id);if(!t)return;const P=cfg.servicios.filter(x=>+x.sesiones>0);$('#paqVCli').textContent='Para '+t.cliente;$('#paqVList').innerHTML=P.map(x=>{const i=cfg.servicios.indexOf(x);return `<button type="button" class="btn" style="justify-content:space-between;display:flex;text-align:left" data-paqv="${i}" data-tk="${t.id}"><span>${esc(x.nombre)}<br><small class="muted">${+x.sesiones} sesiones</small></span><b>${money(+x.precio||0)} <small>+ ITBMS</small></b></button>`}).join('');$('#paqVSheet').hidden=false}
   else if(act==='cobrar')openCobro(id);
   else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&modo==='caja'&&!duena&&l0.estilista===cajero)revisarLog('quito-propio',l0.cliente,`Quitó su propio ${l0.servicio} (${money(l0.precio)}) de la cuenta`);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
     await db.doc('lineas/'+id).delete();if(l0&&l0.paqueteId)await paqRecontar(l0.paqueteId);if(l0&&l0.invId)try{await invMover(l0.invId,{dc:1,tipo:'Venta anulada',nota:l0.cliente||''})}catch(err){}}catch(err){toast('No se pudo quitar.')}}
@@ -3257,7 +3267,7 @@ function prodCaja(it,est){return modo==='est'&&Array.isArray(it.productos)&&insD
 function insTxt(i){return i.porcion?`${i.nombre} · ${i.porcion}`:`${i.nombre}${i.cant?' '+i.cant:''}${i.unidad?' '+i.unidad:''}`}
 function precioOrden(s){return s.libre?(s.minimo?+s.minimo:1e6):(+s.precio||0)}
 const AREA_ORDEN=['Peluquería','Manicura','Cuidado capilar','Barbería','Depilación','Pestañas y cejas'],AREA_FIN=['Faciales','Masajes'];
-function areasConSvc(){const l=[...new Set(cfg.servicios.map(s=>norm(s.area)))],r=a=>{const i=AREA_ORDEN.indexOf(a),f=AREA_FIN.indexOf(a);return i>=0?i:f>=0?200+f:99};return l.map((a,i)=>({a,i})).sort((x,y)=>r(x.a)-r(y.a)||x.i-y.i).map(x=>x.a)}
+function areasConSvc(){const l=[...new Set(cfg.servicios.filter(s=>!(+s.sesiones>0&&esCC(s.nombre))).map(s=>norm(s.area)))],r=a=>{const i=AREA_ORDEN.indexOf(a),f=AREA_FIN.indexOf(a);return i>=0?i:f>=0?200+f:99};return l.map((a,i)=>({a,i})).sort((x,y)=>r(x.a)-r(y.a)||x.i-y.i).map(x=>x.a)}
 function catsDe(area){return [...new Set(cfg.servicios.filter(s=>norm(s.area)===area).map(s=>norm(s.categoria)))]}
 function svcsDe(area,cat){return cfg.servicios.map((s,i)=>({s,i})).filter(x=>norm(x.s.area)===area&&(cat==null||norm(x.s.categoria)===cat)).sort((a,b)=>a.i-b.i)}
 function navInicio(){nav={otras:false}}
@@ -3307,6 +3317,10 @@ async function paqUsar(pid,btn){const p=(paqBox.P||[]).find(x=>x.id===pid);if(!p
     await db.collection('lineas').add({fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),estilista:est,servicio:`${nom} · sesión ${n} de ${p.sesiones} (paquete)`,area:'',precio:0,insumos:[],insumosTotal:0,paqueteId:pid,paqueteVal:+p.valSesion||0,paqueteN:n,creado:new Date().toISOString(),...(esInq(est)?{alquilado:true}:{})});
     await db.doc('paquetes/'+pid).update({usadas:n});toast(`Sesión ${n} de ${p.sesiones} anotada para ${svcTicket.cliente}`);$('#svcSheet').hidden=true}
   catch(e){toast('No se pudo anotar la sesión.')}finally{btn.disabled=false}}
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-paqv]');if(!b||b.disabled)return;const x=cfg.servicios[+b.dataset.paqv],t=tickets.find(z=>z.id===b.dataset.tk);if(!x||!t||!db)return;b.disabled=true;
+  try{const pr=r2(+x.precio||0),n=+x.sesiones,quien=enCaja()||(duena?'Gerencia':'Caja');const lref=await db.collection('lineas').add({paqueteSes:n,fecha:t.fecha||hoy(),ticketId:t.id,cliente:t.cliente,clienteKey:ckey(t.cliente),estilista:'',vendioCaja:quien,servicio:x.nombre,area:x.area||'',precio:pr,insumos:[],insumosTotal:0,creado:new Date().toISOString()});
+    await db.collection('paquetes').add({cliente:t.cliente,clienteKey:ckey(t.cliente),servicio:x.nombre,sesiones:n,total:pr,valSesion:r2(pr/n),usadas:0,fecha:t.fecha||hoy(),ticketId:t.id,lineaId:lref.id,vendio:quien,creado:new Date().toISOString()});
+    $('#paqVSheet').hidden=true;toast(`${x.nombre} agregado a la cuenta de ${t.cliente}. Cóbralo con «Cerrar cuenta».`)}catch(err){toast('No se pudo agregar ('+(err.code||'error')+').')}finally{b.disabled=false}});
 document.addEventListener('click',e=>{const u=e.target.closest('[data-paq-usar]');if(u)paqUsar(u.dataset.paqUsar,u);const c=e.target.closest('[data-paq-cc]');if(c){const [pid,k]=c.dataset.paqCc.split('|');paqCC(pid,k,c)}});
 document.addEventListener('change',e=>{const c=e.target.closest&&e.target.closest('[data-ses1]');if(!c)return;const it=cart.find(x=>x.key===c.dataset.ses1);if(it){it.ses1=c.checked;try{sumSvc()}catch(er){}}});
 async function cargarHist(t){
