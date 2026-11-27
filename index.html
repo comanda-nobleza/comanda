@@ -17,8 +17,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-<script>window.BUILD="43b2734e3c6a"</script>
-<script src="web.js?v=43b2734e3c6a"></script>
+<script>window.BUILD="1e6a595655e1"</script>
+<script src="web.js?v=1e6a595655e1"></script>
 </head>
 <body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -445,7 +445,7 @@ body:not(.es-web) .only-web{display:none!important}
 .tl-hh{position:absolute;left:52px;right:0;border-top:1px dashed var(--line);opacity:.5;height:0}
 .tl-ev{position:absolute;border:0;border-radius:8px;padding:4px 7px;text-align:left;font:inherit;font-size:.78rem;line-height:1.25;overflow:hidden;cursor:pointer;box-shadow:0 1px 0 rgba(0,0,0,.25);border-left:5px solid hsl(var(--h) var(--s) 45%)}
 .tl-ev b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.tl-ev small{display:block;opacity:.95;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-.tl-ev.pc{outline:1.5px dashed currentColor;outline-offset:-2px}.rent-t{font-size:.86rem}.rent-t th,.rent-t td{padding:7px 5px}.rent-t td:first-child{white-space:nowrap}.rent-r{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.rent-r>b{white-space:nowrap}.rent-sv{padding:8px 0;border-top:1px solid var(--line)}.rent-t tr.sel td{background:var(--card2,rgba(212,175,55,.08))}.tl-ev.llego{opacity:.9}
+.tl-ev.pc{outline:1.5px dashed currentColor;outline-offset:-2px}.paqv-b{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;width:100%;min-width:0;white-space:normal;height:auto;padding:10px 12px}.paqv-b>span{min-width:0;overflow-wrap:anywhere}.paqv-b>b{white-space:nowrap;text-align:right}#paqVList{min-width:0}.rent-t{font-size:.86rem}.rent-t th,.rent-t td{padding:7px 5px}.rent-t td:first-child{white-space:nowrap}.rent-r{display:flex;justify-content:space-between;align-items:baseline;gap:10px}.rent-r>b{white-space:nowrap}.rent-sv{padding:8px 0;border-top:1px solid var(--line)}.rent-t tr.sel td{background:var(--card2,rgba(212,175,55,.08))}.tl-ev.llego{opacity:.9}
 .tl-bl{position:absolute;left:56px;right:4px;border-radius:8px;background:repeating-linear-gradient(135deg,var(--line) 0 6px,transparent 6px 12px);color:var(--muted);font-size:.75rem;padding:4px 8px}
 .tl-now{position:absolute;left:52px;right:0;height:0;border-top:2px solid #e5534b;z-index:3;pointer-events:none}.tl-now::before{content:'';position:absolute;left:-5px;top:-6px;width:10px;height:10px;border-radius:50%;background:#e5534b}
 .tl-dia{display:grid;gap:4px;margin-bottom:6px}
@@ -1315,7 +1315,7 @@ document.addEventListener('click',async e=>{
   }catch(err){toast('No se pudo guardar.')}
 });
 var tkEdit=null;
-const PAQC={};
+const PAQC={};let PAQV=[];
 function paqChip(t){const k=ckey(t.cliente);if(!db||k.length<2)return '';const c=PAQC[k];if(c===undefined){PAQC[k]=null;db.collection('paquetes').where('clienteKey','==',k).get().then(s=>{PAQC[k]=s.docs.map(d=>({id:d.id,...d.data()})).filter(p=>(+p.usadas||0)<(+p.sesiones||0));if(PAQC[k].length)try{renderDyn()}catch(e){}}).catch(()=>{PAQC[k]=[]});return ''}
   if(!c||!c.length)return '';return `<div class="notice ok" style="margin:4px 0;padding:6px 10px">🎟️ ${c.map(p=>`<b>${esc(p.servicio)}</b> · le quedan ${p.sesiones-(+p.usadas||0)} de ${p.sesiones}`).join('<br>')}<br><small>${mode_est()?'Al anotar tu servicio, toca tu parte en «Paquetes de la clienta».':'Cada profesional anota su parte desde «Anotar servicio».'}</small></div>`}
 const mode_est=()=>modo==='est';
@@ -3242,7 +3242,9 @@ document.addEventListener('click',async e=>{
   const b=e.target.closest('[data-act]');if(!b)return;
   const id=b.dataset.id, act=b.dataset.act;
   if(act==='add-svc')openSvc(tickets.find(t=>t.id===id));
-  if(act==='vender-paq'){const t=tickets.find(x=>x.id===id);if(!t)return;const P=cfg.servicios.filter(x=>+x.sesiones>0);$('#paqVCli').textContent='Para '+t.cliente;$('#paqVList').innerHTML=P.map(x=>{const i=cfg.servicios.indexOf(x);return `<button type="button" class="btn" style="justify-content:space-between;display:flex;text-align:left" data-paqv="${i}" data-tk="${t.id}"><span>${esc(x.nombre)}<br><small class="muted">${+x.sesiones} sesiones</small></span><b>${money(+x.precio||0)} <small>+ ITBMS</small></b></button>`}).join('');$('#paqVSheet').hidden=false}
+  if(act==='vender-paq'){const t=tickets.find(x=>x.id===id);if(!t)return;const CCD=[{nombre:'Club Cero Canas · Siempre Impecable (2 sesiones)',precio:177.52,sesiones:2,area:'Club Cero Canas'},{nombre:'Club Cero Canas · Cero Canas VIP (4 sesiones)',precio:345.75,sesiones:4,area:'Club Cero Canas'}];
+    PAQV=[...CCD.filter(d=>!cfg.servicios.some(x=>x.nombre===d.nombre)),...cfg.servicios.filter(x=>+x.sesiones>0)];const A=[...new Set(PAQV.map(x=>norm(x.area)||'Otros'))].sort((a,b)=>(b==='Club Cero Canas')-(a==='Club Cero Canas'));
+    $('#paqVCli').textContent='Para '+t.cliente;$('#paqVList').innerHTML=A.map(a=>`<b style="margin-top:6px">${esc(a)}</b>`+PAQV.map((x,i)=>({x,i})).filter(o=>(norm(o.x.area)||'Otros')===a).map(({x,i})=>`<button type="button" class="btn paqv-b" data-paqv="${i}" data-tk="${t.id}"><span>${esc(x.nombre.replace(/^Club Cero Canas · /,''))}<br><small class="muted">${+x.sesiones} sesiones</small></span><b>${money(r2((+x.precio||0)*(1+(+cfg.itbms||0)/100)))}<br><small class="muted">con ITBMS</small></b></button>`).join('')).join('');$('#paqVSheet').hidden=false}
   else if(act==='cobrar')openCobro(id);
   else if(act==='del-line'){if(!armed(b))return;try{const l0=lineas.find(x=>x.id===id);if(l0&&modo==='caja'&&!duena&&l0.estilista===cajero)revisarLog('quito-propio',l0.cliente,`Quitó su propio ${l0.servicio} (${money(l0.precio)}) de la cuenta`);if(l0&&l0.paqueteSes){const ps=await db.collection('paquetes').where('lineaId','==',id).get();if(ps.docs.some(d=>+(d.data().usadas||0)>0)){toast('Ese paquete ya tiene sesiones usadas; no se puede quitar.');return}for(const d of ps.docs)await db.doc('paquetes/'+d.id).delete()}
     await db.doc('lineas/'+id).delete();if(l0&&l0.paqueteId)await paqRecontar(l0.paqueteId);if(l0&&l0.invId)try{await invMover(l0.invId,{dc:1,tipo:'Venta anulada',nota:l0.cliente||''})}catch(err){}}catch(err){toast('No se pudo quitar.')}}
@@ -3323,7 +3325,7 @@ async function paqUsar(pid,btn){const p=(paqBox.P||[]).find(x=>x.id===pid);if(!p
     await db.collection('lineas').add({fecha:svcTicket.fecha||hoy(),ticketId:svcTicket.id,cliente:svcTicket.cliente,clienteKey:ckey(svcTicket.cliente),estilista:est,servicio:`${nom} · sesión ${n} de ${p.sesiones} (paquete)`,area:'',precio:0,insumos:[],insumosTotal:0,paqueteId:pid,paqueteVal:+p.valSesion||0,paqueteN:n,creado:new Date().toISOString(),...(esInq(est)?{alquilado:true}:{})});
     await db.doc('paquetes/'+pid).update({usadas:n});toast(`Sesión ${n} de ${p.sesiones} anotada para ${svcTicket.cliente}`);$('#svcSheet').hidden=true}
   catch(e){toast('No se pudo anotar la sesión.')}finally{btn.disabled=false}}
-document.addEventListener('click',async e=>{const b=e.target.closest('[data-paqv]');if(!b||b.disabled)return;const x=cfg.servicios[+b.dataset.paqv],t=tickets.find(z=>z.id===b.dataset.tk);if(!x||!t||!db)return;b.disabled=true;
+document.addEventListener('click',async e=>{const b=e.target.closest('[data-paqv]');if(!b||b.disabled)return;const x=(typeof PAQV!=='undefined'?PAQV:[])[+b.dataset.paqv],t=tickets.find(z=>z.id===b.dataset.tk);if(!x||!t||!db)return;b.disabled=true;
   try{const pr=r2(+x.precio||0),n=+x.sesiones,quien=enCaja()||(duena?'Gerencia':'Caja');const lref=await db.collection('lineas').add({paqueteSes:n,fecha:t.fecha||hoy(),ticketId:t.id,cliente:t.cliente,clienteKey:ckey(t.cliente),estilista:'',vendioCaja:quien,servicio:x.nombre,area:x.area||'',precio:pr,insumos:[],insumosTotal:0,creado:new Date().toISOString()});
     await db.collection('paquetes').add({cliente:t.cliente,clienteKey:ckey(t.cliente),servicio:x.nombre,sesiones:n,total:pr,valSesion:r2(pr/n),usadas:0,fecha:t.fecha||hoy(),ticketId:t.id,lineaId:lref.id,vendio:quien,creado:new Date().toISOString()});
     delete PAQC[ckey(t.cliente)];$('#paqVSheet').hidden=true;toast(`${x.nombre} agregado a la cuenta de ${t.cliente}. Cóbralo con «Cerrar cuenta».`)}catch(err){toast('No se pudo agregar ('+(err.code||'error')+').')}finally{b.disabled=false}});
